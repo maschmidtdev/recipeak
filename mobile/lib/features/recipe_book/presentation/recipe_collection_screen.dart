@@ -398,6 +398,45 @@ const _sampleRecipes = [
     ),
   ),
   RecipeSummary(
+    title: 'Three Rows With Merge',
+    description:
+        'Third DSL example: three ingredient rows with one merge over rows 1-2 and another over rows 1-3.',
+    duration: '20 min',
+    yieldText: '3 servings',
+    document: RecipeDocument(
+      title: 'Three Rows With Merge',
+      yieldText: '3 servings',
+      prepRows: [PrepRow(text: 'Set out a large mixing bowl')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'flour'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'water'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'salt'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'measure'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'pour'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'sprinkle'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 2, text: 'mix wet base')],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 3, text: 'combine fully')],
+        ),
+      ],
+      rowCount: 3,
+    ),
+  ),
+  RecipeSummary(
     title: 'Banana Nut Bread',
     description:
         'End-state reference chart with prep rows, ingredient columns, and merged workflow steps.',

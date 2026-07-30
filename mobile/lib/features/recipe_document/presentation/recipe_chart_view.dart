@@ -34,7 +34,7 @@ class RecipeChartView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'The current implementation supports the first two recipe examples only. More complex charts will come next.',
+              'This preview currently supports simple vertical spans only. More advanced chart behavior will come next.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF5E675F),
               ),
@@ -233,9 +233,7 @@ class _BasicChartLayout {
   final List<List<_BasicChartCell>> columns;
 
   static _BasicChartLayout? tryFrom(RecipeDocument document) {
-    if (document.columns.isEmpty ||
-        document.rowCount < 1 ||
-        document.rowCount > 2) {
+    if (document.columns.isEmpty || document.rowCount < 1) {
       return null;
     }
 
@@ -251,67 +249,33 @@ class _BasicChartLayout {
       final column = sortedColumns[columnIndex];
       final orderedCells = [...column.cells]
         ..sort((left, right) => left.startRow.compareTo(right.startRow));
+      var nextOpenRow = 1;
+      final mappedCells = <_BasicChartCell>[];
 
-      if (document.rowCount == 1) {
-        if (orderedCells.length != 1) {
+      for (final cell in orderedCells) {
+        final endRow = cell.startRow + cell.rowSpan - 1;
+        if (cell.startRow < 1 ||
+            cell.rowSpan < 1 ||
+            cell.startRow > document.rowCount ||
+            endRow > document.rowCount) {
           return null;
         }
-        final cell = orderedCells.single;
-        if (cell.startRow != 1 || cell.rowSpan != 1) {
+        if (cell.startRow < nextOpenRow) {
           return null;
         }
-        columns.add([
+
+        mappedCells.add(
           _BasicChartCell(
             columnIndex: columnIndex,
-            startRow: 1,
-            rowSpan: 1,
+            startRow: cell.startRow,
+            rowSpan: cell.rowSpan,
             text: cell.text,
           ),
-        ]);
-        continue;
+        );
+        nextOpenRow = endRow + 1;
       }
 
-      if (orderedCells.length == 1) {
-        final cell = orderedCells.single;
-        if (cell.startRow != 1 || cell.rowSpan != 2) {
-          return null;
-        }
-        columns.add([
-          _BasicChartCell(
-            columnIndex: columnIndex,
-            startRow: 1,
-            rowSpan: 2,
-            text: cell.text,
-          ),
-        ]);
-        continue;
-      }
-
-      if (orderedCells.length != 2) {
-        return null;
-      }
-
-      if (orderedCells[0].startRow != 1 ||
-          orderedCells[0].rowSpan != 1 ||
-          orderedCells[1].startRow != 2 ||
-          orderedCells[1].rowSpan != 1) {
-        return null;
-      }
-
-      columns.add([
-        _BasicChartCell(
-          columnIndex: columnIndex,
-          startRow: 1,
-          rowSpan: 1,
-          text: orderedCells[0].text,
-        ),
-        _BasicChartCell(
-          columnIndex: columnIndex,
-          startRow: 2,
-          rowSpan: 1,
-          text: orderedCells[1].text,
-        ),
-      ]);
+      columns.add(mappedCells);
     }
 
     return _BasicChartLayout(rowCount: document.rowCount, columns: columns);
