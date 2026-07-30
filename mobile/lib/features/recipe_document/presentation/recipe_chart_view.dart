@@ -3,9 +3,16 @@ import 'package:flutter/material.dart';
 import '../domain/recipe_document.dart';
 
 class RecipeChartView extends StatelessWidget {
-  const RecipeChartView({super.key, required this.document});
+  const RecipeChartView({
+    super.key,
+    required this.document,
+    this.selectedCell,
+    this.onCellTap,
+  });
 
   final RecipeDocument document;
+  final RecipeChartSelection? selectedCell;
+  final ValueChanged<RecipeChartSelection>? onCellTap;
 
   static const _borderColor = Color(0xFFD7CCBE);
   static const _chartRadius = 16.0;
@@ -13,6 +20,7 @@ class RecipeChartView extends StatelessWidget {
   static const _cellHorizontalPadding = 6.0;
   static const _cellVerticalPadding = 6.0;
   static const _columnGapSafety = 2.0;
+  static const _emptyColumnWidth = 96.0;
 
   @override
   Widget build(BuildContext context) {
@@ -97,9 +105,13 @@ class RecipeChartView extends StatelessWidget {
                           (index) => SizedBox(
                             width: columnWidths[index],
                             child: _WorkflowColumn(
+                              columnId: layout.columnIds[index],
+                              columnIndex: index,
                               rows: layout.rowCount,
                               cells: layout.columns[index],
                               columnWidth: columnWidths[index],
+                              selectedCell: selectedCell,
+                              onCellTap: onCellTap,
                             ),
                           ),
                         ),
@@ -169,7 +181,7 @@ class RecipeChartView extends StatelessWidget {
     required double availableWidth,
   }) {
     if (baseWidths.isEmpty) {
-      return baseWidths;
+      return [_emptyColumnWidth];
     }
 
     final totalBaseWidth = baseWidths.fold<double>(
@@ -202,6 +214,16 @@ class RecipeChartView extends StatelessWidget {
   }
 }
 
+class RecipeChartSelection {
+  const RecipeChartSelection({
+    required this.columnId,
+    required this.startRow,
+  });
+
+  final String columnId;
+  final int startRow;
+}
+
 class _PrepRow extends StatelessWidget {
   const _PrepRow({required this.text});
 
@@ -226,14 +248,22 @@ class _PrepRow extends StatelessWidget {
 
 class _WorkflowColumn extends StatelessWidget {
   const _WorkflowColumn({
+    required this.columnId,
+    required this.columnIndex,
     required this.rows,
     required this.cells,
     required this.columnWidth,
+    this.selectedCell,
+    this.onCellTap,
   });
 
+  final String columnId;
+  final int columnIndex;
   final int rows;
   final List<_BasicChartCell> cells;
   final double columnWidth;
+  final RecipeChartSelection? selectedCell;
+  final ValueChanged<RecipeChartSelection>? onCellTap;
 
   @override
   Widget build(BuildContext context) {
@@ -248,6 +278,17 @@ class _WorkflowColumn extends StatelessWidget {
               child: _WorkflowCell(
                 text: cell.text,
                 columnWidth: columnWidth,
+                isSelected:
+                    selectedCell?.columnId == cell.columnId &&
+                    selectedCell?.startRow == cell.startRow,
+                onTap: onCellTap == null
+                    ? null
+                    : () => onCellTap!(
+                          RecipeChartSelection(
+                            columnId: cell.columnId,
+                            startRow: cell.startRow,
+                          ),
+                        ),
                 showLeftBorder: cell.columnIndex > 0,
                 showTopBorder: rowIndex > 1,
               ),
@@ -255,7 +296,18 @@ class _WorkflowColumn extends StatelessWidget {
           else if (!_isCoveredBySpan(rowIndex))
             Expanded(
               child: _EmptyWorkflowCell(
-                showLeftBorder: cells.isNotEmpty && cells.first.columnIndex > 0,
+                isSelected:
+                    selectedCell?.columnId == columnId &&
+                    selectedCell?.startRow == rowIndex,
+                onTap: onCellTap == null
+                    ? null
+                    : () => onCellTap!(
+                          RecipeChartSelection(
+                            columnId: columnId,
+                            startRow: rowIndex,
+                          ),
+                        ),
+                showLeftBorder: columnIndex > 0,
                 showTopBorder: rowIndex > 1,
               ),
             ),
@@ -287,49 +339,73 @@ class _WorkflowCell extends StatelessWidget {
   const _WorkflowCell({
     required this.text,
     required this.columnWidth,
+    required this.isSelected,
     required this.showLeftBorder,
     required this.showTopBorder,
+    this.onTap,
   });
 
   final String text;
   final double columnWidth;
+  final bool isSelected;
   final bool showLeftBorder;
   final bool showTopBorder;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(
-        minHeight: RecipeChartView._cellMinHeight,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: RecipeChartView._cellHorizontalPadding,
-        vertical: RecipeChartView._cellVerticalPadding,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          left: showLeftBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
-          top: showTopBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
-        ),
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          _wrapAtWordBoundaries(
-            context: context,
-            text: text,
-            maxContentWidth:
-                columnWidth - (RecipeChartView._cellHorizontalPadding * 2),
+    final theme = Theme.of(context);
+
+    return Material(
+      color: isSelected
+          ? theme.colorScheme.primary.withValues(alpha: 0.10)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: RecipeChartView._cellMinHeight,
           ),
-          softWrap: true,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            height: 1.15,
+          padding: const EdgeInsets.symmetric(
+            horizontal: RecipeChartView._cellHorizontalPadding,
+            vertical: RecipeChartView._cellVerticalPadding,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              left: showLeftBorder
+                  ? BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : RecipeChartView._borderColor,
+                      width: isSelected ? 2 : 1,
+                    )
+                  : BorderSide.none,
+              top: showTopBorder
+                  ? BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : RecipeChartView._borderColor,
+                      width: isSelected ? 2 : 1,
+                    )
+                  : BorderSide.none,
+            ),
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _wrapAtWordBoundaries(
+                context: context,
+                text: text,
+                maxContentWidth:
+                    columnWidth - (RecipeChartView._cellHorizontalPadding * 2),
+              ),
+              softWrap: true,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                height: 1.15,
+              ),
+            ),
           ),
         ),
       ),
@@ -401,19 +477,37 @@ class _WorkflowCell extends StatelessWidget {
 }
 
 class _BasicChartLayout {
-  const _BasicChartLayout({required this.rowCount, required this.columns});
+  const _BasicChartLayout({
+    required this.rowCount,
+    required this.columns,
+    required this.columnIds,
+  });
 
   final int rowCount;
   final List<List<_BasicChartCell>> columns;
+  final List<String> columnIds;
 
   static _BasicChartLayout? tryFrom(RecipeDocument document) {
-    if (document.columns.isEmpty || document.rowCount < 1) {
+    if (document.rowCount < 0) {
       return null;
+    }
+
+    if (document.rowCount == 0) {
+      return const _BasicChartLayout(rowCount: 0, columns: [], columnIds: []);
+    }
+
+    if (document.columns.isEmpty) {
+      return _BasicChartLayout(
+        rowCount: document.rowCount,
+        columns: const [[]],
+        columnIds: const ['A'],
+      );
     }
 
     final sortedColumns = [...document.columns]
       ..sort((left, right) => left.id.compareTo(right.id));
     final columns = <List<_BasicChartCell>>[];
+    final columnIds = <String>[];
 
     for (
       var columnIndex = 0;
@@ -421,6 +515,7 @@ class _BasicChartLayout {
       columnIndex++
     ) {
       final column = sortedColumns[columnIndex];
+      columnIds.add(column.id);
       final orderedCells = [...column.cells]
         ..sort((left, right) => left.startRow.compareTo(right.startRow));
       var nextOpenRow = 1;
@@ -441,6 +536,7 @@ class _BasicChartLayout {
         mappedCells.add(
           _BasicChartCell(
             columnIndex: columnIndex,
+            columnId: column.id,
             startRow: cell.startRow,
             rowSpan: cell.rowSpan,
             text: cell.text,
@@ -452,19 +548,25 @@ class _BasicChartLayout {
       columns.add(mappedCells);
     }
 
-    return _BasicChartLayout(rowCount: document.rowCount, columns: columns);
+    return _BasicChartLayout(
+      rowCount: document.rowCount,
+      columns: columns,
+      columnIds: columnIds,
+    );
   }
 }
 
 class _BasicChartCell {
   const _BasicChartCell({
     required this.columnIndex,
+    required this.columnId,
     required this.startRow,
     required this.rowSpan,
     required this.text,
   });
 
   final int columnIndex;
+  final String columnId;
   final int startRow;
   final int rowSpan;
   final String text;
@@ -472,27 +574,51 @@ class _BasicChartCell {
 
 class _EmptyWorkflowCell extends StatelessWidget {
   const _EmptyWorkflowCell({
+    required this.isSelected,
     required this.showLeftBorder,
     required this.showTopBorder,
+    this.onTap,
   });
 
+  final bool isSelected;
   final bool showLeftBorder;
   final bool showTopBorder;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(
-        minHeight: RecipeChartView._cellMinHeight,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          left: showLeftBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
-          top: showTopBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
+    final theme = Theme.of(context);
+
+    return Material(
+      color: isSelected
+          ? theme.colorScheme.primary.withValues(alpha: 0.08)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: RecipeChartView._cellMinHeight,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              left: showLeftBorder
+                  ? BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : RecipeChartView._borderColor,
+                      width: isSelected ? 2 : 1,
+                    )
+                  : BorderSide.none,
+              top: showTopBorder
+                  ? BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : RecipeChartView._borderColor,
+                      width: isSelected ? 2 : 1,
+                    )
+                  : BorderSide.none,
+            ),
+          ),
         ),
       ),
     );
