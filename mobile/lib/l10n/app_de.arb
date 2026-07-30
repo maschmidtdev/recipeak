@@ -1,0 +1,25 @@
+{
+  "@@locale": "de",
+  "appTitle": "Recipeak",
+  "collectionTitle": "Meine Rezepte",
+  "newRecipe": "Neues Rezept",
+  "searchRecipes": "Rezepte suchen",
+  "allFilter": "Alle",
+  "favoritesFilter": "Favoriten",
+  "breakfastFilter": "Frühstück",
+  "bakingFilter": "Backen",
+  "delete": "Löschen",
+  "edit": "Bearbeiten",
+  "save": "Speichern",
+  "discard": "Verwerfen",
+  "chartPreview": "Diagrammvorschau",
+  "timeTbd": "Zeit offen",
+  "yieldTbd": "Menge offen",
+  "deletedMessage": "{title} gelöscht",
+  "@deletedMessage": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "undo": "Rückgängig"
+}

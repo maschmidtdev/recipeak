@@ -5,6 +5,7 @@ import 'recipe_editor_result.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
 import '../../recipe_document/presentation/recipe_chart_view.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecipeEditorScreen extends StatefulWidget {
   const RecipeEditorScreen({
@@ -34,10 +35,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   @override
   void initState() {
     super.initState();
+    final localizedTimeTbd = widget.initialRecipe.duration.trim();
     _titleController = TextEditingController(text: widget.initialRecipe.title);
     _yieldController = TextEditingController(text: widget.initialRecipe.yieldText);
     _durationController = TextEditingController(
-      text: widget.initialRecipe.duration.trim().toLowerCase() == 'time tbd'
+      text: localizedTimeTbd.toLowerCase() == 'time tbd' ||
+              localizedTimeTbd.toLowerCase() == 'zeit offen'
           ? ''
           : widget.initialRecipe.duration,
     );
@@ -67,11 +70,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
     final title = _titleController.text.trim();
     final yieldText = _yieldController.text.trim();
+    final localizations = AppLocalizations.of(context)!;
 
     try {
       final document = RecipeDslCodec.parse(
         title: title.isEmpty ? widget.initialRecipe.title : title,
-        yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
+        yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
         source: _dslController.text,
       );
       setState(() {
@@ -912,6 +916,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _saveRecipe() {
+    final localizations = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -934,12 +939,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         widget.initialRecipe.copyWith(
           title: title,
           description: notes,
-          yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
+          yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
           document: document.copyWith(
             title: title,
-            yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
+            yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
           ),
-          duration: durationText.isEmpty ? 'Time TBD' : durationText,
+          duration: durationText.isEmpty ? localizations.timeTbd : durationText,
           isDraft: false,
         ),
       ),
@@ -1133,7 +1138,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Chart Preview',
+                AppLocalizations.of(context)!.chartPreview,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -1257,10 +1262,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: FilledButton.tonalIcon(
+                  child: FilledButton.tonalIcon(
                       onPressed: _discardChanges,
                       icon: const Icon(Icons.close),
-                      label: const Text('Discard'),
+                      label: Text(AppLocalizations.of(context)!.discard),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -1268,10 +1273,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton.icon(
+                  child: FilledButton.icon(
                       onPressed: _saveRecipe,
                       icon: const Icon(Icons.check),
-                      label: const Text('Save'),
+                      label: Text(AppLocalizations.of(context)!.save),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

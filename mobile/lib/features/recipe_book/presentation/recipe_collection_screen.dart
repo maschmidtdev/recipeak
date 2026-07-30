@@ -5,9 +5,17 @@ import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
 import '../../recipe_document/domain/recipe_document.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecipeCollectionScreen extends StatefulWidget {
-  const RecipeCollectionScreen({super.key});
+  const RecipeCollectionScreen({
+    super.key,
+    required this.localeOverride,
+    required this.onLocaleChanged,
+  });
+
+  final Locale localeOverride;
+  final ValueChanged<Locale> onLocaleChanged;
 
   @override
   State<RecipeCollectionScreen> createState() => _RecipeCollectionScreenState();
@@ -28,6 +36,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     });
 
     final messenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
     messenger.hideCurrentSnackBar();
     final toastToken = ++_deleteToastToken;
 
@@ -46,10 +55,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF2A2C2A),
             content: _UndoToastContent(
-              message: '${recipe.title} deleted',
+              message: localizations.deletedMessage(recipe.title),
               duration: _deleteUndoDuration,
             ),
-            action: SnackBarAction(label: 'Undo', onPressed: () {}),
+            action: SnackBarAction(
+              label: localizations.undo,
+              onPressed: () {},
+            ),
           ),
         )
         .closed;
@@ -65,17 +77,18 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<void> _openNewRecipeFlow() async {
+    final localizations = AppLocalizations.of(context)!;
     final result = await Navigator.of(context).push<RecipeEditorResult>(
       MaterialPageRoute(
         builder: (context) => RecipeEditorScreen(
-          initialRecipe: const RecipeSummary(
+          initialRecipe: RecipeSummary(
             title: '',
             description: '',
-            duration: 'Time TBD',
+            duration: '',
             yieldText: '',
             document: RecipeDocument(
               title: '',
-              yieldText: '',
+              yieldText: localizations.yieldTbd,
               prepRows: [],
               columns: [],
               rowCount: 0,
@@ -131,9 +144,64 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Recipeak',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.appTitle,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD7CCBE)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${AppLocalizations.of(context)!.languageLabel}:',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<Locale>(
+                        value: widget.localeOverride,
+                        borderRadius: BorderRadius.circular(12),
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        items: const [
+                          DropdownMenuItem<Locale>(
+                            value: Locale('en'),
+                            child: Text('EN'),
+                          ),
+                          DropdownMenuItem<Locale>(
+                            value: Locale('de'),
+                            child: Text('DE'),
+                          ),
+                        ],
+                        onChanged: (locale) {
+                          if (locale != null) {
+                            widget.onLocaleChanged(locale);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: SafeArea(
@@ -170,7 +238,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             const SizedBox(height: 20),
             TextField(
               decoration: InputDecoration(
-                hintText: 'Search recipes',
+                hintText: AppLocalizations.of(context)!.searchRecipes,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: theme.colorScheme.surface,
@@ -184,16 +252,16 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: const [
-                Chip(label: Text('All')),
-                Chip(label: Text('Favorites')),
-                Chip(label: Text('Breakfast')),
-                Chip(label: Text('Baking')),
+              children: [
+                Chip(label: Text(AppLocalizations.of(context)!.allFilter)),
+                Chip(label: Text(AppLocalizations.of(context)!.favoritesFilter)),
+                Chip(label: Text(AppLocalizations.of(context)!.breakfastFilter)),
+                Chip(label: Text(AppLocalizations.of(context)!.bakingFilter)),
               ],
             ),
             const SizedBox(height: 20),
             Text(
-              'My Recipes',
+              AppLocalizations.of(context)!.collectionTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -212,7 +280,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewRecipeFlow,
         icon: const Icon(Icons.add),
-        label: const Text('New Recipe'),
+        label: Text(AppLocalizations.of(context)!.newRecipe),
       ),
     );
   }
@@ -263,6 +331,13 @@ class _RecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
+    final durationText = recipe.duration.trim().isEmpty
+        ? localizations.timeTbd
+        : recipe.duration;
+    final yieldText = recipe.yieldText.trim().isEmpty
+        ? localizations.yieldTbd
+        : recipe.yieldText;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -299,11 +374,11 @@ class _RecipeCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.schedule, size: 18),
                   const SizedBox(width: 6),
-                  Text(recipe.duration),
+                  Text(durationText),
                   const SizedBox(width: 16),
                   const Icon(Icons.restaurant_menu, size: 18),
                   const SizedBox(width: 6),
-                  Text(recipe.yieldText),
+                  Text(yieldText),
                 ],
               ),
             ],

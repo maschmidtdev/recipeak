@@ -4,6 +4,7 @@ import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
 import '../../recipe_document/presentation/recipe_chart_view.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   const RecipeDetailScreen({
@@ -71,6 +72,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final recipe = _recipe;
+    final localizations = AppLocalizations.of(context)!;
+    final durationText = recipe.duration.trim().isEmpty
+        ? localizations.timeTbd
+        : recipe.duration;
+    final yieldText = recipe.yieldText.trim().isEmpty
+        ? localizations.yieldTbd
+        : recipe.yieldText;
 
     return WillPopScope(
       onWillPop: _handleBackNavigation,
@@ -123,7 +131,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           children: [
                             const Icon(Icons.schedule, size: 18),
                             const SizedBox(width: 6),
-                            Text(recipe.duration),
+                            Text(durationText),
                           ],
                         ),
                         Row(
@@ -131,7 +139,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           children: [
                             const Icon(Icons.restaurant_menu, size: 18),
                             const SizedBox(width: 6),
-                            Text(recipe.yieldText),
+                            Text(yieldText),
                           ],
                         ),
                     ],
@@ -141,7 +149,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Chart Preview',
+                localizations.chartPreview,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -161,7 +169,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   child: FilledButton.icon(
                     onPressed: () => _deleteRecipe(context),
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete'),
+                    label: Text(localizations.delete),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFB33A2F),
                       foregroundColor: Colors.white,
@@ -177,7 +185,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   child: FilledButton.icon(
                     onPressed: () => _openEditor(context),
                     icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Edit'),
+                    label: Text(localizations.edit),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
