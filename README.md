@@ -11,9 +11,9 @@ Each recipe is modeled as a structured chart:
 
 The project currently defines the product and data model direction:
 
-- [system-design.md](./system-design.md) describes the high-level product and architecture
-- [dsl-spec.md](./dsl-spec.md) defines the text DSL, validation rules, and internal document model
-- [tech-stack.md](./tech-stack.md) defines the implementation stack for version 1
+- [system-design.md](./documents/system-design.md) describes the high-level product and architecture
+- [dsl-spec.md](./documents/dsl-spec.md) defines the text DSL, validation rules, and internal document model
+- [tech-stack.md](./documents/tech-stack.md) defines the implementation stack for version 1
 
 ## Example
 
