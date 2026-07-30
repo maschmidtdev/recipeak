@@ -9,8 +9,10 @@ class RecipeChartView extends StatelessWidget {
 
   static const _borderColor = Color(0xFFD7CCBE);
   static const _chartRadius = 16.0;
-  static const _minColumnWidth = 64.0;
-  static const _maxColumnWidth = 88.0;
+  static const _cellMinHeight = 48.0;
+  static const _cellHorizontalPadding = 6.0;
+  static const _cellVerticalPadding = 6.0;
+  static const _columnGapSafety = 2.0;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,17 @@ class RecipeChartView extends StatelessWidget {
       );
     }
 
+    final workflowTextStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w400,
+      height: 1.15,
+    );
+    final fittedColumnWidths = _buildColumnWidths(
+      context: context,
+      columns: document.columns,
+      textStyle: workflowTextStyle,
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -54,42 +67,138 @@ class RecipeChartView extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_chartRadius),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: IntrinsicWidth(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final prepRow in document.prepRows)
-                  _PrepRow(text: prepRow.text),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final column in layout.columns)
-                        IntrinsicWidth(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              minWidth: _minColumnWidth,
-                              maxWidth: _maxColumnWidth,
-                            ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final columnWidths = _distributeExtraWidth(
+              baseWidths: fittedColumnWidths,
+              availableWidth: constraints.maxWidth,
+            );
+            final chartWidth = columnWidths.fold<double>(
+              0,
+              (sum, width) => sum + width,
+            );
+
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: chartWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final prepRow in document.prepRows)
+                      _PrepRow(text: prepRow.text),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(
+                          layout.columns.length,
+                          (index) => SizedBox(
+                            width: columnWidths[index],
                             child: _WorkflowColumn(
                               rows: layout.rowCount,
-                              cells: column,
+                              cells: layout.columns[index],
+                              columnWidth: columnWidths[index],
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
+  }
+
+  List<double> _buildColumnWidths({
+    required BuildContext context,
+    required List<WorkflowColumn> columns,
+    required TextStyle? textStyle,
+  }) {
+    final textDirection = Directionality.of(context);
+    final widths = <double>[];
+    final sortedColumns = [...columns]
+      ..sort((left, right) => left.id.compareTo(right.id));
+
+    for (final column in sortedColumns) {
+      final widthSpec = column.widthSpec;
+      if (widthSpec?.kind == ColumnWidthKind.fixed &&
+          widthSpec?.logicalPixels != null) {
+        widths.add(widthSpec!.logicalPixels!);
+        continue;
+      }
+
+      var widestWord = 0.0;
+      for (final cell in column.cells) {
+        for (final paragraph in cell.text.split('\n')) {
+          for (final word in paragraph.split(RegExp(r'\s+'))) {
+            final trimmedWord = word.trim();
+            if (trimmedWord.isEmpty) {
+              continue;
+            }
+
+            final wordWidth = _measureTextWidth(
+              text: trimmedWord,
+              textStyle: textStyle,
+              textDirection: textDirection,
+            );
+            if (wordWidth > widestWord) {
+              widestWord = wordWidth;
+            }
+          }
+        }
+      }
+
+      widths.add(
+        widestWord +
+            (_cellHorizontalPadding * 2) +
+            _columnGapSafety,
+      );
+    }
+
+    return widths;
+  }
+
+  List<double> _distributeExtraWidth({
+    required List<double> baseWidths,
+    required double availableWidth,
+  }) {
+    if (baseWidths.isEmpty) {
+      return baseWidths;
+    }
+
+    final totalBaseWidth = baseWidths.fold<double>(
+      0,
+      (sum, width) => sum + width,
+    );
+    final extraWidth = availableWidth - totalBaseWidth;
+
+    if (extraWidth <= 0) {
+      return baseWidths;
+    }
+
+    final extraPerColumn = extraWidth / baseWidths.length;
+    return [
+      for (final width in baseWidths) width + extraPerColumn,
+    ];
+  }
+
+  double _measureTextWidth({
+    required String text,
+    required TextStyle? textStyle,
+    required TextDirection textDirection,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: textStyle),
+      textDirection: textDirection,
+      maxLines: 1,
+    )..layout();
+    return painter.width;
   }
 }
 
@@ -116,10 +225,15 @@ class _PrepRow extends StatelessWidget {
 }
 
 class _WorkflowColumn extends StatelessWidget {
-  const _WorkflowColumn({required this.rows, required this.cells});
+  const _WorkflowColumn({
+    required this.rows,
+    required this.cells,
+    required this.columnWidth,
+  });
 
   final int rows;
   final List<_BasicChartCell> cells;
+  final double columnWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -133,6 +247,7 @@ class _WorkflowColumn extends StatelessWidget {
               flex: cell.rowSpan,
               child: _WorkflowCell(
                 text: cell.text,
+                columnWidth: columnWidth,
                 showLeftBorder: cell.columnIndex > 0,
                 showTopBorder: rowIndex > 1,
               ),
@@ -171,11 +286,13 @@ class _WorkflowColumn extends StatelessWidget {
 class _WorkflowCell extends StatelessWidget {
   const _WorkflowCell({
     required this.text,
+    required this.columnWidth,
     required this.showLeftBorder,
     required this.showTopBorder,
   });
 
   final String text;
+  final double columnWidth;
   final bool showLeftBorder;
   final bool showTopBorder;
 
@@ -183,10 +300,12 @@ class _WorkflowCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(
-        minWidth: RecipeChartView._minColumnWidth,
-        minHeight: 48,
+        minHeight: RecipeChartView._cellMinHeight,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: RecipeChartView._cellHorizontalPadding,
+        vertical: RecipeChartView._cellVerticalPadding,
+      ),
       decoration: BoxDecoration(
         border: Border(
           left: showLeftBorder
@@ -200,7 +319,12 @@ class _WorkflowCell extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          text,
+          _wrapAtWordBoundaries(
+            context: context,
+            text: text,
+            maxContentWidth:
+                columnWidth - (RecipeChartView._cellHorizontalPadding * 2),
+          ),
           softWrap: true,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontSize: 13,
@@ -210,6 +334,69 @@ class _WorkflowCell extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _wrapAtWordBoundaries({
+    required BuildContext context,
+    required String text,
+    required double maxContentWidth,
+  }) {
+    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w400,
+      height: 1.15,
+    );
+    final textDirection = Directionality.of(context);
+    final wrappedParagraphs = <String>[];
+
+    for (final paragraph in text.split('\n')) {
+      final words = paragraph.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+      if (words.isEmpty) {
+        wrappedParagraphs.add('');
+        continue;
+      }
+
+      var currentLine = '';
+      final lines = <String>[];
+
+      for (final word in words) {
+        final candidate = currentLine.isEmpty ? word : '$currentLine $word';
+        final candidateWidth = _measureTextWidth(
+          text: candidate,
+          textStyle: style,
+          textDirection: textDirection,
+        );
+
+        if (currentLine.isNotEmpty && candidateWidth > maxContentWidth) {
+          lines.add(currentLine);
+          currentLine = word;
+          continue;
+        }
+
+        currentLine = candidate;
+      }
+
+      if (currentLine.isNotEmpty) {
+        lines.add(currentLine);
+      }
+
+      wrappedParagraphs.add(lines.join('\n'));
+    }
+
+    return wrappedParagraphs.join('\n');
+  }
+
+  double _measureTextWidth({
+    required String text,
+    required TextStyle? textStyle,
+    required TextDirection textDirection,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: textStyle),
+      textDirection: textDirection,
+      maxLines: 1,
+    )..layout();
+    return painter.width;
   }
 }
 
@@ -296,8 +483,7 @@ class _EmptyWorkflowCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(
-        minWidth: RecipeChartView._minColumnWidth,
-        minHeight: 48,
+        minHeight: RecipeChartView._cellMinHeight,
       ),
       decoration: BoxDecoration(
         border: Border(
