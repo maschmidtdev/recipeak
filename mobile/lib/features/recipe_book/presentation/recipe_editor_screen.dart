@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
+import '../../recipe_document/domain/recipe_document.dart';
+import '../../recipe_document/presentation/recipe_chart_view.dart';
 
 class RecipeEditorScreen extends StatefulWidget {
   const RecipeEditorScreen({
@@ -57,6 +59,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           title: _titleController.text.trim(),
           description: notes.isEmpty ? _defaultDraftDescription : notes,
           yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
+          document: widget.initialRecipe.document.copyWith(
+            title: _titleController.text.trim(),
+            yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
+          ),
           duration: widget.initialRecipe.isDraft ? 'Draft' : widget.initialRecipe.duration,
           isDraft: true,
         ),
@@ -145,6 +151,17 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     hintText: 'Optional notes about the recipe before you build the workflow chart.',
                   ),
                 ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Chart Preview',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              RecipeChartView(
+                document: widget.initialRecipe.document,
               ),
             ],
           ),

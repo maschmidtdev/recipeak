@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
+import '../../recipe_document/domain/recipe_document.dart';
 
 class RecipeCollectionScreen extends StatefulWidget {
   const RecipeCollectionScreen({super.key});
@@ -14,6 +15,8 @@ class RecipeCollectionScreen extends StatefulWidget {
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   late final List<RecipeSummary> _recipes = List.of(_sampleRecipes);
   static const _deleteUndoDuration = Duration(seconds: 4);
+  static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
+  int _deleteToastToken = 0;
 
   Future<void> _deleteRecipeWithUndo({
     required int index,
@@ -25,21 +28,27 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
+    final toastToken = ++_deleteToastToken;
+
+    Future<void>.delayed(_deleteUndoDuration + _deleteToastDismissBuffer, () {
+      if (!mounted || toastToken != _deleteToastToken) {
+        return;
+      }
+
+      messenger.hideCurrentSnackBar();
+    });
 
     final didUndo = await messenger
         .showSnackBar(
           SnackBar(
-            duration: _deleteUndoDuration,
+            duration: const Duration(minutes: 1),
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF2A2C2A),
             content: _UndoToastContent(
               message: '${recipe.title} deleted',
               duration: _deleteUndoDuration,
             ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () {},
-            ),
+            action: SnackBarAction(label: 'Undo', onPressed: () {}),
           ),
         )
         .closed;
@@ -63,6 +72,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             description: '',
             duration: 'Draft',
             yieldText: '',
+            document: RecipeDocument(
+              title: '',
+              yieldText: '',
+              prepRows: [],
+              columns: [],
+              rowCount: 0,
+            ),
             isDraft: true,
           ),
         ),
@@ -70,7 +86,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     );
 
     final newRecipe = result?.recipe;
-    if (result == null || result.action != RecipeEditorAction.save || newRecipe == null) {
+    if (result == null ||
+        result.action != RecipeEditorAction.save ||
+        newRecipe == null) {
       return;
     }
 
@@ -204,10 +222,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 }
 
 class _UndoToastContent extends StatelessWidget {
-  const _UndoToastContent({
-    required this.message,
-    required this.duration,
-  });
+  const _UndoToastContent({required this.message, required this.duration});
 
   final String message;
   final Duration duration;
@@ -243,10 +258,7 @@ class _UndoToastContent extends StatelessWidget {
 }
 
 class _RecipeCard extends StatelessWidget {
-  const _RecipeCard({
-    required this.recipe,
-    required this.onTap,
-  });
+  const _RecipeCard({required this.recipe, required this.onTap});
 
   final RecipeSummary recipe;
   final VoidCallback onTap;
@@ -327,21 +339,131 @@ class _RecipeCard extends StatelessWidget {
 const _sampleRecipes = [
   RecipeSummary(
     title: 'Banana Nut Bread',
-    description: 'A chart-based bake with prep rows, ingredient columns, and merged workflow steps.',
+    description:
+        'A chart-based bake with prep rows, ingredient columns, and merged workflow steps.',
     duration: '1 hr 20 min',
     yieldText: '10 servings',
+    document: RecipeDocument(
+      title: 'Banana Nut Bread',
+      yieldText: '10 servings',
+      prepRows: [
+        PrepRow(text: 'Butter and flour a loaf pan'),
+        PrepRow(text: 'Preheat oven to 350°F (170°C)'),
+      ],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          widthSpec: ColumnWidthSpec.fixed(190.0),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: '2 ripe bananas'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: '6 Tbs. butter'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: '1 tsp. vanilla'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: '2 eggs'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: '1 1/3 cups flour'),
+            WorkflowCell(startRow: 6, rowSpan: 1, text: '2/3 cup sugar'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          widthSpec: const ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'lightly beat'),
+            WorkflowCell(startRow: 5, rowSpan: 2, text: 'whisk'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          widthSpec: const ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 4, text: 'mash until smooth'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          cells: [WorkflowCell(startRow: 5, rowSpan: 2, text: 'fold')],
+        ),
+        WorkflowColumn(
+          id: 'E',
+          widthSpec: ColumnWidthSpec.fixed(170.0),
+          cells: [
+            WorkflowCell(startRow: 5, rowSpan: 2, text: 'bake 350°F\n55 min.'),
+          ],
+        ),
+      ],
+      rowCount: 6,
+    ),
     isFavorite: true,
   ),
   RecipeSummary(
     title: 'Weeknight Tomato Pasta',
-    description: 'A compact stovetop workflow with parallel prep and sauce timing.',
+    description:
+        'A compact stovetop workflow with parallel prep and sauce timing.',
     duration: '30 min',
     yieldText: '4 servings',
+    document: RecipeDocument(
+      title: 'Weeknight Tomato Pasta',
+      yieldText: '4 servings',
+      prepRows: [PrepRow(text: 'Bring salted water to a boil')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          widthSpec: ColumnWidthSpec.fixed(170.0),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'garlic'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'olive oil'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'tomatoes'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'pasta'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'slice'),
+            WorkflowCell(startRow: 2, rowSpan: 2, text: 'simmer sauce'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'boil'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 3, rowSpan: 2, text: 'toss together')],
+        ),
+      ],
+      rowCount: 4,
+    ),
   ),
   RecipeSummary(
     title: 'Shakshuka',
-    description: 'A skillet recipe with staged aromatics, sauce reduction, and egg finish timing.',
+    description:
+        'A skillet recipe with staged aromatics, sauce reduction, and egg finish timing.',
     duration: '35 min',
     yieldText: '3 servings',
+    document: RecipeDocument(
+      title: 'Shakshuka',
+      yieldText: '3 servings',
+      prepRows: [PrepRow(text: 'Warm skillet over medium heat')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          widthSpec: ColumnWidthSpec.fixed(180.0),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'onion'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'pepper'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'tomatoes'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'eggs'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 2, text: 'soften aromatics'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'reduce'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'cover and finish'),
+          ],
+        ),
+      ],
+      rowCount: 4,
+    ),
   ),
 ];
