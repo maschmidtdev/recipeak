@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/recipe_summary.dart';
+import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
 import '../../recipe_document/domain/recipe_document.dart';
@@ -70,7 +71,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           initialRecipe: const RecipeSummary(
             title: '',
             description: '',
-            duration: 'Draft',
+            duration: 'Time TBD',
             yieldText: '',
             document: RecipeDocument(
               title: '',
@@ -79,7 +80,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               columns: [],
               rowCount: 0,
             ),
-            isDraft: true,
           ),
         ),
       ),
@@ -97,13 +97,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     });
   }
 
-  Future<void> _openEditorForRecipe(int index) async {
+  Future<void> _openRecipeForViewing(int index) async {
     final result = await Navigator.of(context).push<RecipeEditorResult>(
       MaterialPageRoute(
-        builder: (context) => RecipeEditorScreen(
-          initialRecipe: _recipes[index],
-          allowDelete: true,
-        ),
+        builder: (context) => RecipeDetailScreen(recipe: _recipes[index]),
       ),
     );
 
@@ -205,7 +202,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             for (final entry in recipes.indexed) ...[
               _RecipeCard(
                 recipe: entry.$2,
-                onTap: () => _openEditorForRecipe(entry.$1),
+                onTap: () => _openRecipeForViewing(entry.$1),
               ),
               const SizedBox(height: 12),
             ],
@@ -288,25 +285,6 @@ class _RecipeCard extends StatelessWidget {
                   ),
                   if (recipe.isFavorite)
                     const Icon(Icons.favorite, color: Color(0xFFC96A3D)),
-                  if (recipe.isDraft)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE9E0D1),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        'Draft',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -472,7 +450,9 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'D',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 5, text: 'combine everything')],
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 5, text: 'combine everything'),
+          ],
         ),
       ],
       rowCount: 5,
@@ -516,7 +496,9 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'D',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 6, text: 'combine everything')],
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 6, text: 'combine everything'),
+          ],
         ),
         WorkflowColumn(
           id: 'E',
@@ -537,7 +519,7 @@ const _sampleRecipes = [
       yieldText: '10 servings',
       prepRows: [
         PrepRow(text: 'Butter and flour a loaf pan'),
-        PrepRow(text: 'Preheat oven to 350Ã‚Â°F (170Ã‚Â°C)'),
+        PrepRow(text: 'Preheat oven to 350°F (170°C)'),
       ],
       columns: [
         WorkflowColumn(
@@ -589,4 +571,3 @@ const _sampleRecipes = [
     isFavorite: true,
   ),
 ];
-

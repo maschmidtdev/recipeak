@@ -10,11 +10,9 @@ class RecipeEditorScreen extends StatefulWidget {
   const RecipeEditorScreen({
     super.key,
     required this.initialRecipe,
-    this.allowDelete = false,
   });
 
   final RecipeSummary initialRecipe;
-  final bool allowDelete;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -24,6 +22,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _yieldController;
+  late final TextEditingController _durationController;
   late final TextEditingController _notesController;
   late final TextEditingController _dslController;
   RecipeDocument? _document;
@@ -37,11 +36,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     super.initState();
     _titleController = TextEditingController(text: widget.initialRecipe.title);
     _yieldController = TextEditingController(text: widget.initialRecipe.yieldText);
-    _notesController = TextEditingController(
-      text: _isDefaultDraftDescription(widget.initialRecipe.description)
+    _durationController = TextEditingController(
+      text: widget.initialRecipe.duration.trim().toLowerCase() == 'time tbd'
           ? ''
-          : widget.initialRecipe.description,
+          : widget.initialRecipe.duration,
     );
+    _notesController = TextEditingController(text: widget.initialRecipe.description);
     _document = _normalizedDocument(widget.initialRecipe.document);
     _dslController = TextEditingController()
       ..addListener(_handleDslChanged);
@@ -52,6 +52,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   void dispose() {
     _titleController.dispose();
     _yieldController.dispose();
+    _durationController.dispose();
     _notesController.dispose();
     _dslController
       ..removeListener(_handleDslChanged)
@@ -924,6 +925,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
     final notes = _notesController.text.trim();
     final yieldText = _yieldController.text.trim();
+    final durationText = _durationController.text.trim();
     final title = _titleController.text.trim();
     final document = _currentDocument;
 
@@ -931,21 +933,21 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       RecipeEditorResult.saved(
         widget.initialRecipe.copyWith(
           title: title,
-          description: notes.isEmpty ? _defaultDraftDescription : notes,
+          description: notes,
           yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
           document: document.copyWith(
             title: title,
             yieldText: yieldText.isEmpty ? 'Yield TBD' : yieldText,
           ),
-          duration: widget.initialRecipe.isDraft ? 'Draft' : widget.initialRecipe.duration,
-          isDraft: true,
+          duration: durationText.isEmpty ? 'Time TBD' : durationText,
+          isDraft: false,
         ),
       ),
     );
   }
 
-  void _deleteRecipe() {
-    Navigator.of(context).pop(const RecipeEditorResult.deleted());
+  void _discardChanges() {
+    Navigator.of(context).pop();
   }
 
   @override
@@ -954,7 +956,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.allowDelete ? 'Edit Recipe' : 'New Recipe'),
+        title: Text(
+          widget.initialRecipe.title.trim().isEmpty ? 'New Recipe' : 'Edit Recipe',
+        ),
       ),
       body: SafeArea(
         child: Form(
@@ -972,9 +976,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.allowDelete
-                          ? 'Edit the recipe visually and keep DSL as an advanced option.'
-                          : 'Start visually and use DSL only when you want it.',
+                      widget.initialRecipe.title.trim().isEmpty
+                          ? 'Start visually and use DSL only when you want it.'
+                          : 'Edit the recipe visually and keep DSL as an advanced option.',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         height: 1.1,
@@ -1016,7 +1020,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 16),
               _FieldLabel(
-                label: 'Draft notes',
+                label: 'Duration',
+                child: TextFormField(
+                  controller: _durationController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(hintText: '1 hr 20 min'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _FieldLabel(
+                label: 'Notes',
                 child: TextFormField(
                   controller: _notesController,
                   minLines: 4,
@@ -1243,29 +1256,22 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
-                  if (widget.allowDelete) ...[
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _deleteRecipe,
-                        icon: const Icon(Icons.delete_outline),
-                        label: const Text('Delete'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFB33A2F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: _discardChanges,
+                      icon: const Icon(Icons.close),
+                      label: const Text('Discard'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                  ],
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: _saveRecipe,
                       icon: const Icon(Icons.check),
-                      label: Text(widget.allowDelete ? 'Save' : 'Create Draft'),
+                      label: const Text('Save'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -1584,13 +1590,6 @@ class _FieldLabel extends StatelessWidget {
       ],
     );
   }
-}
-
-const _defaultDraftDescription =
-    'New draft recipe ready for ingredients, prep rows, and chart steps.';
-
-bool _isDefaultDraftDescription(String description) {
-  return description == _defaultDraftDescription;
 }
 
 String _buildInitialDsl(RecipeDocument document) {

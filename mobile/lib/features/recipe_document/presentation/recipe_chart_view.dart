@@ -278,6 +278,7 @@ class _WorkflowColumn extends StatelessWidget {
               child: _WorkflowCell(
                 text: cell.text,
                 columnWidth: columnWidth,
+                rowSpan: cell.rowSpan,
                 isSelected:
                     selectedCell?.columnId == cell.columnId &&
                     selectedCell?.startRow == cell.startRow,
@@ -339,6 +340,7 @@ class _WorkflowCell extends StatelessWidget {
   const _WorkflowCell({
     required this.text,
     required this.columnWidth,
+    required this.rowSpan,
     required this.isSelected,
     required this.showLeftBorder,
     required this.showTopBorder,
@@ -347,6 +349,7 @@ class _WorkflowCell extends StatelessWidget {
 
   final String text;
   final double columnWidth;
+  final int rowSpan;
   final bool isSelected;
   final bool showLeftBorder;
   final bool showTopBorder;
@@ -363,8 +366,8 @@ class _WorkflowCell extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(
-            minHeight: RecipeChartView._cellMinHeight,
+          constraints: BoxConstraints(
+            minHeight: RecipeChartView._cellMinHeight * rowSpan,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: RecipeChartView._cellHorizontalPadding,
