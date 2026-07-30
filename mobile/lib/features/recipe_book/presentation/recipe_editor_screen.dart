@@ -26,6 +26,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   late final TextEditingController _yieldController;
   late final TextEditingController _notesController;
   late final TextEditingController _dslController;
+  bool _isDslEditorExpanded = false;
 
   @override
   void initState() {
@@ -192,18 +193,77 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              _FieldLabel(
-                label: 'Chart DSL',
-                child: TextFormField(
-                  controller: _dslController,
-                  minLines: 12,
-                  maxLines: 20,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-                  decoration: const InputDecoration(
-                    hintText:
-                        'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk',
-                    alignLabelWithHint: true,
-                  ),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFD7CCBE)),
+                ),
+                child: Column(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        setState(() {
+                          _isDslEditorExpanded = !_isDslEditorExpanded;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Chart DSL',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Optional advanced editing and paste/import flow.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: const Color(0xFF5E675F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              _isDslEditorExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_isDslEditorExpanded) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextFormField(
+                          controller: _dslController,
+                          minLines: 12,
+                          maxLines: 20,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.35,
+                          ),
+                          decoration: const InputDecoration(
+                            hintText:
+                                'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk',
+                            alignLabelWithHint: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
