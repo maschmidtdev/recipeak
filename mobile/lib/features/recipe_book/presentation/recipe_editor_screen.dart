@@ -108,7 +108,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'This editor currently covers title, yield, and notes. Chart editing comes next.',
+                      'This editor currently covers title, yield, and notes. The chart renderer is temporarily removed while the next implementation is rebuilt.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: const Color(0xFF5E675F),
                       ),

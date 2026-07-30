@@ -338,9 +338,69 @@ class _RecipeCard extends StatelessWidget {
 
 const _sampleRecipes = [
   RecipeSummary(
+    title: 'Single Ingredient Flow',
+    description:
+        'First DSL example: one prep row, one ingredient row, and sequential workflow steps.',
+    duration: '10 min',
+    yieldText: '1 serving',
+    document: RecipeDocument(
+      title: 'Single Ingredient Flow',
+      yieldText: '1 serving',
+      prepRows: [PrepRow(text: 'Warm a small pan')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: '1 egg')],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: 'crack')],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: 'whisk')],
+        ),
+      ],
+      rowCount: 1,
+    ),
+  ),
+  RecipeSummary(
+    title: 'Two Rows With Merge',
+    description:
+        'Second DSL example: two ingredient rows that merge into one final workflow step.',
+    duration: '15 min',
+    yieldText: '2 servings',
+    document: RecipeDocument(
+      title: 'Two Rows With Merge',
+      yieldText: '2 servings',
+      prepRows: [PrepRow(text: 'Set out a mixing bowl')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'flour'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'water'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'measure'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'pour'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 2, text: 'mix together')],
+        ),
+      ],
+      rowCount: 2,
+    ),
+  ),
+  RecipeSummary(
     title: 'Banana Nut Bread',
     description:
-        'A chart-based bake with prep rows, ingredient columns, and merged workflow steps.',
+        'End-state reference chart with prep rows, ingredient columns, and merged workflow steps.',
     duration: '1 hr 20 min',
     yieldText: '10 servings',
     document: RecipeDocument(
@@ -353,7 +413,7 @@ const _sampleRecipes = [
       columns: [
         WorkflowColumn(
           id: 'A',
-          widthSpec: ColumnWidthSpec.fixed(190.0),
+          widthSpec: const ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 1, text: '2 ripe bananas'),
             WorkflowCell(startRow: 2, rowSpan: 1, text: '6 Tbs. butter'),
@@ -386,7 +446,7 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'E',
-          widthSpec: ColumnWidthSpec.fixed(170.0),
+          widthSpec: const ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 5, rowSpan: 2, text: 'bake 350°F\n55 min.'),
           ],
@@ -395,75 +455,5 @@ const _sampleRecipes = [
       rowCount: 6,
     ),
     isFavorite: true,
-  ),
-  RecipeSummary(
-    title: 'Weeknight Tomato Pasta',
-    description:
-        'A compact stovetop workflow with parallel prep and sauce timing.',
-    duration: '30 min',
-    yieldText: '4 servings',
-    document: RecipeDocument(
-      title: 'Weeknight Tomato Pasta',
-      yieldText: '4 servings',
-      prepRows: [PrepRow(text: 'Bring salted water to a boil')],
-      columns: [
-        WorkflowColumn(
-          id: 'A',
-          widthSpec: ColumnWidthSpec.fixed(170.0),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'garlic'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'olive oil'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'tomatoes'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'pasta'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'B',
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'slice'),
-            WorkflowCell(startRow: 2, rowSpan: 2, text: 'simmer sauce'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'boil'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'C',
-          cells: [WorkflowCell(startRow: 3, rowSpan: 2, text: 'toss together')],
-        ),
-      ],
-      rowCount: 4,
-    ),
-  ),
-  RecipeSummary(
-    title: 'Shakshuka',
-    description:
-        'A skillet recipe with staged aromatics, sauce reduction, and egg finish timing.',
-    duration: '35 min',
-    yieldText: '3 servings',
-    document: RecipeDocument(
-      title: 'Shakshuka',
-      yieldText: '3 servings',
-      prepRows: [PrepRow(text: 'Warm skillet over medium heat')],
-      columns: [
-        WorkflowColumn(
-          id: 'A',
-          widthSpec: ColumnWidthSpec.fixed(180.0),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'onion'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'pepper'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'tomatoes'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'eggs'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'B',
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 2, text: 'soften aromatics'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'reduce'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'cover and finish'),
-          ],
-        ),
-      ],
-      rowCount: 4,
-    ),
   ),
 ];
