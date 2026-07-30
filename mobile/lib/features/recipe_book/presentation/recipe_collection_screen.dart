@@ -437,6 +437,48 @@ const _sampleRecipes = [
     ),
   ),
   RecipeSummary(
+    title: 'Five Rows With Staged Merge',
+    description:
+        'Fourth DSL example: separate early rows, a later merged step, a mid-column merge, and a final merge spanning rows 1-5.',
+    duration: '25 min',
+    yieldText: '4 servings',
+    document: RecipeDocument(
+      title: 'Five Rows With Staged Merge',
+      yieldText: '4 servings',
+      prepRows: [PrepRow(text: 'Set out a prep tray and mixing bowl')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'bananas'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'butter'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'vanilla'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'flour'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: 'sugar'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
+            WorkflowCell(startRow: 4, rowSpan: 2, text: 'whisk dry'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 3, text: 'mix wet base')],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 5, text: 'combine everything')],
+        ),
+      ],
+      rowCount: 5,
+    ),
+  ),
+  RecipeSummary(
     title: 'Banana Nut Bread',
     description:
         'End-state reference chart with prep rows, ingredient columns, and merged workflow steps.',
