@@ -479,6 +479,54 @@ const _sampleRecipes = [
     ),
   ),
   RecipeSummary(
+    title: 'Six Rows With Full Finish Merge',
+    description:
+        'Fifth DSL example: an extra ingredient row, a taller early merge, and two full-height finishing columns.',
+    duration: '30 min',
+    yieldText: '5 servings',
+    document: RecipeDocument(
+      title: 'Six Rows With Full Finish Merge',
+      yieldText: '5 servings',
+      prepRows: [PrepRow(text: 'Set out a prep tray and loaf pan')],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'bananas'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'butter'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'vanilla'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'eggs'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: 'flour'),
+            WorkflowCell(startRow: 6, rowSpan: 1, text: 'sugar'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'beat'),
+            WorkflowCell(startRow: 5, rowSpan: 2, text: 'whisk dry'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 4, text: 'mix wet base')],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 6, text: 'combine everything')],
+        ),
+        WorkflowColumn(
+          id: 'E',
+          cells: [WorkflowCell(startRow: 1, rowSpan: 6, text: 'finish loaf')],
+        ),
+      ],
+      rowCount: 6,
+    ),
+  ),
+  RecipeSummary(
     title: 'Banana Nut Bread',
     description:
         'End-state reference chart with prep rows, ingredient columns, and merged workflow steps.',
@@ -489,7 +537,7 @@ const _sampleRecipes = [
       yieldText: '10 servings',
       prepRows: [
         PrepRow(text: 'Butter and flour a loaf pan'),
-        PrepRow(text: 'Preheat oven to 350°F (170°C)'),
+        PrepRow(text: 'Preheat oven to 350Ã‚Â°F (170Ã‚Â°C)'),
       ],
       columns: [
         WorkflowColumn(
@@ -510,6 +558,7 @@ const _sampleRecipes = [
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
             WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
             WorkflowCell(startRow: 4, rowSpan: 1, text: 'lightly beat'),
             WorkflowCell(startRow: 5, rowSpan: 2, text: 'whisk'),
           ],
@@ -523,13 +572,15 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'D',
-          cells: [WorkflowCell(startRow: 5, rowSpan: 2, text: 'fold')],
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 6, text: 'fold everything'),
+          ],
         ),
         WorkflowColumn(
           id: 'E',
           widthSpec: const ColumnWidthSpec.fit(),
           cells: [
-            WorkflowCell(startRow: 5, rowSpan: 2, text: 'bake 350°F\n55 min.'),
+            WorkflowCell(startRow: 1, rowSpan: 6, text: 'bake 350°F\n55 min.'),
           ],
         ),
       ],
@@ -538,3 +589,4 @@ const _sampleRecipes = [
     isFavorite: true,
   ),
 ];
+

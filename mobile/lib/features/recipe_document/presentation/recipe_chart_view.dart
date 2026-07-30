@@ -9,6 +9,8 @@ class RecipeChartView extends StatelessWidget {
 
   static const _borderColor = Color(0xFFD7CCBE);
   static const _chartRadius = 16.0;
+  static const _minColumnWidth = 64.0;
+  static const _maxColumnWidth = 88.0;
 
   @override
   Widget build(BuildContext context) {
@@ -52,27 +54,39 @@ class RecipeChartView extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_chartRadius),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final prepRow in document.prepRows)
-              _PrepRow(text: prepRow.text),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final column in layout.columns)
-                    Expanded(
-                      child: _WorkflowColumn(
-                        rows: layout.rowCount,
-                        cells: column,
-                      ),
-                    ),
-                ],
-              ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final prepRow in document.prepRows)
+                  _PrepRow(text: prepRow.text),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final column in layout.columns)
+                        IntrinsicWidth(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: _minColumnWidth,
+                              maxWidth: _maxColumnWidth,
+                            ),
+                            child: _WorkflowColumn(
+                              rows: layout.rowCount,
+                              cells: column,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -95,7 +109,7 @@ class _PrepRow extends StatelessWidget {
         text,
         style: Theme.of(
           context,
-        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -111,6 +125,7 @@ class _WorkflowColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (var rowIndex = 1; rowIndex <= rows; rowIndex++)
           if (_cellStartingAt(rowIndex) case final cell?)
@@ -125,7 +140,7 @@ class _WorkflowColumn extends StatelessWidget {
           else if (!_isCoveredBySpan(rowIndex))
             Expanded(
               child: _EmptyWorkflowCell(
-                showLeftBorder: _leftBorderForColumn(),
+                showLeftBorder: cells.isNotEmpty && cells.first.columnIndex > 0,
                 showTopBorder: rowIndex > 1,
               ),
             ),
@@ -151,12 +166,6 @@ class _WorkflowColumn extends StatelessWidget {
     return false;
   }
 
-  bool _leftBorderForColumn() {
-    if (cells.isEmpty) {
-      return false;
-    }
-    return cells.first.columnIndex > 0;
-  }
 }
 
 class _WorkflowCell extends StatelessWidget {
@@ -173,7 +182,10 @@ class _WorkflowCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 48),
+      constraints: const BoxConstraints(
+        minWidth: RecipeChartView._minColumnWidth,
+        minHeight: 48,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         border: Border(
@@ -189,37 +201,12 @@ class _WorkflowCell extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Text(
           text,
+          softWrap: true,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
             height: 1.15,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyWorkflowCell extends StatelessWidget {
-  const _EmptyWorkflowCell({
-    required this.showLeftBorder,
-    required this.showTopBorder,
-  });
-
-  final bool showLeftBorder;
-  final bool showTopBorder;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      decoration: BoxDecoration(
-        border: Border(
-          left: showLeftBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
-          top: showTopBorder
-              ? const BorderSide(color: RecipeChartView._borderColor)
-              : BorderSide.none,
         ),
       ),
     );
@@ -294,4 +281,34 @@ class _BasicChartCell {
   final int startRow;
   final int rowSpan;
   final String text;
+}
+
+class _EmptyWorkflowCell extends StatelessWidget {
+  const _EmptyWorkflowCell({
+    required this.showLeftBorder,
+    required this.showTopBorder,
+  });
+
+  final bool showLeftBorder;
+  final bool showTopBorder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: RecipeChartView._minColumnWidth,
+        minHeight: 48,
+      ),
+      decoration: BoxDecoration(
+        border: Border(
+          left: showLeftBorder
+              ? const BorderSide(color: RecipeChartView._borderColor)
+              : BorderSide.none,
+          top: showTopBorder
+              ? const BorderSide(color: RecipeChartView._borderColor)
+              : BorderSide.none,
+        ),
+      ),
+    );
+  }
 }
