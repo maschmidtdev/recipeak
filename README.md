@@ -2,6 +2,11 @@
 
 Recipeek is a mobile-first recipe application built around visual workflow charts instead of paragraph-style recipes.
 
+## License
+
+This project is source-available under the PolyForm Noncommercial License 1.0.0.
+Commercial use requires a separate license from the author.
+
 Each recipe is modeled as a structured chart:
 
 - preparation steps appear above the grid
