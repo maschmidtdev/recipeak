@@ -31,6 +31,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   String? _dslError;
   bool _isSyncingDslText = false;
   RecipeChartSelection? _selectedCell;
+  late bool _isFavorite;
+  late final Set<String> _selectedTags;
 
   @override
   void initState() {
@@ -45,6 +47,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           : widget.initialRecipe.duration,
     );
     _notesController = TextEditingController(text: widget.initialRecipe.description);
+    _isFavorite = widget.initialRecipe.isFavorite;
+    _selectedTags = {...widget.initialRecipe.tags};
     _document = _normalizedDocument(widget.initialRecipe.document);
     _dslController = TextEditingController()
       ..addListener(_handleDslChanged);
@@ -944,6 +948,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             title: title,
             yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
           ),
+          tags: _selectedTags.toList()..sort(),
+          isFavorite: _isFavorite,
           duration: durationText.isEmpty ? localizations.timeTbd : durationText,
           isDraft: false,
         ),
@@ -1042,6 +1048,62 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   decoration: const InputDecoration(
                     hintText: 'Optional notes about the recipe before you build the workflow chart.',
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _FieldLabel(
+                label: 'Tags',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Favorite'),
+                      value: _isFavorite,
+                      onChanged: (value) {
+                        setState(() {
+                          _isFavorite = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilterChip(
+                          label: Text(
+                            AppLocalizations.of(context)!.breakfastFilter,
+                          ),
+                          selected: _selectedTags.contains(recipeTagBreakfast),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedTags.add(recipeTagBreakfast);
+                              } else {
+                                _selectedTags.remove(recipeTagBreakfast);
+                              }
+                            });
+                          },
+                        ),
+                        FilterChip(
+                          label: Text(
+                            AppLocalizations.of(context)!.bakingFilter,
+                          ),
+                          selected: _selectedTags.contains(recipeTagBaking),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedTags.add(recipeTagBaking);
+                              } else {
+                                _selectedTags.remove(recipeTagBaking);
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),

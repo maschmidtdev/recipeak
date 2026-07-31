@@ -7,6 +7,7 @@ class RecipeSummary {
     required this.duration,
     required this.yieldText,
     required this.document,
+    this.tags = const [],
     this.isFavorite = false,
     this.isDraft = false,
   });
@@ -16,6 +17,7 @@ class RecipeSummary {
   final String duration;
   final String yieldText;
   final RecipeDocument document;
+  final List<String> tags;
   final bool isFavorite;
   final bool isDraft;
 
@@ -25,6 +27,7 @@ class RecipeSummary {
     String? duration,
     String? yieldText,
     RecipeDocument? document,
+    List<String>? tags,
     bool? isFavorite,
     bool? isDraft,
   }) {
@@ -34,8 +37,12 @@ class RecipeSummary {
       duration: duration ?? this.duration,
       yieldText: yieldText ?? this.yieldText,
       document: document ?? this.document,
+      tags: tags ?? this.tags,
       isFavorite: isFavorite ?? this.isFavorite,
       isDraft: isDraft ?? this.isDraft,
     );
   }
 }
+
+const recipeTagBreakfast = 'breakfast';
+const recipeTagBaking = 'baking';

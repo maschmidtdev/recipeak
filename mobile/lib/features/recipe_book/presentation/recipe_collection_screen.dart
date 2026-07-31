@@ -23,6 +23,7 @@ class RecipeCollectionScreen extends StatefulWidget {
 
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   late final List<RecipeSummary> _recipes = List.of(_sampleRecipes);
+  final Set<_RecipeFilter> _selectedFilters = {_RecipeFilter.all};
   static const _deleteUndoDuration = Duration(seconds: 4);
   static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
   int _deleteToastToken = 0;
@@ -140,7 +141,8 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final recipes = _recipes;
+    final recipeEntries = _filteredRecipeEntries;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
@@ -238,7 +240,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             const SizedBox(height: 20),
             TextField(
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.searchRecipes,
+                hintText: localizations.searchRecipes,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: theme.colorScheme.surface,
@@ -253,24 +255,40 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Chip(label: Text(AppLocalizations.of(context)!.allFilter)),
-                Chip(label: Text(AppLocalizations.of(context)!.favoritesFilter)),
-                Chip(label: Text(AppLocalizations.of(context)!.breakfastFilter)),
-                Chip(label: Text(AppLocalizations.of(context)!.bakingFilter)),
+                FilterChip(
+                  label: Text(localizations.allFilter),
+                  selected: _selectedFilters.contains(_RecipeFilter.all),
+                  onSelected: (_) => _toggleFilter(_RecipeFilter.all),
+                ),
+                FilterChip(
+                  label: Text(localizations.favoritesFilter),
+                  selected: _selectedFilters.contains(_RecipeFilter.favorites),
+                  onSelected: (_) => _toggleFilter(_RecipeFilter.favorites),
+                ),
+                FilterChip(
+                  label: Text(localizations.breakfastFilter),
+                  selected: _selectedFilters.contains(_RecipeFilter.breakfast),
+                  onSelected: (_) => _toggleFilter(_RecipeFilter.breakfast),
+                ),
+                FilterChip(
+                  label: Text(localizations.bakingFilter),
+                  selected: _selectedFilters.contains(_RecipeFilter.baking),
+                  onSelected: (_) => _toggleFilter(_RecipeFilter.baking),
+                ),
               ],
             ),
             const SizedBox(height: 20),
             Text(
-              AppLocalizations.of(context)!.collectionTitle,
+              localizations.collectionTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
-            for (final entry in recipes.indexed) ...[
+            for (final entry in recipeEntries) ...[
               _RecipeCard(
-                recipe: entry.$2,
-                onTap: () => _openRecipeForViewing(entry.$1),
+                recipe: entry.recipe,
+                onTap: () => _openRecipeForViewing(entry.index),
               ),
               const SizedBox(height: 12),
             ],
@@ -280,9 +298,59 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewRecipeFlow,
         icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context)!.newRecipe),
+        label: Text(localizations.newRecipe),
       ),
     );
+  }
+
+  List<_RecipeEntry> get _filteredRecipeEntries {
+    final entries = <_RecipeEntry>[
+      for (final entry in _recipes.indexed)
+        _RecipeEntry(index: entry.$1, recipe: entry.$2),
+    ];
+
+    if (_selectedFilters.contains(_RecipeFilter.all)) {
+      return entries;
+    }
+
+    return entries.where((entry) {
+      if (_selectedFilters.contains(_RecipeFilter.favorites) &&
+          entry.recipe.isFavorite) {
+        return true;
+      }
+      if (_selectedFilters.contains(_RecipeFilter.breakfast) &&
+          entry.recipe.tags.contains(recipeTagBreakfast)) {
+        return true;
+      }
+      if (_selectedFilters.contains(_RecipeFilter.baking) &&
+          entry.recipe.tags.contains(recipeTagBaking)) {
+        return true;
+      }
+      return false;
+    }).toList();
+  }
+
+  void _toggleFilter(_RecipeFilter filter) {
+    setState(() {
+      if (filter == _RecipeFilter.all) {
+        _selectedFilters
+          ..clear()
+          ..add(_RecipeFilter.all);
+        return;
+      }
+
+      _selectedFilters.remove(_RecipeFilter.all);
+
+      if (_selectedFilters.contains(filter)) {
+        _selectedFilters.remove(filter);
+      } else {
+        _selectedFilters.add(filter);
+      }
+
+      if (_selectedFilters.isEmpty) {
+        _selectedFilters.add(_RecipeFilter.all);
+      }
+    });
   }
 }
 
@@ -369,6 +437,20 @@ class _RecipeCard extends StatelessWidget {
                   color: const Color(0xFF5E675F),
                 ),
               ),
+              if (recipe.tags.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in recipe.tags)
+                      Chip(
+                        label: Text(_tagLabel(context, tag)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -416,6 +498,7 @@ const _sampleRecipes = [
       ],
       rowCount: 1,
     ),
+    tags: const [recipeTagBreakfast],
   ),
   RecipeSummary(
     title: 'Two Rows With Merge',
@@ -449,6 +532,7 @@ const _sampleRecipes = [
       ],
       rowCount: 2,
     ),
+    tags: const [recipeTagBreakfast],
   ),
   RecipeSummary(
     title: 'Three Rows With Merge',
@@ -488,6 +572,7 @@ const _sampleRecipes = [
       ],
       rowCount: 3,
     ),
+    tags: const [recipeTagBreakfast],
   ),
   RecipeSummary(
     title: 'Five Rows With Staged Merge',
@@ -532,6 +617,7 @@ const _sampleRecipes = [
       ],
       rowCount: 5,
     ),
+    tags: const [recipeTagBaking],
   ),
   RecipeSummary(
     title: 'Six Rows With Full Finish Merge',
@@ -582,6 +668,7 @@ const _sampleRecipes = [
       ],
       rowCount: 6,
     ),
+    tags: const [recipeTagBaking],
   ),
   RecipeSummary(
     title: 'Banana Nut Bread',
@@ -643,6 +730,30 @@ const _sampleRecipes = [
       ],
       rowCount: 6,
     ),
+    tags: const [recipeTagBaking],
     isFavorite: true,
   ),
 ];
+
+class _RecipeEntry {
+  const _RecipeEntry({required this.index, required this.recipe});
+
+  final int index;
+  final RecipeSummary recipe;
+}
+
+enum _RecipeFilter {
+  all,
+  favorites,
+  breakfast,
+  baking,
+}
+
+String _tagLabel(BuildContext context, String tag) {
+  final localizations = AppLocalizations.of(context)!;
+  return switch (tag) {
+    recipeTagBreakfast => localizations.breakfastFilter,
+    recipeTagBaking => localizations.bakingFilter,
+    _ => tag,
+  };
+}

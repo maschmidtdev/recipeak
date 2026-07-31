@@ -121,6 +121,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         color: const Color(0xFF5E675F),
                       ),
                     ),
+                    if (recipe.tags.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final tag in recipe.tags)
+                            Chip(
+                              label: Text(_tagLabel(context, tag)),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Wrap(
                       spacing: 16,
@@ -198,4 +212,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
     );
   }
+}
+
+String _tagLabel(BuildContext context, String tag) {
+  final localizations = AppLocalizations.of(context)!;
+  return switch (tag) {
+    recipeTagBreakfast => localizations.breakfastFilter,
+    recipeTagBaking => localizations.bakingFilter,
+    _ => tag,
+  };
 }
