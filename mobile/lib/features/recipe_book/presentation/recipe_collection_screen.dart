@@ -915,7 +915,7 @@ const _productionSampleRecipes = [
   RecipeSummary(
     title: 'Skillet Chickpea Curry',
     description:
-        'A realistic stovetop dinner with parallel aromatics, sauce reduction, and a final simmer.',
+        'A weeknight chickpea curry with tomato, spinach, and warm spices.',
     duration: '35 min',
     yieldText: '4 servings',
     document: RecipeDocument(
@@ -976,7 +976,7 @@ const _devSampleRecipes = [
   RecipeSummary(
     title: 'Overnight Oats',
     description:
-        'A cold breakfast jar with layered prep and a quick morning finish.',
+        'Creamy oats layered with milk and fruit for an easy make-ahead breakfast.',
     duration: '',
     yieldText: '2 jars',
     document: RecipeDocument(
@@ -1015,7 +1015,7 @@ const _devSampleRecipes = [
   RecipeSummary(
     title: 'Tomato Toast',
     description:
-        'A quick savory toast with almost no metadata except the core recipe.',
+        'Crisp toast topped with juicy tomato, olive oil, and a pinch of salt.',
     duration: '',
     yieldText: '',
     document: RecipeDocument(
@@ -1050,7 +1050,8 @@ const _devSampleRecipes = [
   ),
   RecipeSummary(
     title: 'Roasted Broccoli',
-    description: 'A simple sheet-pan side dish with a clear timed workflow.',
+    description:
+        'Oven-roasted broccoli with crisp edges and a simple savory finish.',
     duration: '25 min',
     yieldText: '',
     document: RecipeDocument(
@@ -1091,7 +1092,7 @@ const _devSampleRecipes = [
   RecipeSummary(
     title: 'Banana Nut Bread',
     description:
-        'End-state reference chart with prep rows, ingredient columns, and merged workflow steps.',
+        'A tender banana loaf with buttery crumb and a simple one-bowl bake flow.',
     duration: '1 hr 20 min',
     yieldText: '10 servings',
     document: RecipeDocument(

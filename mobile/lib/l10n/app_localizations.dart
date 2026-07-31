@@ -180,7 +180,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartDslLabel => 'Chart DSL';
 
   @override
-  String get chartPreview => 'Chart Preview';
+  String get chartPreview => 'Recipe Flow';
 
   @override
   String chartStructureSummary(int prepRows, int workflowRows, int columns) =>
@@ -498,7 +498,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chartDslLabel => 'Chart-DSL';
 
   @override
-  String get chartPreview => 'Diagrammvorschau';
+  String get chartPreview => 'Rezeptablauf';
 
   @override
   String chartStructureSummary(int prepRows, int workflowRows, int columns) =>
@@ -757,10 +757,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get yieldHint => '10 Portionen';
 
   @override
-  String get yieldLabel => 'Menge';
+  String get yieldLabel => 'Portionen';
 
   @override
-  String get yieldTbd => 'Menge offen';
+  String get yieldTbd => 'Portionen offen';
 }
 
 class _AppLocalizationsDelegate
