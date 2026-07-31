@@ -10,9 +10,11 @@ class RecipeDetailScreen extends StatefulWidget {
   const RecipeDetailScreen({
     super.key,
     required this.recipe,
+    required this.availableTags,
   });
 
   final RecipeSummary recipe;
+  final List<String> availableTags;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -20,12 +22,14 @@ class RecipeDetailScreen extends StatefulWidget {
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late RecipeSummary _recipe;
+  late List<String> _availableTags;
   bool _hasUnsyncedChanges = false;
 
   @override
   void initState() {
     super.initState();
     _recipe = widget.recipe;
+    _availableTags = List.of(widget.availableTags);
   }
 
   Future<void> _openEditor(BuildContext context) async {
@@ -33,6 +37,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       MaterialPageRoute(
         builder: (context) => RecipeEditorScreen(
           initialRecipe: _recipe,
+          availableTags: _availableTags,
         ),
       ),
     );
@@ -46,6 +51,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         if (result.recipe != null) {
           setState(() {
             _recipe = result.recipe!;
+            _availableTags = List.of(result.availableTags ?? _availableTags);
             _hasUnsyncedChanges = true;
           });
         }
@@ -62,7 +68,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Future<bool> _handleBackNavigation() async {
     if (_hasUnsyncedChanges) {
-      Navigator.of(context).pop(RecipeEditorResult.saved(_recipe));
+      Navigator.of(
+        context,
+      ).pop(RecipeEditorResult.saved(_recipe, availableTags: _availableTags));
       return false;
     }
     return true;

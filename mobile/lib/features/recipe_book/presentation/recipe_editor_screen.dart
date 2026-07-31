@@ -11,9 +11,11 @@ class RecipeEditorScreen extends StatefulWidget {
   const RecipeEditorScreen({
     super.key,
     required this.initialRecipe,
+    required this.availableTags,
   });
 
   final RecipeSummary initialRecipe;
+  final List<String> availableTags;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -33,6 +35,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   RecipeChartSelection? _selectedCell;
   late bool _isFavorite;
   late final Set<String> _selectedTags;
+  late final Set<String> _availableTags;
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _notesController = TextEditingController(text: widget.initialRecipe.description);
     _isFavorite = widget.initialRecipe.isFavorite;
     _selectedTags = {...widget.initialRecipe.tags};
+    _availableTags = {...widget.availableTags, ...widget.initialRecipe.tags};
     _document = _normalizedDocument(widget.initialRecipe.document);
     _dslController = TextEditingController()
       ..addListener(_handleDslChanged);
@@ -953,8 +957,59 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           duration: durationText.isEmpty ? localizations.timeTbd : durationText,
           isDraft: false,
         ),
+        availableTags: _availableTags.toList()..sort(),
       ),
     );
+  }
+
+  Future<void> _addTag() async {
+    final controller = TextEditingController();
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Tag'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Dessert'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || tag == null || tag.isEmpty) {
+      return;
+    }
+
+    final normalizedTag = _normalizeTag(tag);
+    if (normalizedTag.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _availableTags.add(normalizedTag);
+      _selectedTags.add(normalizedTag);
+    });
+  }
+
+  String _normalizeTag(String input) {
+    final collapsed = input.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (collapsed.isEmpty) {
+      return '';
+    }
+    return collapsed;
   }
 
   void _discardChanges() {
@@ -1071,35 +1126,24 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilterChip(
-                          label: Text(
-                            AppLocalizations.of(context)!.breakfastFilter,
+                        for (final tag in _sortedTags(_availableTags))
+                          FilterChip(
+                            label: Text(_tagLabel(context, tag)),
+                            selected: _selectedTags.contains(tag),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedTags.add(tag);
+                                } else {
+                                  _selectedTags.remove(tag);
+                                }
+                              });
+                            },
                           ),
-                          selected: _selectedTags.contains(recipeTagBreakfast),
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedTags.add(recipeTagBreakfast);
-                              } else {
-                                _selectedTags.remove(recipeTagBreakfast);
-                              }
-                            });
-                          },
-                        ),
-                        FilterChip(
-                          label: Text(
-                            AppLocalizations.of(context)!.bakingFilter,
-                          ),
-                          selected: _selectedTags.contains(recipeTagBaking),
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedTags.add(recipeTagBaking);
-                              } else {
-                                _selectedTags.remove(recipeTagBaking);
-                              }
-                            });
-                          },
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Tag'),
+                          onPressed: _addTag,
                         ),
                       ],
                     ),
@@ -1666,4 +1710,19 @@ String _buildInitialDsl(RecipeDocument document) {
   }
 
   return 'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk';
+}
+
+List<String> _sortedTags(Iterable<String> tags) {
+  final values = [...tags];
+  values.sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+  return values;
+}
+
+String _tagLabel(BuildContext context, String tag) {
+  final localizations = AppLocalizations.of(context)!;
+  return switch (tag) {
+    recipeTagBreakfast => localizations.breakfastFilter,
+    recipeTagBaking => localizations.bakingFilter,
+    _ => tag,
+  };
 }
