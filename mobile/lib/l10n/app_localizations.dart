@@ -40,9 +40,11 @@ abstract class AppLocalizations {
   String get matchAllSelectedTags;
   String get addTagLabel;
   String get addTagTitle;
+  String get editDeleteTagsLabel;
   String get deleteTagLabel;
   String get deleteTagTitle;
   String get tagsAvailableLabel;
+  String get renameOrRemoveTags;
   String get removeTagsFromAllRecipes;
   String get noTagsAvailableToDelete;
   String get deleteDialogCancel;
@@ -135,6 +137,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addTagTitle => 'Add Tag';
 
   @override
+  String get editDeleteTagsLabel => 'Edit / delete tags';
+
+  @override
   String get deleteTagLabel => 'Delete tag';
 
   @override
@@ -142,6 +147,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagsAvailableLabel => 'tags available';
+
+  @override
+  String get renameOrRemoveTags => 'Rename or remove tags';
 
   @override
   String get removeTagsFromAllRecipes => 'Remove tags from all recipes';
@@ -257,6 +265,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addTagTitle => 'Tag hinzufügen';
 
   @override
+  String get editDeleteTagsLabel => 'Tags bearbeiten / löschen';
+
+  @override
   String get deleteTagLabel => 'Tag löschen';
 
   @override
@@ -264,6 +275,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tagsAvailableLabel => 'Tags verfügbar';
+
+  @override
+  String get renameOrRemoveTags => 'Tags umbenennen oder löschen';
 
   @override
   String get removeTagsFromAllRecipes => 'Tags aus allen Rezepten entfernen';

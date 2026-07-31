@@ -81,12 +81,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final theme = Theme.of(context);
     final recipe = _recipe;
     final localizations = AppLocalizations.of(context)!;
-    final durationText = recipe.duration.trim().isEmpty
-        ? localizations.timeTbd
-        : recipe.duration;
-    final yieldText = recipe.yieldText.trim().isEmpty
-        ? localizations.yieldTbd
-        : recipe.yieldText;
+    final durationText = recipe.duration.trim();
+    final yieldText = recipe.yieldText.trim();
+    final hasDuration = durationText.isNotEmpty;
+    final hasYield = yieldText.isNotEmpty;
 
     return WillPopScope(
       onWillPop: _handleBackNavigation,
@@ -143,29 +141,33 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 8,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.schedule, size: 18),
-                            const SizedBox(width: 6),
-                            Text(durationText),
-                          ],
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.restaurant_menu, size: 18),
-                            const SizedBox(width: 6),
-                            Text(yieldText),
-                          ],
-                        ),
+                    if (hasDuration || hasYield) ...[
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 8,
+                        children: [
+                          if (hasDuration)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.schedule, size: 18),
+                                const SizedBox(width: 6),
+                                Text(durationText),
+                              ],
+                            ),
+                          if (hasYield)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.restaurant_menu, size: 18),
+                                const SizedBox(width: 6),
+                                Text(yieldText),
+                              ],
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
                 ],
                 ),
               ),

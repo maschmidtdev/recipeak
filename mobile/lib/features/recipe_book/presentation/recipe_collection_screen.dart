@@ -200,17 +200,20 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                 FilterChip(
                   label: Text(localizations.allFilter),
                   selected: _showAllFilter,
+                  showCheckmark: false,
                   onSelected: (_) => _toggleAllFilter(),
                 ),
                 FilterChip(
                   label: Text(localizations.favoritesFilter),
                   selected: _showFavoritesFilter,
+                  showCheckmark: false,
                   onSelected: (_) => _toggleFavoritesFilter(),
                 ),
                 for (final tag in _sortedTags(_availableTags))
                   FilterChip(
                     label: Text(_tagLabel(context, tag)),
                     selected: _selectedTagFilters.contains(tag),
+                    showCheckmark: false,
                     onSelected: (_) => _toggleTagFilter(tag),
                   ),
               ],
@@ -451,8 +454,8 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.delete_outline),
-                      title: Text(localizations.deleteTagLabel),
-                      subtitle: Text(localizations.removeTagsFromAllRecipes),
+                      title: Text(localizations.editDeleteTagsLabel),
+                      subtitle: Text(localizations.renameOrRemoveTags),
                       onTap: () async {
                         await _openDeleteTagManager();
                         if (context.mounted) {
@@ -537,14 +540,30 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                                       tagUsage[tag] ?? 0,
                                     ),
                                   ),
-                                  trailing: IconButton(
-                                    onPressed: () async {
-                                      final deleted = await _deleteTag(tag);
-                                      if (deleted) {
-                                        setSheetState(() {});
-                                      }
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
+                                  trailing: Wrap(
+                                    spacing: 4,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () async {
+                                          final renamed = await _renameTag(tag);
+                                          if (renamed) {
+                                            setSheetState(() {});
+                                          }
+                                        },
+                                        icon: const Icon(Icons.edit_outlined),
+                                        tooltip: localizations.edit,
+                                      ),
+                                      IconButton(
+                                        onPressed: () async {
+                                          final deleted = await _deleteTag(tag);
+                                          if (deleted) {
+                                            setSheetState(() {});
+                                          }
+                                        },
+                                        icon: const Icon(Icons.delete_outline),
+                                        tooltip: localizations.delete,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -663,6 +682,65 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     return true;
   }
+
+  Future<bool> _renameTag(String tag) async {
+    final controller = TextEditingController(text: tag);
+    final nextTag = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
+        return AlertDialog(
+          title: Text('${localizations.edit} ${localizations.tagsTitle}'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Vegetarian'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.deleteDialogCancel),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: Text(localizations.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || nextTag == null) {
+      return false;
+    }
+
+    final normalizedTag = _normalizeTag(nextTag);
+    if (normalizedTag.isEmpty || normalizedTag == tag) {
+      return false;
+    }
+
+    setState(() {
+      _availableTags.remove(tag);
+      _availableTags.add(normalizedTag);
+
+      if (_selectedTagFilters.remove(tag)) {
+        _selectedTagFilters.add(normalizedTag);
+      }
+
+      for (var index = 0; index < _recipes.length; index++) {
+        final updatedTags = <String>{
+          for (final recipeTag in _recipes[index].tags)
+            if (recipeTag == tag) normalizedTag else recipeTag,
+        }.toList()
+          ..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+
+        _recipes[index] = _recipes[index].copyWith(tags: updatedTags);
+      }
+    });
+
+    return true;
+  }
 }
 
 class _UndoToastContent extends StatelessWidget {
@@ -710,13 +788,10 @@ class _RecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
-    final durationText = recipe.duration.trim().isEmpty
-        ? localizations.timeTbd
-        : recipe.duration;
-    final yieldText = recipe.yieldText.trim().isEmpty
-        ? localizations.yieldTbd
-        : recipe.yieldText;
+    final durationText = recipe.duration.trim();
+    final yieldText = recipe.yieldText.trim();
+    final hasDuration = durationText.isNotEmpty;
+    final hasYield = yieldText.isNotEmpty;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -762,18 +837,24 @@ class _RecipeCard extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(Icons.schedule, size: 18),
-                  const SizedBox(width: 6),
-                  Text(durationText),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.restaurant_menu, size: 18),
-                  const SizedBox(width: 6),
-                  Text(yieldText),
-                ],
-              ),
+              if (hasDuration || hasYield) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    if (hasDuration) ...[
+                      const Icon(Icons.schedule, size: 18),
+                      const SizedBox(width: 6),
+                      Text(durationText),
+                    ],
+                    if (hasDuration && hasYield) const SizedBox(width: 16),
+                    if (hasYield) ...[
+                      const Icon(Icons.restaurant_menu, size: 18),
+                      const SizedBox(width: 6),
+                      Text(yieldText),
+                    ],
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -784,101 +865,38 @@ class _RecipeCard extends StatelessWidget {
 
 const _sampleRecipes = [
   RecipeSummary(
-    title: 'Single Ingredient Flow',
+    title: 'Overnight Oats',
     description:
-        'First DSL example: one prep row, one ingredient row, and sequential workflow steps.',
-    duration: '10 min',
-    yieldText: '1 serving',
+        'A cold breakfast jar with layered prep and a quick morning finish.',
+    duration: '',
+    yieldText: '2 jars',
     document: RecipeDocument(
-      title: 'Single Ingredient Flow',
-      yieldText: '1 serving',
-      prepRows: [PrepRow(text: 'Warm a small pan')],
-      columns: [
-        WorkflowColumn(
-          id: 'A',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: '1 egg')],
-        ),
-        WorkflowColumn(
-          id: 'B',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: 'crack')],
-        ),
-        WorkflowColumn(
-          id: 'C',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 1, text: 'whisk')],
-        ),
-      ],
-      rowCount: 1,
-    ),
-    tags: const [recipeTagBreakfast],
-  ),
-  RecipeSummary(
-    title: 'Two Rows With Merge',
-    description:
-        'Second DSL example: two ingredient rows that merge into one final workflow step.',
-    duration: '15 min',
-    yieldText: '2 servings',
-    document: RecipeDocument(
-      title: 'Two Rows With Merge',
-      yieldText: '2 servings',
-      prepRows: [PrepRow(text: 'Set out a mixing bowl')],
+      title: 'Overnight Oats',
+      yieldText: '2 jars',
+      prepRows: [PrepRow(text: 'Set out two jars with lids')],
       columns: [
         WorkflowColumn(
           id: 'A',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'flour'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'water'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'rolled oats'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'milk'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'berries'),
           ],
         ),
         WorkflowColumn(
           id: 'B',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'measure'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'divide'),
             WorkflowCell(startRow: 2, rowSpan: 1, text: 'pour'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'top'),
           ],
         ),
         WorkflowColumn(
           id: 'C',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 2, text: 'mix together')],
-        ),
-      ],
-      rowCount: 2,
-    ),
-    tags: const [recipeTagBreakfast],
-  ),
-  RecipeSummary(
-    title: 'Three Rows With Merge',
-    description:
-        'Third DSL example: three ingredient rows with one merge over rows 1-2 and another over rows 1-3.',
-    duration: '20 min',
-    yieldText: '3 servings',
-    document: RecipeDocument(
-      title: 'Three Rows With Merge',
-      yieldText: '3 servings',
-      prepRows: [PrepRow(text: 'Set out a large mixing bowl')],
-      columns: [
-        WorkflowColumn(
-          id: 'A',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'flour'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'water'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'salt'),
+            WorkflowCell(startRow: 1, rowSpan: 2, text: 'stir together'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'chill overnight'),
           ],
-        ),
-        WorkflowColumn(
-          id: 'B',
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'measure'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'pour'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'sprinkle'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'C',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 2, text: 'mix wet base')],
-        ),
-        WorkflowColumn(
-          id: 'D',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 3, text: 'combine fully')],
         ),
       ],
       rowCount: 3,
@@ -886,100 +904,81 @@ const _sampleRecipes = [
     tags: const [recipeTagBreakfast],
   ),
   RecipeSummary(
-    title: 'Five Rows With Staged Merge',
+    title: 'Tomato Toast',
     description:
-        'Fourth DSL example: separate early rows, a later merged step, a mid-column merge, and a final merge spanning rows 1-5.',
-    duration: '25 min',
-    yieldText: '4 servings',
+        'A quick savory toast with almost no metadata except the core recipe.',
+    duration: '',
+    yieldText: '',
     document: RecipeDocument(
-      title: 'Five Rows With Staged Merge',
-      yieldText: '4 servings',
-      prepRows: [PrepRow(text: 'Set out a prep tray and mixing bowl')],
+      title: 'Tomato Toast',
+      yieldText: '',
+      prepRows: [PrepRow(text: 'Toast two slices of bread')],
       columns: [
         WorkflowColumn(
           id: 'A',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'bananas'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'butter'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'vanilla'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'flour'),
-            WorkflowCell(startRow: 5, rowSpan: 1, text: 'sugar'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'tomato'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'olive oil'),
           ],
         ),
         WorkflowColumn(
           id: 'B',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
-            WorkflowCell(startRow: 4, rowSpan: 2, text: 'whisk dry'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'slice'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'drizzle'),
           ],
         ),
         WorkflowColumn(
           id: 'C',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 3, text: 'mix wet base')],
-        ),
-        WorkflowColumn(
-          id: 'D',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 5, text: 'combine everything'),
+            WorkflowCell(startRow: 1, rowSpan: 2, text: 'finish with salt'),
           ],
         ),
       ],
-      rowCount: 5,
+      rowCount: 2,
     ),
-    tags: const [recipeTagBaking],
+    tags: const [recipeTagBreakfast],
   ),
   RecipeSummary(
-    title: 'Six Rows With Full Finish Merge',
+    title: 'Roasted Broccoli',
     description:
-        'Fifth DSL example: an extra ingredient row, a taller early merge, and two full-height finishing columns.',
-    duration: '30 min',
-    yieldText: '5 servings',
+        'A simple sheet-pan side dish with a clear timed workflow.',
+    duration: '25 min',
+    yieldText: '',
     document: RecipeDocument(
-      title: 'Six Rows With Full Finish Merge',
-      yieldText: '5 servings',
-      prepRows: [PrepRow(text: 'Set out a prep tray and loaf pan')],
+      title: 'Roasted Broccoli',
+      yieldText: '',
+      prepRows: [
+        PrepRow(text: 'Heat oven to 425°F (220°C)'),
+        PrepRow(text: 'Line a tray with parchment'),
+      ],
       columns: [
         WorkflowColumn(
           id: 'A',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'bananas'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'butter'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'vanilla'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'eggs'),
-            WorkflowCell(startRow: 5, rowSpan: 1, text: 'flour'),
-            WorkflowCell(startRow: 6, rowSpan: 1, text: 'sugar'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'broccoli'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'olive oil'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'pepper'),
           ],
         ),
         WorkflowColumn(
           id: 'B',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'beat'),
-            WorkflowCell(startRow: 5, rowSpan: 2, text: 'whisk dry'),
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'spread'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'coat'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'season'),
           ],
         ),
         WorkflowColumn(
           id: 'C',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 4, text: 'mix wet base')],
-        ),
-        WorkflowColumn(
-          id: 'D',
           cells: [
-            WorkflowCell(startRow: 1, rowSpan: 6, text: 'combine everything'),
+            WorkflowCell(startRow: 1, rowSpan: 3, text: 'roast until browned'),
           ],
         ),
-        WorkflowColumn(
-          id: 'E',
-          cells: [WorkflowCell(startRow: 1, rowSpan: 6, text: 'finish loaf')],
-        ),
       ],
-      rowCount: 6,
+      rowCount: 3,
     ),
-    tags: const [recipeTagBaking],
+    tags: const ['vegetarian'],
   ),
   RecipeSummary(
     title: 'Banana Nut Bread',
