@@ -1,7 +1,7 @@
 {
   "recipes": [
     {
-      "title": "Skillet Chickpea Curry",
+      "title": "Chickpea Curry",
       "description": "A weeknight chickpea curry with tomato, spinach, and warm spices.",
       "duration": "35 min",
       "yieldText": "4 servings",
@@ -21,33 +21,33 @@
             "id": "A",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "150 g onion" },
-              { "startRow": 2, "rowSpan": 1, "text": "12 g garlic" },
-              { "startRow": 3, "rowSpan": 1, "text": "35 g curry paste" },
-              { "startRow": 4, "rowSpan": 1, "text": "400 g tomatoes" },
-              { "startRow": 5, "rowSpan": 1, "text": "240 g chickpeas" },
-              { "startRow": 6, "rowSpan": 1, "text": "120 g spinach" },
-              { "startRow": 7, "rowSpan": 1, "text": "240 g rice" }
+              { "startRow": 1, "rowSpan": 1, "text": "240 g rice" },
+              { "startRow": 2, "rowSpan": 1, "text": "150 g onion" },
+              { "startRow": 3, "rowSpan": 1, "text": "12 g garlic" },
+              { "startRow": 4, "rowSpan": 1, "text": "35 g curry paste" },
+              { "startRow": 5, "rowSpan": 1, "text": "400 g tomatoes" },
+              { "startRow": 6, "rowSpan": 1, "text": "240 g chickpeas" },
+              { "startRow": 7, "rowSpan": 1, "text": "120 g spinach" }
             ]
           },
           {
             "id": "B",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "dice" },
-              { "startRow": 2, "rowSpan": 1, "text": "mince" },
-              { "startRow": 3, "rowSpan": 1, "text": "stir in" },
-              { "startRow": 4, "rowSpan": 1, "text": "pour" },
-              { "startRow": 5, "rowSpan": 1, "text": "add" },
-              { "startRow": 6, "rowSpan": 1, "text": "stir in" },
-              { "startRow": 7, "rowSpan": 1, "text": "rinse + boil" }
+              { "startRow": 1, "rowSpan": 1, "text": "rinse + boil" },
+              { "startRow": 2, "rowSpan": 1, "text": "dice" },
+              { "startRow": 3, "rowSpan": 1, "text": "mince" },
+              { "startRow": 4, "rowSpan": 1, "text": "stir in" }
             ]
           },
           {
             "id": "C",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 3, "text": "cook until fragrant" }
+              { "startRow": 2, "rowSpan": 3, "text": "cook until fragrant" },
+              { "startRow": 5, "rowSpan": 1, "text": "pour in" },
+              { "startRow": 6, "rowSpan": 1, "text": "add in" },
+              { "startRow": 7, "rowSpan": 1, "text": "stir in" }
             ]
           },
           {
@@ -55,7 +55,7 @@
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
               {
-                "startRow": 1,
+                "startRow": 2,
                 "rowSpan": 6,
                 "text": "simmer until chickpeas are hot and spinach wilts"
               }
