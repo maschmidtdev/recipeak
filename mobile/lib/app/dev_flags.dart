@@ -1,1 +1,1 @@
-const bool kIsDevelopmentMode = true;
+const bool kIsDevelopmentMode = false;

@@ -3,10 +3,7 @@ import 'package:flutter/widgets.dart';
 abstract class AppLocalizations {
   const AppLocalizations();
 
-  static const supportedLocales = [
-    Locale('en'),
-    Locale('de'),
-  ];
+  static const supportedLocales = [Locale('en'), Locale('de')];
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
@@ -80,6 +77,7 @@ abstract class AppLocalizations {
   String get favoriteLabel;
   String get chartDslLabel;
   String get chartDslDescription;
+  String get chartDslInfoBody;
   String get chartDslHint;
   String get newRecipeEditorHeadline;
   String get editRecipeEditorHeadline;
@@ -174,11 +172,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartDslDescription =>
-      'Optional advanced editing and paste/import flow.';
+      'Advanced text format for direct editing and recipe import/export.';
+
+  @override
+  String get chartDslInfoBody =>
+      "DSL is the recipe's text format. Use it for direct editing, to paste or import recipes, or to copy and export a recipe as text.";
 
   @override
   String get chartDslHint =>
-      'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk';
+      'title: Chickpea Curry\ndescription: A weeknight chickpea curry with tomato, spinach, and warm spices.\nduration: 35 min\nyield: 4 servings\ntags: Vegan\n\nprep:\n- Set out a large skillet and a medium pot\n- Warm oil over medium heat\n\nA:\n1. 240 g rice\n2. 150 g onion\n\nB:\n1. rinse + boil\n2. dice';
 
   @override
   String get chartDslLabel => 'Chart DSL';
@@ -506,11 +508,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chartDslDescription =>
-      'Optionale erweiterte Bearbeitung und Einf\u00fcgen/Import per DSL.';
+      'Erweitertes Textformat f\u00fcr direkte Bearbeitung sowie Rezept-Import und -Export.';
+
+  @override
+  String get chartDslInfoBody =>
+      'DSL ist das Textformat des Rezepts. Du kannst es f\u00fcr direkte Bearbeitung nutzen, um Rezepte einzuf\u00fcgen oder zu importieren, oder um ein Rezept als Text zu kopieren und zu exportieren.';
 
   @override
   String get chartDslHint =>
-      'prep:\n- Kleine Pfanne erw\u00e4rmen\n\nA:\n1. 1 Ei\n\nB:\n1. aufschlagen\n\nC:\n1. verquirlen';
+      'title: Kichererbsen-Curry aus der Pfanne\ndescription: Ein schnelles Kichererbsen-Curry mit Tomaten, Spinat und warmen Gew\u00fcrzen.\nduration: 35 min\nyield: 4 Portionen\ntags: Vegan\n\nprep:\n- Gro\u00dfe Pfanne und mittleren Topf bereitstellen\n- \u00d6l bei mittlerer Hitze erw\u00e4rmen\n\nA:\n1. 240 g Reis\n2. 150 g Zwiebel\n\nB:\n1. waschen + kochen\n2. w\u00fcrfeln';
 
   @override
   String get chartDslLabel => 'Chart-DSL';
@@ -628,7 +634,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matchAnyLabel => 'Beliebig';
 
   @override
-  String get matchAnySelectedTags => 'Mindestens einen gew\u00e4hlten Tag treffen';
+  String get matchAnySelectedTags =>
+      'Mindestens einen gew\u00e4hlten Tag treffen';
 
   @override
   String get mergeDown => 'Nach unten verbinden';
@@ -657,7 +664,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'In dieser Spalte gibt es noch keine Zellen.';
 
   @override
-  String get noMoreColumnLetters => 'Keine weiteren Spaltenbuchstaben verf\u00fcgbar.';
+  String get noMoreColumnLetters =>
+      'Keine weiteren Spaltenbuchstaben verf\u00fcgbar.';
 
   @override
   String get noPrepRowsPlaceholder => 'Noch keine Vorbereitungszeilen.';
@@ -716,8 +724,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get renameOrRemoveTags => 'Tags umbenennen oder l\u00f6schen';
 
   @override
-  String rowRangeLabel(int startRow, int endRow) =>
-      'Zeilen $startRow-$endRow';
+  String rowRangeLabel(int startRow, int endRow) => 'Zeilen $startRow-$endRow';
 
   @override
   String get rowLabel => 'Zeile';

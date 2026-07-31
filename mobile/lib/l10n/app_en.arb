@@ -15,6 +15,8 @@
   "chartPreview": "Chart Preview",
   "timeTbd": "Time TBD",
   "yieldTbd": "Yield TBD",
+  "chartDslDescription": "Advanced text format for direct editing and recipe import/export.",
+  "chartDslInfoBody": "DSL is the recipe's text format. Use it for direct editing, to paste or import recipes, or to copy and export a recipe as text.",
   "deletedMessage": "{title} deleted",
   "@deletedMessage": {
     "placeholders": {

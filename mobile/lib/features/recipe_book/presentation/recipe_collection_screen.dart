@@ -188,7 +188,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<void> _openNewRecipeFlow() async {
-    final localizations = AppLocalizations.of(context);
     final result = await Navigator.of(context).push<RecipeEditorResult>(
       MaterialPageRoute(
         builder: (context) => RecipeEditorScreen(
@@ -199,7 +198,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             yieldText: '',
             document: RecipeDocument(
               title: '',
-              yieldText: localizations.yieldTbd,
+              yieldText: '',
               prepRows: [],
               columns: [],
               rowCount: 0,

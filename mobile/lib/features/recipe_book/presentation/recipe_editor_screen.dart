@@ -30,7 +30,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   late final TextEditingController _notesController;
   late final TextEditingController _dslController;
   RecipeDocument? _document;
-  bool _isDslEditorExpanded = false;
   String? _dslError;
   bool _isSyncingDslText = false;
   RecipeChartSelection? _selectedCell;
@@ -77,18 +76,19 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    final title = _titleController.text.trim();
-    final yieldText = _yieldController.text.trim();
-    final localizations = AppLocalizations.of(context);
-
     try {
-      final document = RecipeDslCodec.parse(
-        title: title.isEmpty ? widget.initialRecipe.title : title,
-        yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
-        source: _dslController.text,
-      );
+      final parsed = RecipeDslCodec.parseRecipe(source: _dslController.text);
       setState(() {
-        _document = _normalizedDocument(document);
+        _titleController.text = parsed.title;
+        _notesController.text = parsed.description;
+        _durationController.text = parsed.duration;
+        _yieldController.text = parsed.yieldText;
+        _isFavorite = parsed.isFavorite;
+        _availableTags.addAll(parsed.tags);
+        _selectedTags
+          ..clear()
+          ..addAll(parsed.tags);
+        _document = _normalizedDocument(parsed.document);
         _dslError = null;
       });
     } on FormatException catch (error) {
@@ -96,6 +96,77 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         _dslError = error.message;
       });
     }
+  }
+
+  Future<void> _openDslEditor() async {
+    _syncDslFromDocument();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final localizations = AppLocalizations.of(context);
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${localizations.edit} ${localizations.chartDslLabel}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                localizations.chartDslDescription,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF5E675F),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _dslController,
+                minLines: 12,
+                maxLines: 20,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+                decoration: InputDecoration(
+                  hintText: localizations.chartDslHint,
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDslInfo() async {
+    final localizations = AppLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(localizations.chartDslLabel),
+          content: Text(localizations.chartDslInfoBody),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.done),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _setDocument(RecipeDocument document) {
@@ -128,7 +199,20 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _syncDslFromDocument() {
-    final nextDsl = _buildInitialDsl(_currentDocument);
+    final nextDsl = RecipeDslCodec.encodeRecipe(
+      RecipeDslData(
+        title: _titleController.text.trim(),
+        description: _notesController.text.trim(),
+        duration: _durationController.text.trim(),
+        yieldText: _yieldController.text.trim(),
+        tags: _sortedTags(_selectedTags),
+        isFavorite: _isFavorite,
+        document: _currentDocument.copyWith(
+          title: _titleController.text.trim(),
+          yieldText: _yieldController.text.trim(),
+        ),
+      ),
+    );
     _isSyncingDslText = true;
     _dslController.value = TextEditingValue(
       text: nextDsl,
@@ -946,7 +1030,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _saveRecipe() {
-    final localizations = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -969,14 +1052,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         widget.initialRecipe.copyWith(
           title: title,
           description: notes,
-          yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
+          yieldText: yieldText,
           document: document.copyWith(
             title: title,
-            yieldText: yieldText.isEmpty ? localizations.yieldTbd : yieldText,
+            yieldText: yieldText,
           ),
           tags: _selectedTags.toList()..sort(),
           isFavorite: _isFavorite,
-          duration: durationText.isEmpty ? localizations.timeTbd : durationText,
+          duration: durationText,
           isDraft: false,
         ),
         availableTags: _availableTags.toList()..sort(),
@@ -1182,77 +1265,21 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFD7CCBE)),
-                ),
-                child: Column(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () {
-                        setState(() {
-                          _isDslEditorExpanded = !_isDslEditorExpanded;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    localizations.chartDslLabel,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    localizations.chartDslDescription,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFF5E675F),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              _isDslEditorExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                            ),
-                          ],
-                        ),
-                      ),
+              Row(
+                children: [
+                  FilledButton.tonal(
+                    onPressed: _openDslEditor,
+                    child: Text(
+                      '${localizations.edit} ${localizations.chartDslLabel}',
                     ),
-                    if (_isDslEditorExpanded) ...[
-                      const Divider(height: 1),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: TextFormField(
-                          controller: _dslController,
-                          minLines: 12,
-                          maxLines: 20,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.35,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: localizations.chartDslHint,
-                            alignLabelWithHint: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: _showDslInfo,
+                    icon: const Icon(Icons.help_outline, size: 22),
+                    tooltip: localizations.chartDslLabel,
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               if (_dslError != null) _EditorErrorBanner(message: _dslError!),
@@ -1636,15 +1663,6 @@ class _FieldLabel extends StatelessWidget {
       ],
     );
   }
-}
-
-String _buildInitialDsl(RecipeDocument document) {
-  final encoded = RecipeDslCodec.encode(document);
-  if (encoded.trim().isNotEmpty) {
-    return encoded;
-  }
-
-  return 'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk';
 }
 
 List<String> _sortedTags(Iterable<String> tags) {
