@@ -26,6 +26,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   final Set<String> _availableTags = {};
   bool _showAllFilter = true;
   bool _showFavoritesFilter = false;
+  bool _matchAllTags = false;
   final Set<String> _selectedTagFilters = {};
   static const _deleteUndoDuration = Duration(seconds: 4);
   static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
@@ -163,65 +164,17 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                AppLocalizations.of(context)!.appTitle,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD7CCBE)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${AppLocalizations.of(context)!.languageLabel}:',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<Locale>(
-                        value: widget.localeOverride,
-                        borderRadius: BorderRadius.circular(12),
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        items: const [
-                          DropdownMenuItem<Locale>(
-                            value: Locale('en'),
-                            child: Text('EN'),
-                          ),
-                          DropdownMenuItem<Locale>(
-                            value: Locale('de'),
-                            child: Text('DE'),
-                          ),
-                        ],
-                        onChanged: (locale) {
-                          if (locale != null) {
-                            widget.onLocaleChanged(locale);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          AppLocalizations.of(context)!.appTitle,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -244,12 +197,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ActionChip(
-                  label: const Icon(Icons.settings, size: 18),
-                  tooltip: 'Manage tags',
-                  onPressed: _openTagManager,
-                  visualDensity: VisualDensity.compact,
-                ),
                 FilterChip(
                   label: Text(localizations.allFilter),
                   selected: _showAllFilter,
@@ -305,14 +252,20 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     }
 
     return entries.where((entry) {
-      if (_showFavoritesFilter &&
-          entry.recipe.isFavorite) {
-        return true;
+      final matchesFavorites = !_showFavoritesFilter || entry.recipe.isFavorite;
+      final matchesTags = _selectedTagFilters.isEmpty
+          ? true
+          : (_matchAllTags
+                ? _selectedTagFilters.every(entry.recipe.tags.contains)
+                : _selectedTagFilters.any(entry.recipe.tags.contains));
+
+      if (_matchAllTags) {
+        return matchesFavorites && matchesTags;
       }
-      if (_selectedTagFilters.any(entry.recipe.tags.contains)) {
-        return true;
-      }
-      return false;
+
+      return (_showFavoritesFilter && entry.recipe.isFavorite) ||
+          (_selectedTagFilters.isNotEmpty &&
+              _selectedTagFilters.any(entry.recipe.tags.contains));
     }).toList();
   }
 
@@ -384,13 +337,151 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     _restoreAllIfNoSpecificFilters();
   }
 
+  Future<void> _openSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localizations.settingsTitle,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      localizations.languageLabel,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFD7CCBE)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<Locale>(
+                          value: widget.localeOverride,
+                          isExpanded: true,
+                          borderRadius: BorderRadius.circular(16),
+                          items: [
+                            DropdownMenuItem<Locale>(
+                              value: Locale('en'),
+                              child: Text(localizations.englishLanguage),
+                            ),
+                            DropdownMenuItem<Locale>(
+                              value: Locale('de'),
+                              child: Text(localizations.germanLanguage),
+                            ),
+                          ],
+                          onChanged: (locale) {
+                            if (locale != null) {
+                              widget.onLocaleChanged(locale);
+                              setSheetState(() {});
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      localizations.tagsTitle,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      localizations.tagMatchingLabel,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment<bool>(
+                          value: false,
+                          label: Text(localizations.matchAnyLabel),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          label: Text(localizations.matchAllLabel),
+                        ),
+                      ],
+                      selected: {_matchAllTags},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _matchAllTags = selection.first;
+                        });
+                        setSheetState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.add),
+                      title: Text(localizations.addTagLabel),
+                      subtitle: Text(
+                        localizations.tagsAvailableCountLabel(
+                          _availableTags.length,
+                        ),
+                      ),
+                      onTap: () async {
+                        final added = await _addGlobalTag();
+                        if (added) {
+                          setSheetState(() {});
+                        }
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.delete_outline),
+                      title: Text(localizations.deleteTagLabel),
+                      subtitle: Text(localizations.removeTagsFromAllRecipes),
+                      onTap: () async {
+                        await _openDeleteTagManager();
+                        if (context.mounted) {
+                          setSheetState(() {});
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _openTagManager() async {
+    await _openDeleteTagManager();
+  }
+
+  Future<void> _openDeleteTagManager() async {
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final localizations = AppLocalizations.of(context)!;
             final tagUsage = _tagUsageCounts();
             return SafeArea(
               child: Padding(
@@ -403,20 +494,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Tag Manager',
+                            localizations.deleteTagTitle,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: () async {
-                            final added = await _addGlobalTag();
-                            if (added) {
-                              setSheetState(() {});
-                            }
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Tag'),
                         ),
                       ],
                     ),
@@ -430,7 +511,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          'No tags yet. Create one from the recipe editor.',
+                          localizations.noTagsAvailableToDelete,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: const Color(0xFF5E675F)),
                         ),
@@ -451,7 +532,11 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                                 ),
                                 child: ListTile(
                                   title: Text(_tagLabel(context, tag)),
-                                  subtitle: Text('${tagUsage[tag] ?? 0} recipes'),
+                                  subtitle: Text(
+                                    localizations.recipesCountLabel(
+                                      tagUsage[tag] ?? 0,
+                                    ),
+                                  ),
                                   trailing: IconButton(
                                     onPressed: () async {
                                       final deleted = await _deleteTag(tag);
@@ -494,8 +579,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     final tag = await showDialog<String>(
       context: context,
       builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
         return AlertDialog(
-          title: const Text('Add Tag'),
+          title: Text(localizations.addTagTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
@@ -504,12 +590,12 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(localizations.discard),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Add'),
+              child: Text(localizations.addTagLabel),
             ),
           ],
         );
@@ -538,17 +624,18 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) {
+          final localizations = AppLocalizations.of(context)!;
           return AlertDialog(
-            title: const Text('Delete Tag'),
-            content: Text('Tag used in $usageCount recipes, delete?'),
+            title: Text(localizations.deleteTagTitle),
+            content: Text(localizations.tagDeleteConfirmation(usageCount)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+                child: Text(localizations.discard),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Delete'),
+                child: Text(localizations.delete),
               ),
             ],
           );

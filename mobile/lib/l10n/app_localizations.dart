@@ -29,6 +29,27 @@ abstract class AppLocalizations {
   String get breakfastFilter;
   String get bakingFilter;
   String get languageLabel;
+  String get englishLanguage;
+  String get germanLanguage;
+  String get settingsTitle;
+  String get tagsTitle;
+  String get tagMatchingLabel;
+  String get matchAnyLabel;
+  String get matchAllLabel;
+  String get matchAnySelectedTags;
+  String get matchAllSelectedTags;
+  String get addTagLabel;
+  String get addTagTitle;
+  String get deleteTagLabel;
+  String get deleteTagTitle;
+  String get tagsAvailableLabel;
+  String get removeTagsFromAllRecipes;
+  String get noTagsAvailableToDelete;
+  String get deleteDialogCancel;
+  String get addDialogConfirm;
+  String recipesCountLabel(int count);
+  String tagsAvailableCountLabel(int count);
+  String tagDeleteConfirmation(int count);
   String get delete;
   String get edit;
   String get save;
@@ -79,6 +100,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageLabel => 'Language';
+
+  @override
+  String get englishLanguage => 'English';
+
+  @override
+  String get germanLanguage => 'German';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
+  String get tagMatchingLabel => 'Tag matching';
+
+  @override
+  String get matchAnyLabel => 'Any';
+
+  @override
+  String get matchAllLabel => 'All';
+
+  @override
+  String get matchAnySelectedTags => 'Match any selected tags';
+
+  @override
+  String get matchAllSelectedTags => 'Match all selected tags';
+
+  @override
+  String get addTagLabel => 'Add tag';
+
+  @override
+  String get addTagTitle => 'Add Tag';
+
+  @override
+  String get deleteTagLabel => 'Delete tag';
+
+  @override
+  String get deleteTagTitle => 'Delete Tag';
+
+  @override
+  String get tagsAvailableLabel => 'tags available';
+
+  @override
+  String get removeTagsFromAllRecipes => 'Remove tags from all recipes';
+
+  @override
+  String get noTagsAvailableToDelete => 'No tags available to delete.';
+
+  @override
+  String get deleteDialogCancel => 'Cancel';
+
+  @override
+  String get addDialogConfirm => 'Add';
+
+  @override
+  String recipesCountLabel(int count) => '$count recipes';
+
+  @override
+  String tagsAvailableCountLabel(int count) => '$count tags available';
+
+  @override
+  String tagDeleteConfirmation(int count) =>
+      'Tag used in $count recipes, delete?';
 
   @override
   String get newRecipe => 'New Recipe';
@@ -137,6 +222,70 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get languageLabel => 'Sprache';
+
+  @override
+  String get englishLanguage => 'Englisch';
+
+  @override
+  String get germanLanguage => 'Deutsch';
+
+  @override
+  String get settingsTitle => 'Einstellungen';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
+  String get tagMatchingLabel => 'Tag-Abgleich';
+
+  @override
+  String get matchAnyLabel => 'Beliebig';
+
+  @override
+  String get matchAllLabel => 'Alle';
+
+  @override
+  String get matchAnySelectedTags => 'Mindestens einen gewählten Tag treffen';
+
+  @override
+  String get matchAllSelectedTags => 'Alle gewählten Tags treffen';
+
+  @override
+  String get addTagLabel => 'Tag hinzufügen';
+
+  @override
+  String get addTagTitle => 'Tag hinzufügen';
+
+  @override
+  String get deleteTagLabel => 'Tag löschen';
+
+  @override
+  String get deleteTagTitle => 'Tag löschen';
+
+  @override
+  String get tagsAvailableLabel => 'Tags verfügbar';
+
+  @override
+  String get removeTagsFromAllRecipes => 'Tags aus allen Rezepten entfernen';
+
+  @override
+  String get noTagsAvailableToDelete => 'Keine Tags zum Löschen verfügbar.';
+
+  @override
+  String get deleteDialogCancel => 'Abbrechen';
+
+  @override
+  String get addDialogConfirm => 'Hinzufügen';
+
+  @override
+  String recipesCountLabel(int count) => '$count Rezepte';
+
+  @override
+  String tagsAvailableCountLabel(int count) => '$count Tags verfügbar';
+
+  @override
+  String tagDeleteConfirmation(int count) =>
+      'Tag wird in $count Rezepten verwendet, löschen?';
 
   @override
   String get newRecipe => 'Neues Rezept';
