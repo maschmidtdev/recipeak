@@ -1,6 +1,6 @@
-# Recipeak
+# Recipeek
 
-Recipeak is a mobile-first recipe application built around visual workflow charts instead of paragraph-style recipes.
+Recipeek is a mobile-first recipe application built around visual workflow charts instead of paragraph-style recipes.
 
 Each recipe is modeled as a structured chart:
 

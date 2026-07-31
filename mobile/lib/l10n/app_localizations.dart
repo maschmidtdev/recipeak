@@ -155,7 +155,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allFilter => 'All';
 
   @override
-  String get appTitle => 'Recipeak';
+  String get appTitle => 'Recipeek';
 
   @override
   String get bakingFilter => 'Baking';
@@ -487,7 +487,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get allFilter => 'Alle';
 
   @override
-  String get appTitle => 'Recipeak';
+  String get appTitle => 'Recipeek';
 
   @override
   String get bakingFilter => 'Backen';

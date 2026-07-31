@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_storage.dart';
-import 'theme/recipeak_theme.dart';
+import 'theme/recipeek_theme.dart';
 import '../features/recipe_book/presentation/recipe_collection_screen.dart';
 import '../l10n/app_localizations.dart';
 
-class RecipeakApp extends StatefulWidget {
-  const RecipeakApp({super.key});
+class RecipeekApp extends StatefulWidget {
+  const RecipeekApp({super.key});
 
   @override
-  State<RecipeakApp> createState() => _RecipeakAppState();
+  State<RecipeekApp> createState() => _RecipeekAppState();
 }
 
-class _RecipeakAppState extends State<RecipeakApp> {
+class _RecipeekAppState extends State<RecipeekApp> {
   Locale? _locale;
   bool _isLoadingLocale = true;
 
@@ -58,7 +58,7 @@ class _RecipeakAppState extends State<RecipeakApp> {
       locale: activeLocale,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: RecipeakTheme.light(),
+      theme: RecipeekTheme.light(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

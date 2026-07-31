@@ -1,4 +1,4 @@
-package com.recipeak.mobile
+package com.recipeek.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

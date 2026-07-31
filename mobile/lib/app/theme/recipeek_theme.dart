@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-final class RecipeakTheme {
-  RecipeakTheme._();
+final class RecipeekTheme {
+  RecipeekTheme._();
 
   static ThemeData light() {
     const background = Color(0xFFF6F1E8);

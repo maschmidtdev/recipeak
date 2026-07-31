@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import 'app/recipeak_app.dart';
+import 'app/recipeek_app.dart';
 
 void main() {
-  runApp(const RecipeakApp());
+  runApp(const RecipeekApp());
 }

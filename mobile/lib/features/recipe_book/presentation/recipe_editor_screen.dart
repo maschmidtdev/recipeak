@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/dev_flags.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import '../../recipe_document/domain/recipe_document.dart';
@@ -1159,6 +1160,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           FilterChip(
                             label: Text(_tagLabel(context, tag)),
                             selected: _selectedTags.contains(tag),
+                            showCheckmark: false,
                             onSelected: (selected) {
                               setState(() {
                                 if (selected) {
@@ -1255,26 +1257,28 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               const SizedBox(height: 12),
               if (_dslError != null) _EditorErrorBanner(message: _dslError!),
               if (_dslError != null) const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFD7CCBE)),
-                ),
-                child: Text(
-                  localizations.chartStructureSummary(
-                    _currentDocument.prepRows.length,
-                    _currentDocument.rowCount,
-                    _currentDocument.columns.length,
+              if (kIsDevelopmentMode) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFD7CCBE)),
                   ),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF5E675F),
-                    fontWeight: FontWeight.w600,
+                  child: Text(
+                    localizations.chartStructureSummary(
+                      _currentDocument.prepRows.length,
+                      _currentDocument.rowCount,
+                      _currentDocument.columns.length,
+                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF5E675F),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               Text(
                 localizations.chartPreview,
                 style: theme.textTheme.titleMedium?.copyWith(
