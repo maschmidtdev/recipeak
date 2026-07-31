@@ -80,10 +80,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               message: localizations.deletedMessage(recipe.title),
               duration: _deleteUndoDuration,
             ),
-            action: SnackBarAction(
-              label: localizations.undo,
-              onPressed: () {},
-            ),
+            action: SnackBarAction(label: localizations.undo, onPressed: () {}),
           ),
         )
         .closed;
@@ -311,9 +308,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       ...recipe.tags,
     ];
 
-    return haystacks.any(
-      (value) => value.toLowerCase().contains(_searchQuery),
-    );
+    return haystacks.any((value) => value.toLowerCase().contains(_searchQuery));
   }
 
   void _toggleAllFilter() {
@@ -374,7 +369,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     _availableTags
       ..clear()
-      ..addAll(nextAvailableTags.map(_normalizeTag).where((tag) => tag.isNotEmpty));
+      ..addAll(
+        nextAvailableTags.map(_normalizeTag).where((tag) => tag.isNotEmpty),
+      );
 
     for (var index = 0; index < _recipes.length; index++) {
       _recipes[index] = _sanitizeRecipeTags(_recipes[index]);
@@ -677,7 +674,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<bool> _deleteTag(String tag) async {
-    final usageCount = _recipes.where((recipe) => recipe.tags.contains(tag)).length;
+    final usageCount = _recipes
+        .where((recipe) => recipe.tags.contains(tag))
+        .length;
 
     if (usageCount > 0) {
       final confirmed = await showDialog<bool>(
@@ -769,11 +768,14 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       }
 
       for (var index = 0; index < _recipes.length; index++) {
-        final updatedTags = <String>{
-          for (final recipeTag in _recipes[index].tags)
-            if (recipeTag == tag) normalizedTag else recipeTag,
-        }.toList()
-          ..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+        final updatedTags =
+            <String>{
+              for (final recipeTag in _recipes[index].tags)
+                if (recipeTag == tag) normalizedTag else recipeTag,
+            }.toList()..sort(
+              (left, right) =>
+                  left.toLowerCase().compareTo(right.toLowerCase()),
+            );
 
         _recipes[index] = _recipes[index].copyWith(tags: updatedTags);
       }
@@ -903,9 +905,72 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-final _seedRecipes = kIncludeDevSeedContent
-    ? List<RecipeSummary>.unmodifiable(_devSampleRecipes)
-    : const <RecipeSummary>[];
+final _seedRecipes = List<RecipeSummary>.unmodifiable([
+  ..._productionSampleRecipes,
+  if (kIncludeDevSeedContent)
+    ..._devSampleRecipes.where((recipe) => recipe.title != 'Banana Nut Bread'),
+]);
+
+const _productionSampleRecipes = [
+  RecipeSummary(
+    title: 'Skillet Chickpea Curry',
+    description:
+        'A realistic stovetop dinner with parallel aromatics, sauce reduction, and a final simmer.',
+    duration: '35 min',
+    yieldText: '4 servings',
+    document: RecipeDocument(
+      title: 'Skillet Chickpea Curry',
+      yieldText: '4 servings',
+      prepRows: [
+        PrepRow(text: 'Set out a large skillet and a pot of rice'),
+        PrepRow(text: 'Warm oil over medium heat'),
+      ],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'onion'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'garlic'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'curry paste'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'tomatoes'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: 'chickpeas'),
+            WorkflowCell(startRow: 6, rowSpan: 1, text: 'spinach'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'dice'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'mince'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'pour'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: 'add'),
+            WorkflowCell(startRow: 6, rowSpan: 1, text: 'fold in'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 3, text: 'cook until fragrant'),
+            WorkflowCell(startRow: 4, rowSpan: 2, text: 'simmer gently'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 6, text: 'serve over rice'),
+          ],
+        ),
+      ],
+      rowCount: 6,
+    ),
+    isFavorite: true,
+  ),
+];
 
 const _devSampleRecipes = [
   RecipeSummary(
@@ -985,8 +1050,7 @@ const _devSampleRecipes = [
   ),
   RecipeSummary(
     title: 'Roasted Broccoli',
-    description:
-        'A simple sheet-pan side dish with a clear timed workflow.',
+    description: 'A simple sheet-pan side dish with a clear timed workflow.',
     duration: '25 min',
     yieldText: '',
     document: RecipeDocument(
@@ -1115,7 +1179,9 @@ Set<String> _initialAvailableTags(List<RecipeSummary> recipes) {
 
 List<String> _sortedTags(Iterable<String> tags) {
   final values = [...tags];
-  values.sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+  values.sort(
+    (left, right) => left.toLowerCase().compareTo(right.toLowerCase()),
+  );
   return values;
 }
 
