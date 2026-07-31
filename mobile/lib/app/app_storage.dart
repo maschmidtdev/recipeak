@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'dev_flags.dart';
 import '../features/recipe_book/domain/recipe_summary.dart';
 import '../features/recipe_document/domain/recipe_document.dart';
 
@@ -25,8 +26,10 @@ class AppStorage {
   static final AppStorage instance = AppStorage._();
 
   static const _localeKey = 'app.locale';
-  static const _recipeStateKey = 'app.recipe_state';
   static const _productionSeedAssetPath = 'assets/seeds/production_recipes.json';
+
+  String get _recipeStateKey =>
+      'app.recipe_state.${kIsDevelopmentMode ? 'dev' : 'prod'}';
 
   Future<Locale?> loadLocale() async {
     final preferences = await SharedPreferences.getInstance();

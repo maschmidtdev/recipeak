@@ -5,7 +5,7 @@
       "description": "A weeknight chickpea curry with tomato, spinach, and warm spices.",
       "duration": "35 min",
       "yieldText": "4 servings",
-      "tags": [],
+      "tags": ["Vegan"],
       "isFavorite": true,
       "isDraft": false,
       "document": {
@@ -21,12 +21,12 @@
             "id": "A",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "onion" },
-              { "startRow": 2, "rowSpan": 1, "text": "garlic" },
-              { "startRow": 3, "rowSpan": 1, "text": "curry paste" },
-              { "startRow": 4, "rowSpan": 1, "text": "tomatoes" },
-              { "startRow": 5, "rowSpan": 1, "text": "chickpeas" },
-              { "startRow": 6, "rowSpan": 1, "text": "spinach" }
+              { "startRow": 1, "rowSpan": 1, "text": "150 g onion" },
+              { "startRow": 2, "rowSpan": 1, "text": "12 g garlic" },
+              { "startRow": 3, "rowSpan": 1, "text": "35 g curry paste" },
+              { "startRow": 4, "rowSpan": 1, "text": "400 g tomatoes" },
+              { "startRow": 5, "rowSpan": 1, "text": "240 g chickpeas" },
+              { "startRow": 6, "rowSpan": 1, "text": "120 g spinach" }
             ]
           },
           {
