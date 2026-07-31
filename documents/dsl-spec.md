@@ -277,7 +277,7 @@ Import from DSL should map to application data like this:
 - `favorite` -> recipe favorite state
 - `prep` -> `RecipeDocument.prepRows`
 - column sections -> `RecipeDocument.columns`
-- highest referenced row -> `RecipeDocument.rowCount`
+- highest referenced row -> derived workflow row count
 
 The chart remains a structured `RecipeDocument`, but the DSL now represents the entire recipe payload around it.
 

@@ -85,6 +85,8 @@ abstract class AppLocalizations {
   String get createCell;
   String get editCell;
   String get deleteCell;
+  String get moveUp;
+  String get moveDown;
   String get mergeUp;
   String get mergeDown;
   String get mergeWithAbove;
@@ -304,6 +306,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mergeUp => 'Merge Up';
+
+  @override
+  String get moveDown => 'Move Down';
+
+  @override
+  String get moveUp => 'Move Up';
 
   @override
   String get mergeWithAbove => 'Merge With Above';
@@ -642,6 +650,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get mergeUp => 'Nach oben verbinden';
+
+  @override
+  String get moveDown => 'Nach unten verschieben';
+
+  @override
+  String get moveUp => 'Nach oben verschieben';
 
   @override
   String get mergeWithAbove => 'Mit oberer Zelle verbinden';

@@ -7,11 +7,13 @@ class RecipeChartView extends StatelessWidget {
   const RecipeChartView({
     super.key,
     required this.document,
+    this.rowCountOverride,
     this.selectedCell,
     this.onCellTap,
   });
 
   final RecipeDocument document;
+  final int? rowCountOverride;
   final RecipeChartSelection? selectedCell;
   final ValueChanged<RecipeChartSelection>? onCellTap;
 
@@ -22,12 +24,16 @@ class RecipeChartView extends StatelessWidget {
   static const _cellVerticalPadding = 6.0;
   static const _columnGapSafety = 2.0;
   static const _emptyColumnWidth = 96.0;
+  static const _fitColumnMinWidth = 64.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context);
-    final layout = _BasicChartLayout.tryFrom(document);
+    final layout = _BasicChartLayout.tryFrom(
+      document,
+      rowCountOverride: rowCountOverride,
+    );
 
     if (layout == null) {
       return Container(
@@ -169,9 +175,8 @@ class RecipeChartView extends StatelessWidget {
       }
 
       widths.add(
-        widestWord +
-            (_cellHorizontalPadding * 2) +
-            _columnGapSafety,
+        (widestWord + (_cellHorizontalPadding * 2) + _columnGapSafety)
+            .clamp(_fitColumnMinWidth, double.infinity),
       );
     }
 
@@ -492,18 +497,23 @@ class _BasicChartLayout {
   final List<List<_BasicChartCell>> columns;
   final List<String> columnIds;
 
-  static _BasicChartLayout? tryFrom(RecipeDocument document) {
-    if (document.rowCount < 0) {
+  static _BasicChartLayout? tryFrom(
+    RecipeDocument document, {
+    int? rowCountOverride,
+  }) {
+    final rowCount = rowCountOverride ?? document.rowCount;
+
+    if (rowCount < 0) {
       return null;
     }
 
-    if (document.rowCount == 0) {
+    if (rowCount == 0) {
       return const _BasicChartLayout(rowCount: 0, columns: [], columnIds: []);
     }
 
     if (document.columns.isEmpty) {
       return _BasicChartLayout(
-        rowCount: document.rowCount,
+        rowCount: rowCount,
         columns: const [[]],
         columnIds: const ['A'],
       );
@@ -530,8 +540,8 @@ class _BasicChartLayout {
         final endRow = cell.startRow + cell.rowSpan - 1;
         if (cell.startRow < 1 ||
             cell.rowSpan < 1 ||
-            cell.startRow > document.rowCount ||
-            endRow > document.rowCount) {
+            cell.startRow > rowCount ||
+            endRow > rowCount) {
           return null;
         }
         if (cell.startRow < nextOpenRow) {
@@ -554,7 +564,7 @@ class _BasicChartLayout {
     }
 
     return _BasicChartLayout(
-      rowCount: document.rowCount,
+      rowCount: rowCount,
       columns: columns,
       columnIds: columnIds,
     );

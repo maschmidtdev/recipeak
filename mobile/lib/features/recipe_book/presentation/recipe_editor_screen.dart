@@ -30,6 +30,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   late final TextEditingController _notesController;
   late final TextEditingController _dslController;
   RecipeDocument? _document;
+  late int _workflowRowCount;
   String? _dslError;
   bool _isSyncingDslText = false;
   RecipeChartSelection? _selectedCell;
@@ -54,6 +55,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _selectedTags = {...widget.initialRecipe.tags};
     _availableTags = {...widget.availableTags, ...widget.initialRecipe.tags};
     _document = _normalizedDocument(widget.initialRecipe.document);
+    _workflowRowCount = _document!.rowCount;
     _dslController = TextEditingController()
       ..addListener(_handleDslChanged);
     _syncDslFromDocument();
@@ -89,6 +91,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           ..clear()
           ..addAll(parsed.tags);
         _document = _normalizedDocument(parsed.document);
+        _workflowRowCount = _document!.rowCount;
         _dslError = null;
       });
     } on FormatException catch (error) {
@@ -170,10 +173,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _setDocument(RecipeDocument document) {
+    final normalized = _normalizedDocument(document);
     setState(() {
-      _document = _normalizedDocument(document);
+      _document = normalized;
+      _workflowRowCount = _workflowRowCount > normalized.rowCount
+          ? _workflowRowCount
+          : normalized.rowCount;
       _dslError = null;
-      _selectedCell = _resolvedSelection(_selectedCell, _normalizedDocument(document));
+      _selectedCell = _resolvedSelection(_selectedCell, normalized);
     });
     _syncDslFromDocument();
   }
@@ -207,10 +214,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         yieldText: _yieldController.text.trim(),
         tags: _sortedTags(_selectedTags),
         isFavorite: _isFavorite,
-        document: _currentDocument.copyWith(
-          title: _titleController.text.trim(),
-          yieldText: _yieldController.text.trim(),
-        ),
+        document: _currentDocument,
       ),
     );
     _isSyncingDslText = true;
@@ -224,7 +228,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   RecipeDocument _normalizedDocument(RecipeDocument document) {
     final sortedColumns = [...document.columns]
       ..sort((left, right) => left.id.compareTo(right.id));
-    var highestRow = document.rowCount;
 
     final normalizedColumns = [
       for (final column in sortedColumns)
@@ -239,24 +242,20 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         ),
     ];
 
-    for (final column in normalizedColumns) {
-      for (final cell in column.cells) {
-        final endRow = cell.startRow + cell.rowSpan - 1;
-        if (endRow > highestRow) {
-          highestRow = endRow;
-        }
-      }
-    }
-
     return document.copyWith(
       prepRows: [...document.prepRows],
       columns: normalizedColumns,
-      rowCount: highestRow < 0 ? 0 : highestRow,
     );
   }
 
   RecipeDocument get _currentDocument {
     return _document ??= _normalizedDocument(widget.initialRecipe.document);
+  }
+
+  int get _currentWorkflowRowCount {
+    return _workflowRowCount > _currentDocument.rowCount
+        ? _workflowRowCount
+        : _currentDocument.rowCount;
   }
 
   Future<void> _editPrepRow({int? index}) async {
@@ -311,13 +310,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _addWorkflowRow() {
-    final nextRow = _currentDocument.rowCount + 1;
+    final nextRow = _currentWorkflowRowCount + 1;
     if (_currentDocument.columns.every((column) => column.cells.isEmpty)) {
       final targetColumnId = _currentDocument.columns.isEmpty
           ? 'A'
           : _currentDocument.columns.first.id;
       final document = _currentDocument.copyWith(
-        rowCount: nextRow,
         columns: [
           WorkflowColumn(
             id: targetColumnId,
@@ -337,6 +335,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       );
       setState(() {
         _document = _normalizedDocument(document);
+        _workflowRowCount = nextRow;
         _selectedCell = selection;
         _dslError = null;
       });
@@ -355,15 +354,18 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    _setDocument(_currentDocument.copyWith(rowCount: nextRow));
+    setState(() {
+      _workflowRowCount = nextRow;
+    });
+    _syncDslFromDocument();
   }
 
   void _removeWorkflowRow() {
-    if (_currentDocument.rowCount <= 0) {
+    if (_currentWorkflowRowCount <= 0) {
       return;
     }
 
-    final newRowCount = _currentDocument.rowCount - 1;
+    final newRowCount = _currentWorkflowRowCount - 1;
     final columns = [
       for (final column in _currentDocument.columns)
         WorkflowColumn(
@@ -381,9 +383,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         ),
     ];
 
-    _setDocument(
-      _currentDocument.copyWith(columns: columns, rowCount: newRowCount),
+    final normalized = _normalizedDocument(
+      _currentDocument.copyWith(columns: columns),
     );
+    setState(() {
+      _document = normalized;
+      _workflowRowCount = newRowCount;
+      _selectedCell = _resolvedSelection(_selectedCell, normalized);
+      _dslError = null;
+    });
+    _syncDslFromDocument();
   }
 
   int _clampedRowSpan(WorkflowCell cell, int maxRow) {
@@ -447,68 +456,80 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     final draft = await showDialog<_CellDraft>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(
-            existingCell == null
-                ? localizations.addCellTitle
-                : localizations.editCell,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: textController,
-                autofocus: true,
-                decoration: InputDecoration(hintText: localizations.cellTextHint),
-                minLines: 1,
-                maxLines: 4,
-              ),
-              const SizedBox(height: 12),
-              Row(
+        final viewInsets = MediaQuery.of(context).viewInsets;
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: viewInsets.bottom),
+          child: AlertDialog(
+            scrollable: true,
+            title: Text(
+              existingCell == null
+                  ? localizations.addCellTitle
+                  : localizations.editCell,
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: startController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.startRowLabel,
-                      ),
+                  TextField(
+                    controller: textController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: localizations.cellTextHint,
                     ),
+                    minLines: 1,
+                    maxLines: 4,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: endController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.endRowLabel,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: startController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: localizations.startRowLabel,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: endController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: localizations.endRowLabel,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(localizations.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final startRow = int.tryParse(startController.text.trim());
+                  final endRow = int.tryParse(endController.text.trim());
+                  final text = textController.text.trim();
+                  if (startRow == null || endRow == null || text.isEmpty) {
+                    return;
+                  }
+                  Navigator.of(context).pop(
+                    _CellDraft(startRow: startRow, endRow: endRow, text: text),
+                  );
+                },
+                child: Text(localizations.save),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(localizations.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final startRow = int.tryParse(startController.text.trim());
-                final endRow = int.tryParse(endController.text.trim());
-                final text = textController.text.trim();
-                if (startRow == null || endRow == null || text.isEmpty) {
-                  return;
-                }
-                Navigator.of(context).pop(
-                  _CellDraft(startRow: startRow, endRow: endRow, text: text),
-                );
-              },
-              child: Text(localizations.save),
-            ),
-          ],
         );
       },
     );
@@ -519,11 +540,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
     if (draft.startRow < 1 ||
         draft.endRow < draft.startRow ||
-        draft.endRow > _currentDocument.rowCount) {
+        draft.endRow > _currentWorkflowRowCount) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            localizations.invalidRowRangeMessage(_currentDocument.rowCount),
+            localizations.invalidRowRangeMessage(_currentWorkflowRowCount),
           ),
         ),
       );
@@ -635,6 +656,32 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _setDocument(_currentDocument.copyWith(columns: columns));
   }
 
+  void _moveCellUp(String columnId, WorkflowCell cell) {
+    if (!_canMoveUp(columnId, cell)) {
+      return;
+    }
+    _moveCellByOffset(columnId: columnId, cell: cell, offset: -1);
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: columnId,
+        startRow: cell.startRow - 1,
+      );
+    });
+  }
+
+  void _moveCellDown(String columnId, WorkflowCell cell) {
+    if (!_canMoveDown(columnId, cell)) {
+      return;
+    }
+    _moveCellByOffset(columnId: columnId, cell: cell, offset: 1);
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: columnId,
+        startRow: cell.startRow + 1,
+      );
+    });
+  }
+
   void _mergeCellUp(String columnId, WorkflowCell cell) {
     if (cell.startRow <= 1) {
       return;
@@ -655,7 +702,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     final belowCell = _cellCoveringRow(columnId, currentEndRow + 1, excluding: cell);
     final newEndRow =
         belowCell?.startRow != null ? belowCell!.startRow + belowCell.rowSpan - 1 : currentEndRow + 1;
-    if (newEndRow > _currentDocument.rowCount) {
+    if (newEndRow > _currentWorkflowRowCount) {
       return;
     }
     _mergeIntoRange(
@@ -696,6 +743,106 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           )
         else
           column,
+    ];
+    _setDocument(_currentDocument.copyWith(columns: columns));
+  }
+
+  void _moveCellByOffset({
+    required String columnId,
+    required WorkflowCell cell,
+    required int offset,
+  }) {
+    if (cell.rowSpan > 1) {
+      final boundaryRow = offset < 0
+          ? cell.startRow - 1
+          : cell.startRow + cell.rowSpan;
+      final targetCell = _cellCoveringRow(
+        columnId,
+        boundaryRow,
+        excluding: cell,
+      );
+
+      if (targetCell == null) {
+        _replaceCell(
+          columnId: columnId,
+          oldCell: cell,
+          newCell: WorkflowCell(
+            startRow: cell.startRow + offset,
+            rowSpan: cell.rowSpan,
+            text: cell.text,
+          ),
+        );
+        return;
+      }
+
+      final column = _currentDocument.columns.firstWhere(
+        (item) => item.id == columnId,
+      );
+      final displacedRow = offset < 0
+          ? cell.startRow + cell.rowSpan - 1
+          : cell.startRow;
+      final nextCells = <WorkflowCell>[
+        for (final existing in column.cells)
+          if (!_sameCell(existing, cell) && !_sameCell(existing, targetCell))
+            existing,
+        WorkflowCell(
+          startRow: cell.startRow + offset,
+          rowSpan: cell.rowSpan,
+          text: cell.text,
+        ),
+        WorkflowCell(
+          startRow: displacedRow,
+          rowSpan: targetCell.rowSpan,
+          text: targetCell.text,
+        ),
+      ]..sort((left, right) => left.startRow.compareTo(right.startRow));
+
+      final columns = [
+        for (final existingColumn in _currentDocument.columns)
+          if (existingColumn.id == columnId)
+            WorkflowColumn(
+              id: existingColumn.id,
+              widthSpec: existingColumn.widthSpec,
+              cells: nextCells,
+            )
+          else
+            existingColumn,
+      ];
+      _setDocument(_currentDocument.copyWith(columns: columns));
+      return;
+    }
+
+    final targetRow = cell.startRow + offset;
+    final targetCell = _cellCoveringRow(columnId, targetRow, excluding: cell);
+    final column = _currentDocument.columns.firstWhere((item) => item.id == columnId);
+    final nextCells = <WorkflowCell>[
+      for (final existing in column.cells)
+        if (!_sameCell(existing, cell) &&
+            (targetCell == null || !_sameCell(existing, targetCell)))
+          existing,
+      WorkflowCell(
+        startRow: targetRow,
+        rowSpan: cell.rowSpan,
+        text: cell.text,
+      ),
+      if (targetCell != null)
+        WorkflowCell(
+          startRow: cell.startRow,
+          rowSpan: targetCell.rowSpan,
+          text: targetCell.text,
+        ),
+    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
+
+    final columns = [
+      for (final existingColumn in _currentDocument.columns)
+        if (existingColumn.id == columnId)
+          WorkflowColumn(
+            id: existingColumn.id,
+            widthSpec: existingColumn.widthSpec,
+            cells: nextCells,
+          )
+        else
+          existingColumn,
     ];
     _setDocument(_currentDocument.copyWith(columns: columns));
   }
@@ -936,6 +1083,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                             case _CellAction.delete:
                                               _deleteCell(column.id, cell);
                                               break;
+                                            case _CellAction.moveUp:
+                                              _moveCellUp(column.id, cell);
+                                              break;
+                                            case _CellAction.moveDown:
+                                              _moveCellDown(column.id, cell);
+                                              break;
                                             case _CellAction.mergeUp:
                                               _mergeCellUp(column.id, cell);
                                               break;
@@ -952,6 +1105,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                             value: _CellAction.edit,
                                             child: Text(localizations.edit),
                                           ),
+                                          if (_canMoveUp(column.id, cell))
+                                            PopupMenuItem(
+                                              value: _CellAction.moveUp,
+                                              child: Text(localizations.moveUp),
+                                            ),
+                                          if (_canMoveDown(column.id, cell))
+                                            PopupMenuItem(
+                                              value: _CellAction.moveDown,
+                                              child: Text(localizations.moveDown),
+                                            ),
                                           if (_canMergeUp(column.id, cell))
                                             PopupMenuItem(
                                               value: _CellAction.mergeUp,
@@ -999,10 +1162,39 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
   bool _canMergeDown(String columnId, WorkflowCell cell) {
     final endRow = cell.startRow + cell.rowSpan - 1;
-    if (endRow >= _currentDocument.rowCount) {
+    if (endRow >= _currentWorkflowRowCount) {
       return false;
     }
     return true;
+  }
+
+  bool _canMoveUp(String columnId, WorkflowCell cell) {
+    if (cell.startRow <= 1) {
+      return false;
+    }
+    if (cell.rowSpan > 1) {
+      final targetCell = _cellCoveringRow(
+        columnId,
+        cell.startRow - 1,
+        excluding: cell,
+      );
+      return targetCell == null || targetCell.rowSpan == 1;
+    }
+    final targetCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
+    return targetCell == null || targetCell.rowSpan == 1;
+  }
+
+  bool _canMoveDown(String columnId, WorkflowCell cell) {
+    final endRow = cell.startRow + cell.rowSpan - 1;
+    if (endRow >= _currentWorkflowRowCount) {
+      return false;
+    }
+    if (cell.rowSpan > 1) {
+      final targetCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
+      return targetCell == null || targetCell.rowSpan == 1;
+    }
+    final targetCell = _cellCoveringRow(columnId, cell.startRow + 1, excluding: cell);
+    return targetCell == null || targetCell.rowSpan == 1;
   }
 
   WorkflowCell? get _currentCell {
@@ -1053,10 +1245,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           title: title,
           description: notes,
           yieldText: yieldText,
-          document: document.copyWith(
-            title: title,
-            yieldText: yieldText,
-          ),
+          document: document,
           tags: _selectedTags.toList()..sort(),
           isFavorite: _isFavorite,
           duration: durationText,
@@ -1295,7 +1484,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   child: Text(
                     localizations.chartStructureSummary(
                       _currentDocument.prepRows.length,
-                      _currentDocument.rowCount,
+                      _currentWorkflowRowCount,
                       _currentDocument.columns.length,
                     ),
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -1315,6 +1504,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               const SizedBox(height: 12),
               RecipeChartView(
                 document: _currentDocument,
+                rowCountOverride: _currentWorkflowRowCount,
                 selectedCell: _selectedCell,
                 onCellTap: (selection) {
                   setState(() {
@@ -1342,89 +1532,130 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFD7CCBE)),
               ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (_selectedCell != null && _currentCell == null) ...[
-                    FilledButton(
-                      onPressed: () => _editCell(
-                        columnId: _selectedCell!.columnId,
-                        initialStartRow: _selectedCell!.startRow,
-                        initialEndRow: _selectedCell!.startRow,
-                      ),
-                      child: Text(localizations.createCell),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: _clearSelection,
-                      child: Text(localizations.cancel),
-                    ),
-                  ] else if (_currentCell != null) ...[
-                    FilledButton(
-                      onPressed: () => _editCell(
-                        columnId: _selectedCell!.columnId,
-                        existingCell: _currentCell,
-                      ),
-                      child: Text(localizations.editCell),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () =>
-                          _deleteCell(_selectedCell!.columnId, _currentCell!),
-                      child: Text(localizations.deleteCell),
-                    ),
-                    if (_canMergeUp(_selectedCell!.columnId, _currentCell!))
-                      FilledButton.tonal(
-                        onPressed: () =>
-                            _mergeCellUp(_selectedCell!.columnId, _currentCell!),
-                        child: Text(localizations.mergeUp),
-                      ),
-                    if (_canMergeDown(_selectedCell!.columnId, _currentCell!))
-                      FilledButton.tonal(
-                        onPressed: () => _mergeCellDown(
-                          _selectedCell!.columnId,
-                          _currentCell!,
+              child: _currentCell != null || _selectedCell != null
+                  ? _ActionGrid(
+                      children: [
+                        if (_selectedCell != null && _currentCell == null) ...[
+                          _ActionIconButton(
+                            onPressed: () => _editCell(
+                              columnId: _selectedCell!.columnId,
+                              initialStartRow: _selectedCell!.startRow,
+                              initialEndRow: _selectedCell!.startRow,
+                            ),
+                            icon: Icons.add_box_outlined,
+                            tooltip: localizations.createCell,
+                            isPrimary: true,
+                          ),
+                          _ActionIconButton(
+                            onPressed: _clearSelection,
+                            icon: Icons.close,
+                            tooltip: localizations.cancel,
+                          ),
+                        ] else if (_currentCell != null) ...[
+                          _ActionIconButton(
+                            onPressed: () => _editCell(
+                              columnId: _selectedCell!.columnId,
+                              existingCell: _currentCell,
+                            ),
+                            icon: Icons.edit_outlined,
+                            tooltip: localizations.editCell,
+                            isPrimary: true,
+                          ),
+                          if (_canMoveUp(_selectedCell!.columnId, _currentCell!))
+                            _ActionIconButton(
+                              onPressed: () => _moveCellUp(
+                                _selectedCell!.columnId,
+                                _currentCell!,
+                              ),
+                              icon: Icons.arrow_upward,
+                              tooltip: localizations.moveUp,
+                            ),
+                          if (_canMergeUp(_selectedCell!.columnId, _currentCell!))
+                            _ActionIconButton(
+                              onPressed: () => _mergeCellUp(
+                                _selectedCell!.columnId,
+                                _currentCell!,
+                              ),
+                              icon: Icons.vertical_align_top,
+                              tooltip: localizations.mergeUp,
+                            ),
+                          _ActionIconButton(
+                            onPressed: () => _deleteCell(
+                              _selectedCell!.columnId,
+                              _currentCell!,
+                            ),
+                            icon: Icons.delete_outline,
+                            tooltip: localizations.deleteCell,
+                          ),
+                          if (_canMoveDown(_selectedCell!.columnId, _currentCell!))
+                            _ActionIconButton(
+                              onPressed: () => _moveCellDown(
+                                _selectedCell!.columnId,
+                                _currentCell!,
+                              ),
+                              icon: Icons.arrow_downward,
+                              tooltip: localizations.moveDown,
+                            ),
+                          if (_canMergeDown(
+                            _selectedCell!.columnId,
+                            _currentCell!,
+                          ))
+                            _ActionIconButton(
+                              onPressed: () => _mergeCellDown(
+                                _selectedCell!.columnId,
+                                _currentCell!,
+                              ),
+                              icon: Icons.vertical_align_bottom,
+                              tooltip: localizations.mergeDown,
+                            ),
+                          if (_currentCell!.rowSpan > 1)
+                            _ActionIconButton(
+                              onPressed: () => _unmergeCell(
+                                _selectedCell!.columnId,
+                                _currentCell!,
+                              ),
+                              icon: Icons.call_split,
+                              tooltip: localizations.unmerge,
+                            ),
+                          _ActionIconButton(
+                            onPressed: _clearSelection,
+                            icon: Icons.check,
+                            tooltip: localizations.done,
+                          ),
+                        ],
+                      ],
+                    )
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: _openPrepManager,
+                          icon: const Icon(Icons.format_list_bulleted),
+                          label: Text(localizations.prepLabel),
                         ),
-                        child: Text(localizations.mergeDown),
-                      ),
-                    if (_currentCell!.rowSpan > 1)
-                      FilledButton.tonal(
-                        onPressed: () =>
-                            _unmergeCell(_selectedCell!.columnId, _currentCell!),
-                        child: Text(localizations.unmerge),
-                      ),
-                    FilledButton.tonal(
-                      onPressed: _clearSelection,
-                      child: Text(localizations.done),
+                        FilledButton.tonalIcon(
+                          onPressed: _removeWorkflowRow,
+                          icon: const Icon(Icons.remove),
+                          label: Text(localizations.rowLabel),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _addWorkflowRow,
+                          icon: const Icon(Icons.add),
+                          label: Text(localizations.rowLabel),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _addColumn,
+                          icon: const Icon(Icons.view_column),
+                          label: Text(localizations.columnLabel),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _openCellManager,
+                          icon: const Icon(Icons.dashboard_customize),
+                          label: Text(localizations.cellsLabel),
+                        ),
+                      ],
                     ),
-                  ] else ...[
-                  FilledButton.tonalIcon(
-                    onPressed: _openPrepManager,
-                    icon: const Icon(Icons.format_list_bulleted),
-                    label: Text(localizations.prepLabel),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _removeWorkflowRow,
-                    icon: const Icon(Icons.remove),
-                    label: Text(localizations.rowLabel),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _addWorkflowRow,
-                    icon: const Icon(Icons.add),
-                    label: Text(localizations.rowLabel),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _addColumn,
-                    icon: const Icon(Icons.view_column),
-                    label: Text(localizations.columnLabel),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _openCellManager,
-                    icon: const Icon(Icons.dashboard_customize),
-                    label: Text(localizations.cellsLabel),
-                  ),
-                  ],
-                ],
-              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1476,6 +1707,8 @@ class _CellDraft {
 enum _CellAction {
   edit,
   delete,
+  moveUp,
+  moveDown,
   mergeUp,
   mergeDown,
   unmerge,
@@ -1503,6 +1736,66 @@ class _EditorErrorBanner extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+class _ActionGrid extends StatelessWidget {
+  const _ActionGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final child in children)
+          SizedBox(
+            width: 96,
+            child: child,
+          ),
+      ],
+    );
+  }
+}
+
+class _ActionIconButton extends StatelessWidget {
+  const _ActionIconButton({
+    required this.onPressed,
+    required this.icon,
+    required this.tooltip,
+    this.isPrimary = false,
+  });
+
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String tooltip;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = isPrimary
+        ? FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Icon(icon),
+          )
+        : FilledButton.tonal(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Icon(icon),
+          );
+
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(width: double.infinity, child: button),
     );
   }
 }

@@ -1,31 +1,32 @@
 class RecipeDocument {
   const RecipeDocument({
-    required this.title,
-    required this.yieldText,
     required this.prepRows,
     required this.columns,
-    required this.rowCount,
   });
 
-  final String title;
-  final String yieldText;
   final List<PrepRow> prepRows;
   final List<WorkflowColumn> columns;
-  final int rowCount;
+
+  int get rowCount {
+    var highestRow = 0;
+    for (final column in columns) {
+      for (final cell in column.cells) {
+        final endRow = cell.startRow + cell.rowSpan - 1;
+        if (endRow > highestRow) {
+          highestRow = endRow;
+        }
+      }
+    }
+    return highestRow;
+  }
 
   RecipeDocument copyWith({
-    String? title,
-    String? yieldText,
     List<PrepRow>? prepRows,
     List<WorkflowColumn>? columns,
-    int? rowCount,
   }) {
     return RecipeDocument(
-      title: title ?? this.title,
-      yieldText: yieldText ?? this.yieldText,
       prepRows: prepRows ?? this.prepRows,
       columns: columns ?? this.columns,
-      rowCount: rowCount ?? this.rowCount,
     );
   }
 }

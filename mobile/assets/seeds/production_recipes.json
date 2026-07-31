@@ -9,9 +9,6 @@
       "isFavorite": true,
       "isDraft": false,
       "document": {
-        "title": "Skillet Chickpea Curry",
-        "yieldText": "4 servings",
-        "rowCount": 7,
         "prepRows": [
           { "text": "Set out a large skillet and a medium pot" },
           { "text": "Warm oil over medium heat" }
@@ -66,6 +63,72 @@
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
               { "startRow": 1, "rowSpan": 7, "text": "serve over rice" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Lasagne high protein",
+      "description": "",
+      "duration": "60 min",
+      "yieldText": "4-5 Portionen",
+      "tags": ["Vegan"],
+      "isFavorite": true,
+      "isDraft": false,
+      "document": {
+        "prepRows": [
+          { "text": "2 grosse Pfannen" },
+          { "text": "mixer, grosse auflaufform" }
+        ],
+        "columns": [
+          {
+            "id": "A",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 1, "text": "1L Tomatensoße" },
+              { "startRow": 2, "rowSpan": 1, "text": "1/2 Packung Tomatenmark" },
+              { "startRow": 3, "rowSpan": 1, "text": "2 Zwiebeln" },
+              { "startRow": 4, "rowSpan": 1, "text": "Knoblauch" },
+              { "startRow": 5, "rowSpan": 1, "text": "Gemüsebrühe" },
+              { "startRow": 6, "rowSpan": 1, "text": "170g Sojahack" },
+              { "startRow": 7, "rowSpan": 1, "text": "SojaSahne 800ml" },
+              { "startRow": 8, "rowSpan": 1, "text": "200g Spinat" },
+              { "startRow": 9, "rowSpan": 2, "text": "50g Hefeflocken" },
+              { "startRow": 11, "rowSpan": 1, "text": "500g Nudelplatten" }
+            ]
+          },
+          {
+            "id": "B",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 3, "rowSpan": 1, "text": "wuerfeln" },
+              { "startRow": 4, "rowSpan": 1, "text": "hacken" },
+              { "startRow": 5, "rowSpan": 2, "text": "5 min einlegen" },
+              { "startRow": 8, "rowSpan": 1, "text": "waschen" }
+            ]
+          },
+          {
+            "id": "C",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 2, "rowSpan": 3, "text": "anbraten" }
+            ]
+          },
+          {
+            "id": "D",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 2, "rowSpan": 2, "text": "haelfte in pfanne" },
+              { "startRow": 4, "rowSpan": 1, "text": "haelfte in mixer" }
+            ]
+          },
+          {
+            "id": "E",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 2, "rowSpan": 2, "text": "anbraten" },
+              { "startRow": 4, "rowSpan": 4, "text": "mixen" }
             ]
           }
         ]

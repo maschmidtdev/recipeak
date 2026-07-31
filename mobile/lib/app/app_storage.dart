@@ -147,9 +147,6 @@ class AppStorage {
 
   Map<String, dynamic> _recipeDocumentToJson(RecipeDocument document) {
     return {
-      'title': document.title,
-      'yieldText': document.yieldText,
-      'rowCount': document.rowCount,
       'prepRows': [
         for (final prepRow in document.prepRows) {'text': prepRow.text},
       ],
@@ -173,9 +170,6 @@ class AppStorage {
 
   RecipeDocument _recipeDocumentFromJson(Map<String, dynamic> json) {
     return RecipeDocument(
-      title: json['title'] as String? ?? '',
-      yieldText: json['yieldText'] as String? ?? '',
-      rowCount: json['rowCount'] as int? ?? 0,
       prepRows: (json['prepRows'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map((prepRow) => PrepRow(text: prepRow['text'] as String? ?? ''))

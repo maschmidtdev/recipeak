@@ -197,11 +197,8 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             duration: '',
             yieldText: '',
             document: RecipeDocument(
-              title: '',
-              yieldText: '',
               prepRows: [],
               columns: [],
-              rowCount: 0,
             ),
           ),
           availableTags: _availableTags.toList()..sort(),
@@ -1026,8 +1023,6 @@ const _devSampleRecipes = [
     duration: '',
     yieldText: '2 jars',
     document: RecipeDocument(
-      title: 'Overnight Oats',
-      yieldText: '2 jars',
       prepRows: [PrepRow(text: 'Set out two jars with lids')],
       columns: [
         WorkflowColumn(
@@ -1054,7 +1049,6 @@ const _devSampleRecipes = [
           ],
         ),
       ],
-      rowCount: 3,
     ),
     tags: ['Breakfast'],
   ),
@@ -1065,8 +1059,6 @@ const _devSampleRecipes = [
     duration: '',
     yieldText: '',
     document: RecipeDocument(
-      title: 'Tomato Toast',
-      yieldText: '',
       prepRows: [PrepRow(text: 'Toast two slices of bread')],
       columns: [
         WorkflowColumn(
@@ -1090,7 +1082,6 @@ const _devSampleRecipes = [
           ],
         ),
       ],
-      rowCount: 2,
     ),
     tags: ['Breakfast'],
   ),
@@ -1101,8 +1092,6 @@ const _devSampleRecipes = [
     duration: '25 min',
     yieldText: '',
     document: RecipeDocument(
-      title: 'Roasted Broccoli',
-      yieldText: '',
       prepRows: [
         PrepRow(text: 'Heat oven to 425°F (220°C)'),
         PrepRow(text: 'Line a tray with parchment'),
@@ -1131,7 +1120,6 @@ const _devSampleRecipes = [
           ],
         ),
       ],
-      rowCount: 3,
     ),
     tags: ['Vegetarian'],
   ),
@@ -1142,8 +1130,6 @@ const _devSampleRecipes = [
     duration: '1 hr 20 min',
     yieldText: '10 servings',
     document: RecipeDocument(
-      title: 'Banana Nut Bread',
-      yieldText: '10 servings',
       prepRows: [
         PrepRow(text: 'Butter and flour a loaf pan'),
         PrepRow(text: 'Preheat oven to 350°F (170°C)'),
@@ -1193,7 +1179,6 @@ const _devSampleRecipes = [
           ],
         ),
       ],
-      rowCount: 6,
     ),
     tags: ['Baking'],
     isFavorite: true,

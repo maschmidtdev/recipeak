@@ -30,7 +30,6 @@ class RecipeDslCodec {
     final widthsById = <String, ColumnWidthSpec>{};
     String? currentSection;
     String? currentColumnId;
-    var highestRow = 0;
     var title = '';
     var description = '';
     var duration = '';
@@ -217,9 +216,6 @@ class RecipeDslCodec {
           text: text,
         ),
       );
-      if (endRow > highestRow) {
-        highestRow = endRow;
-      }
     }
 
     for (final widthColumnId in widthsById.keys) {
@@ -250,11 +246,8 @@ class RecipeDslCodec {
       tags: tags,
       isFavorite: favoriteSpecified ? isFavorite : false,
       document: RecipeDocument(
-        title: title,
-        yieldText: yieldText,
         prepRows: prepRows,
         columns: columns,
-        rowCount: highestRow,
       ),
     );
   }
