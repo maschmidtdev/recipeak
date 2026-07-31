@@ -44,6 +44,22 @@ class RecipeDslCodec {
       final trimmed = rawLine.trim();
 
       if (trimmed.isEmpty) {
+        if (_isBlankCellContinuation(
+          lines: normalizedLines,
+          currentIndex: index,
+          currentColumnId: currentColumnId,
+          columnsById: columnsById,
+        )) {
+          final existingCells = columnsById[currentColumnId]!;
+          final previousCell = existingCells.removeLast();
+          existingCells.add(
+            WorkflowCell(
+              startRow: previousCell.startRow,
+              rowSpan: previousCell.rowSpan,
+              text: '${previousCell.text}\n',
+            ),
+          );
+        }
         continue;
       }
 
@@ -369,6 +385,33 @@ String _formatLogicalPixels(double value) {
     return value.toInt().toString();
   }
   return value.toString();
+}
+
+bool _isBlankCellContinuation({
+  required List<String> lines,
+  required int currentIndex,
+  required String? currentColumnId,
+  required Map<String, List<WorkflowCell>> columnsById,
+}) {
+  if (currentColumnId == null || columnsById[currentColumnId]!.isEmpty) {
+    return false;
+  }
+
+  for (var index = currentIndex + 1; index < lines.length; index++) {
+    final trimmed = lines[index].trim();
+    if (trimmed.isEmpty) {
+      continue;
+    }
+
+    final startsNewDslEntry = _columnHeaderPattern.hasMatch(trimmed) ||
+        _metadataPattern.hasMatch(trimmed) ||
+        _cellPattern.hasMatch(trimmed) ||
+        _prepItemPattern.hasMatch(trimmed) ||
+        _widthPattern.hasMatch(trimmed);
+    return !startsNewDslEntry;
+  }
+
+  return false;
 }
 
 final _metadataPattern = RegExp(

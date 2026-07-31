@@ -158,15 +158,8 @@
               {
                 "startRow": 1,
                 "rowSpan": 11,
-                "text": "Abwechselnd Schichten: nudelplatten, Pfanne 1, nudelplatten, Pfanne 2, etc. Am Ende Käse oben rauf."
+                "text": "Abwechselnd Schichten: nudelplatten, Pfanne 1, nudelplatten, Pfanne 2, etc. Am Ende Käse oben rauf.\n\n30 min backen bei 180°"
               }
-            ]
-          },
-          {
-            "id": "I",
-            "widthSpec": { "kind": "fit", "logicalPixels": null },
-            "cells": [
-              { "startRow": 1, "rowSpan": 11, "text": "30 min backen bei 180°" }
             ]
           }
         ]
