@@ -1,1 +1,1 @@
-const bool kIncludeDevSeedContent = true;
+const bool kIsDevelopmentMode = false;

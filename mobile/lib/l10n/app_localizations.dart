@@ -34,6 +34,10 @@ abstract class AppLocalizations {
   String get germanLanguage;
   String get settingsTitle;
   String get settingsTooltip;
+  String get resetToSeedLabel;
+  String get resetToSeedDescription;
+  String get resetToSeedTitle;
+  String get resetToSeedMessage;
   String get tagsTitle;
   String get tagMatchingLabel;
   String get matchAnyLabel;
@@ -395,6 +399,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTooltip => 'Settings';
 
   @override
+  String get resetToSeedLabel => 'Reset to seed';
+
+  @override
+  String get resetToSeedDescription =>
+      'Restore the initial example recipes and clear saved recipe state.';
+
+  @override
+  String get resetToSeedTitle => 'Reset to seed';
+
+  @override
+  String get resetToSeedMessage =>
+      'This clears saved recipes, tags, and tag matching, then restores the seeded examples.';
+
+  @override
   String singleRowLabel(int row) => 'Row $row';
 
   @override
@@ -715,6 +733,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsTooltip => 'Einstellungen';
+
+  @override
+  String get resetToSeedLabel => 'Auf Seed zurücksetzen';
+
+  @override
+  String get resetToSeedDescription =>
+      'Stellt die ursprünglichen Beispielrezepte wieder her und löscht den gespeicherten Rezeptzustand.';
+
+  @override
+  String get resetToSeedTitle => 'Auf Seed zurücksetzen';
+
+  @override
+  String get resetToSeedMessage =>
+      'Dadurch werden gespeicherte Rezepte, Tags und der Tag-Abgleich gelöscht und die Beispielinhalte wiederhergestellt.';
 
   @override
   String singleRowLabel(int row) => 'Zeile $row';

@@ -43,6 +43,3 @@ class RecipeSummary {
     );
   }
 }
-
-const recipeTagBreakfast = 'breakfast';
-const recipeTagBaking = 'baking';

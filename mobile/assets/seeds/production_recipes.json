@@ -1,0 +1,63 @@
+{
+  "recipes": [
+    {
+      "title": "Skillet Chickpea Curry",
+      "description": "A weeknight chickpea curry with tomato, spinach, and warm spices.",
+      "duration": "35 min",
+      "yieldText": "4 servings",
+      "tags": [],
+      "isFavorite": true,
+      "isDraft": false,
+      "document": {
+        "title": "Skillet Chickpea Curry",
+        "yieldText": "4 servings",
+        "rowCount": 6,
+        "prepRows": [
+          { "text": "Set out a large skillet and a pot of rice" },
+          { "text": "Warm oil over medium heat" }
+        ],
+        "columns": [
+          {
+            "id": "A",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 1, "text": "onion" },
+              { "startRow": 2, "rowSpan": 1, "text": "garlic" },
+              { "startRow": 3, "rowSpan": 1, "text": "curry paste" },
+              { "startRow": 4, "rowSpan": 1, "text": "tomatoes" },
+              { "startRow": 5, "rowSpan": 1, "text": "chickpeas" },
+              { "startRow": 6, "rowSpan": 1, "text": "spinach" }
+            ]
+          },
+          {
+            "id": "B",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 1, "text": "dice" },
+              { "startRow": 2, "rowSpan": 1, "text": "mince" },
+              { "startRow": 3, "rowSpan": 1, "text": "stir in" },
+              { "startRow": 4, "rowSpan": 1, "text": "pour" },
+              { "startRow": 5, "rowSpan": 1, "text": "add" },
+              { "startRow": 6, "rowSpan": 1, "text": "fold in" }
+            ]
+          },
+          {
+            "id": "C",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 3, "text": "cook until fragrant" },
+              { "startRow": 4, "rowSpan": 2, "text": "simmer gently" }
+            ]
+          },
+          {
+            "id": "D",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 6, "text": "serve over rice" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/app_storage.dart';
 import '../../../app/dev_flags.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
@@ -23,12 +24,13 @@ class RecipeCollectionScreen extends StatefulWidget {
 }
 
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
-  late final List<RecipeSummary> _recipes = List.of(_seedRecipes);
+  final List<RecipeSummary> _recipes = [];
   final Set<String> _availableTags = {};
   final TextEditingController _searchController = TextEditingController();
   bool _showAllFilter = true;
   bool _showFavoritesFilter = false;
   bool _matchAllTags = false;
+  bool _isLoadingState = true;
   final Set<String> _selectedTagFilters = {};
   String _searchQuery = '';
   static const _deleteUndoDuration = Duration(seconds: 4);
@@ -38,15 +40,103 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   @override
   void initState() {
     super.initState();
-    if (_availableTags.isEmpty) {
-      _availableTags.addAll(_initialAvailableTags(_recipes));
-    }
+    _loadPersistedState();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPersistedState() async {
+    final snapshot = await AppStorage.instance.loadRecipeState();
+    final productionSeedRecipes = await AppStorage.instance
+        .loadProductionSeedRecipes();
+    final seedRecipes = [
+      ...productionSeedRecipes,
+      if (kIsDevelopmentMode) ..._devSampleRecipes,
+    ];
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _recipes
+        ..clear()
+        ..addAll(snapshot?.recipes ?? seedRecipes);
+
+      _availableTags
+        ..clear()
+        ..addAll(
+          snapshot != null && snapshot.availableTags.isNotEmpty
+              ? snapshot.availableTags
+              : _initialAvailableTags(_recipes),
+        );
+
+      _matchAllTags = snapshot?.matchAllTags ?? false;
+      _selectedTagFilters.removeWhere((tag) => !_availableTags.contains(tag));
+      _restoreAllIfNoSpecificFilters();
+      _isLoadingState = false;
+    });
+
+    if (snapshot == null) {
+      _persistState();
+    }
+  }
+
+  Future<void> _resetToSeedState() async {
+    final localizations = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(localizations.resetToSeedTitle),
+          content: Text(localizations.resetToSeedMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(localizations.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(localizations.resetToSeedLabel),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    await AppStorage.instance.clearRecipeState();
+    _searchController.clear();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _searchQuery = '';
+      _showAllFilter = true;
+      _showFavoritesFilter = false;
+      _selectedTagFilters.clear();
+      _isLoadingState = true;
+    });
+
+    await _loadPersistedState();
+  }
+
+  Future<void> _persistState() {
+    return AppStorage.instance.saveRecipeState(
+      AppStorageSnapshot(
+        recipes: _recipes,
+        availableTags: _sortedTags(_availableTags),
+        matchAllTags: _matchAllTags,
+      ),
+    );
   }
 
   Future<void> _deleteRecipeWithUndo({
@@ -56,6 +146,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     setState(() {
       _recipes.removeAt(index);
     });
+    _persistState();
 
     final messenger = ScaffoldMessenger.of(context);
     final localizations = AppLocalizations.of(context);
@@ -93,6 +184,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       final safeIndex = index.clamp(0, _recipes.length);
       _recipes.insert(safeIndex, recipe);
     });
+    _persistState();
   }
 
   Future<void> _openNewRecipeFlow() async {
@@ -129,6 +221,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       _applyAvailableTags(result.availableTags);
       _recipes.insert(0, _sanitizeRecipeTags(newRecipe));
     });
+    _persistState();
   }
 
   Future<void> _openRecipeForViewing(int index) async {
@@ -153,6 +246,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             _applyAvailableTags(result.availableTags);
             _recipes[index] = _sanitizeRecipeTags(recipe);
           });
+          _persistState();
         }
         break;
       case RecipeEditorAction.delete:
@@ -182,83 +276,87 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
-          children: [
-            TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.trim().toLowerCase();
-                });
-              },
-              decoration: InputDecoration(
-                hintText: localizations.searchRecipes,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
-                        },
-                        icon: const Icon(Icons.close),
+      body: _isLoadingState
+          ? const SafeArea(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.trim().toLowerCase();
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: localizations.searchRecipes,
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                              icon: const Icon(Icons.close),
+                            ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
                       ),
-                filled: true,
-                fillColor: theme.colorScheme.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilterChip(
-                  label: Text(localizations.allFilter),
-                  selected: _showAllFilter,
-                  showCheckmark: false,
-                  onSelected: (_) => _toggleAllFilter(),
-                ),
-                FilterChip(
-                  label: Text(localizations.favoritesFilter),
-                  selected: _showFavoritesFilter,
-                  showCheckmark: false,
-                  onSelected: (_) => _toggleFavoritesFilter(),
-                ),
-                for (final tag in _sortedTags(_availableTags))
-                  FilterChip(
-                    label: Text(_tagLabel(context, tag)),
-                    selected: _selectedTagFilters.contains(tag),
-                    showCheckmark: false,
-                    onSelected: (_) => _toggleTagFilter(tag),
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Text(
-              localizations.collectionTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilterChip(
+                        label: Text(localizations.allFilter),
+                        selected: _showAllFilter,
+                        showCheckmark: false,
+                        onSelected: (_) => _toggleAllFilter(),
+                      ),
+                      FilterChip(
+                        label: Text(localizations.favoritesFilter),
+                        selected: _showFavoritesFilter,
+                        showCheckmark: false,
+                        onSelected: (_) => _toggleFavoritesFilter(),
+                      ),
+                      for (final tag in _sortedTags(_availableTags))
+                        FilterChip(
+                          label: Text(_tagLabel(context, tag)),
+                          selected: _selectedTagFilters.contains(tag),
+                          showCheckmark: false,
+                          onSelected: (_) => _toggleTagFilter(tag),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    localizations.collectionTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final entry in recipeEntries) ...[
+                    _RecipeCard(
+                      recipe: entry.recipe,
+                      onTap: () => _openRecipeForViewing(entry.index),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            for (final entry in recipeEntries) ...[
-              _RecipeCard(
-                recipe: entry.recipe,
-                onTap: () => _openRecipeForViewing(entry.index),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewRecipeFlow,
         icon: const Icon(Icons.add),
@@ -390,12 +488,24 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (kIsDevelopmentMode) ...[
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.restart_alt),
+                        title: Text(localizations.resetToSeedLabel),
+                        subtitle: Text(localizations.resetToSeedDescription),
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          await _resetToSeedState();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Text(
                       localizations.settingsTitle,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -424,11 +534,11 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                           borderRadius: BorderRadius.circular(16),
                           items: [
                             DropdownMenuItem<Locale>(
-                              value: Locale('en'),
+                              value: const Locale('en'),
                               child: Text(localizations.englishLanguage),
                             ),
                             DropdownMenuItem<Locale>(
-                              value: Locale('de'),
+                              value: const Locale('de'),
                               child: Text(localizations.germanLanguage),
                             ),
                           ],
@@ -472,6 +582,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                         setState(() {
                           _matchAllTags = selection.first;
                         });
+                        _persistState();
                         setSheetState(() {});
                       },
                     ),
@@ -670,6 +781,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     setState(() {
       _availableTags.add(normalizedTag);
     });
+    _persistState();
     return true;
   }
 
@@ -718,6 +830,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       }
       _restoreAllIfNoSpecificFilters();
     });
+    _persistState();
 
     return true;
   }
@@ -780,6 +893,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         _recipes[index] = _recipes[index].copyWith(tags: updatedTags);
       }
     });
+    _persistState();
 
     return true;
   }
@@ -905,73 +1019,6 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-final _seedRecipes = List<RecipeSummary>.unmodifiable([
-  ..._productionSampleRecipes,
-  if (kIncludeDevSeedContent)
-    ..._devSampleRecipes.where((recipe) => recipe.title != 'Banana Nut Bread'),
-]);
-
-const _productionSampleRecipes = [
-  RecipeSummary(
-    title: 'Skillet Chickpea Curry',
-    description:
-        'A weeknight chickpea curry with tomato, spinach, and warm spices.',
-    duration: '35 min',
-    yieldText: '4 servings',
-    document: RecipeDocument(
-      title: 'Skillet Chickpea Curry',
-      yieldText: '4 servings',
-      prepRows: [
-        PrepRow(text: 'Set out a large skillet and a pot of rice'),
-        PrepRow(text: 'Warm oil over medium heat'),
-      ],
-      columns: [
-        WorkflowColumn(
-          id: 'A',
-          widthSpec: ColumnWidthSpec.fit(),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'onion'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'garlic'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'curry paste'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'tomatoes'),
-            WorkflowCell(startRow: 5, rowSpan: 1, text: 'chickpeas'),
-            WorkflowCell(startRow: 6, rowSpan: 1, text: 'spinach'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'B',
-          widthSpec: ColumnWidthSpec.fit(),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 1, text: 'dice'),
-            WorkflowCell(startRow: 2, rowSpan: 1, text: 'mince'),
-            WorkflowCell(startRow: 3, rowSpan: 1, text: 'stir in'),
-            WorkflowCell(startRow: 4, rowSpan: 1, text: 'pour'),
-            WorkflowCell(startRow: 5, rowSpan: 1, text: 'add'),
-            WorkflowCell(startRow: 6, rowSpan: 1, text: 'fold in'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'C',
-          widthSpec: ColumnWidthSpec.fit(),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 3, text: 'cook until fragrant'),
-            WorkflowCell(startRow: 4, rowSpan: 2, text: 'simmer gently'),
-          ],
-        ),
-        WorkflowColumn(
-          id: 'D',
-          widthSpec: ColumnWidthSpec.fit(),
-          cells: [
-            WorkflowCell(startRow: 1, rowSpan: 6, text: 'serve over rice'),
-          ],
-        ),
-      ],
-      rowCount: 6,
-    ),
-    isFavorite: true,
-  ),
-];
-
 const _devSampleRecipes = [
   RecipeSummary(
     title: 'Overnight Oats',
@@ -1010,7 +1057,7 @@ const _devSampleRecipes = [
       ],
       rowCount: 3,
     ),
-    tags: [recipeTagBreakfast],
+    tags: ['Breakfast'],
   ),
   RecipeSummary(
     title: 'Tomato Toast',
@@ -1046,7 +1093,7 @@ const _devSampleRecipes = [
       ],
       rowCount: 2,
     ),
-    tags: [recipeTagBreakfast],
+    tags: ['Breakfast'],
   ),
   RecipeSummary(
     title: 'Roasted Broccoli',
@@ -1087,7 +1134,7 @@ const _devSampleRecipes = [
       ],
       rowCount: 3,
     ),
-    tags: ['vegetarian'],
+    tags: ['Vegetarian'],
   ),
   RecipeSummary(
     title: 'Banana Nut Bread',
@@ -1149,7 +1196,7 @@ const _devSampleRecipes = [
       ],
       rowCount: 6,
     ),
-    tags: [recipeTagBaking],
+    tags: ['Baking'],
     isFavorite: true,
   ),
 ];
@@ -1162,12 +1209,7 @@ class _RecipeEntry {
 }
 
 String _tagLabel(BuildContext context, String tag) {
-  final localizations = AppLocalizations.of(context);
-  return switch (tag) {
-    recipeTagBreakfast => localizations.breakfastFilter,
-    recipeTagBaking => localizations.bakingFilter,
-    _ => tag,
-  };
+  return tag;
 }
 
 Set<String> _initialAvailableTags(List<RecipeSummary> recipes) {

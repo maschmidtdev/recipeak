@@ -1650,10 +1650,5 @@ List<String> _sortedTags(Iterable<String> tags) {
 }
 
 String _tagLabel(BuildContext context, String tag) {
-  final localizations = AppLocalizations.of(context);
-  return switch (tag) {
-    recipeTagBreakfast => localizations.breakfastFilter,
-    recipeTagBaking => localizations.bakingFilter,
-    _ => tag,
-  };
+  return tag;
 }

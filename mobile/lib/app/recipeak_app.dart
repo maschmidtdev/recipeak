@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'app_storage.dart';
 import 'theme/recipeak_theme.dart';
 import '../features/recipe_book/presentation/recipe_collection_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -14,11 +15,12 @@ class RecipeakApp extends StatefulWidget {
 
 class _RecipeakAppState extends State<RecipeakApp> {
   Locale? _locale;
+  bool _isLoadingLocale = true;
 
   @override
   void initState() {
     super.initState();
-    _locale ??= _resolvedDefaultLocale();
+    _loadPersistedLocale();
   }
 
   Locale _resolvedDefaultLocale() {
@@ -29,10 +31,23 @@ class _RecipeakAppState extends State<RecipeakApp> {
     return const Locale('en');
   }
 
+  Future<void> _loadPersistedLocale() async {
+    final persistedLocale = await AppStorage.instance.loadLocale();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _locale = persistedLocale ?? _resolvedDefaultLocale();
+      _isLoadingLocale = false;
+    });
+  }
+
   void _handleLocaleChanged(Locale locale) {
     setState(() {
       _locale = locale;
     });
+    AppStorage.instance.saveLocale(locale);
   }
 
   @override
@@ -51,10 +66,12 @@ class _RecipeakAppState extends State<RecipeakApp> {
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: RecipeCollectionScreen(
-        localeOverride: activeLocale,
-        onLocaleChanged: _handleLocaleChanged,
-      ),
+      home: _isLoadingLocale
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : RecipeCollectionScreen(
+              localeOverride: activeLocale,
+              onLocaleChanged: _handleLocaleChanged,
+            ),
     );
   }
 }
