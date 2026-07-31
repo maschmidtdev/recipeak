@@ -11,9 +11,9 @@
       "document": {
         "title": "Skillet Chickpea Curry",
         "yieldText": "4 servings",
-        "rowCount": 6,
+        "rowCount": 7,
         "prepRows": [
-          { "text": "Set out a large skillet and a pot of rice" },
+          { "text": "Set out a large skillet and a medium pot" },
           { "text": "Warm oil over medium heat" }
         ],
         "columns": [
@@ -26,7 +26,8 @@
               { "startRow": 3, "rowSpan": 1, "text": "35 g curry paste" },
               { "startRow": 4, "rowSpan": 1, "text": "400 g tomatoes" },
               { "startRow": 5, "rowSpan": 1, "text": "240 g chickpeas" },
-              { "startRow": 6, "rowSpan": 1, "text": "120 g spinach" }
+              { "startRow": 6, "rowSpan": 1, "text": "240 g rice" },
+              { "startRow": 7, "rowSpan": 1, "text": "120 g spinach" }
             ]
           },
           {
@@ -38,7 +39,8 @@
               { "startRow": 3, "rowSpan": 1, "text": "stir in" },
               { "startRow": 4, "rowSpan": 1, "text": "pour" },
               { "startRow": 5, "rowSpan": 1, "text": "add" },
-              { "startRow": 6, "rowSpan": 1, "text": "fold in" }
+              { "startRow": 6, "rowSpan": 1, "text": "rinse + boil" },
+              { "startRow": 7, "rowSpan": 1, "text": "add to curry" }
             ]
           },
           {
@@ -53,7 +55,7 @@
             "id": "D",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 6, "text": "serve over rice" }
+              { "startRow": 1, "rowSpan": 7, "text": "serve over rice" }
             ]
           }
         ]
