@@ -24,10 +24,12 @@ class RecipeCollectionScreen extends StatefulWidget {
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   late final List<RecipeSummary> _recipes = List.of(_sampleRecipes);
   final Set<String> _availableTags = {};
+  final TextEditingController _searchController = TextEditingController();
   bool _showAllFilter = true;
   bool _showFavoritesFilter = false;
   bool _matchAllTags = false;
   final Set<String> _selectedTagFilters = {};
+  String _searchQuery = '';
   static const _deleteUndoDuration = Duration(seconds: 4);
   static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
   int _deleteToastToken = 0;
@@ -38,6 +40,12 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     if (_availableTags.isEmpty) {
       _availableTags.addAll(_initialAvailableTags(_recipes));
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _deleteRecipeWithUndo({
@@ -181,9 +189,26 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
           children: [
             TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim().toLowerCase();
+                });
+              },
               decoration: InputDecoration(
                 hintText: localizations.searchRecipes,
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
                 filled: true,
                 fillColor: theme.colorScheme.surface,
                 border: OutlineInputBorder(
@@ -250,11 +275,15 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         _RecipeEntry(index: entry.$1, recipe: entry.$2),
     ];
 
+    final searchFilteredEntries = _searchQuery.isEmpty
+        ? entries
+        : entries.where((entry) => _matchesSearch(entry.recipe)).toList();
+
     if (_showAllFilter) {
-      return entries;
+      return searchFilteredEntries;
     }
 
-    return entries.where((entry) {
+    return searchFilteredEntries.where((entry) {
       final matchesFavorites = !_showFavoritesFilter || entry.recipe.isFavorite;
       final matchesTags = _selectedTagFilters.isEmpty
           ? true
@@ -270,6 +299,20 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           (_selectedTagFilters.isNotEmpty &&
               _selectedTagFilters.any(entry.recipe.tags.contains));
     }).toList();
+  }
+
+  bool _matchesSearch(RecipeSummary recipe) {
+    final haystacks = <String>[
+      recipe.title,
+      recipe.description,
+      recipe.duration,
+      recipe.yieldText,
+      ...recipe.tags,
+    ];
+
+    return haystacks.any(
+      (value) => value.toLowerCase().contains(_searchQuery),
+    );
   }
 
   void _toggleAllFilter() {
