@@ -110,43 +110,59 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       builder: (context) {
         final theme = Theme.of(context);
         final localizations = AppLocalizations.of(context);
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            8,
-            20,
-            MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${localizations.edit} ${localizations.chartDslLabel}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+        final mediaQuery = MediaQuery.of(context);
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.82,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${localizations.edit} ${localizations.chartDslLabel}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      localizations.chartDslDescription,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF5E675F),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: TextField(
+                          controller: _dslController,
+                          minLines: 12,
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.35,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: localizations.chartDslHint,
+                            alignLabelWithHint: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                localizations.chartDslDescription,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF5E675F),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _dslController,
-                minLines: 12,
-                maxLines: 20,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-                decoration: InputDecoration(
-                  hintText: localizations.chartDslHint,
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         );
       },
