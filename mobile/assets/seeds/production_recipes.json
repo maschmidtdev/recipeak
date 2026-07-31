@@ -94,8 +94,9 @@
               { "startRow": 6, "rowSpan": 1, "text": "170g Sojahack" },
               { "startRow": 7, "rowSpan": 1, "text": "SojaSahne 800ml" },
               { "startRow": 8, "rowSpan": 1, "text": "200g Spinat" },
-              { "startRow": 9, "rowSpan": 2, "text": "50g Hefeflocken" },
-              { "startRow": 11, "rowSpan": 1, "text": "500g Nudelplatten" }
+              { "startRow": 9, "rowSpan": 1, "text": "50g Hefeflocken" },
+              { "startRow": 10, "rowSpan": 1, "text": "500g Nudelplatten" },
+              { "startRow": 11, "rowSpan": 1, "text": "Käse simply V" }
             ]
           },
           {
@@ -129,6 +130,43 @@
             "cells": [
               { "startRow": 2, "rowSpan": 2, "text": "anbraten" },
               { "startRow": 4, "rowSpan": 4, "text": "mixen" }
+            ]
+          },
+          {
+            "id": "F",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 3, "text": "In Pfanne 1" },
+              { "startRow": 4, "rowSpan": 5, "text": "In Pfanne 2" }
+            ]
+          },
+          {
+            "id": "G",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              {
+                "startRow": 1,
+                "rowSpan": 9,
+                "text": "Hefeflocken auf Pfannen aufteilen, unterrühren"
+              }
+            ]
+          },
+          {
+            "id": "H",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              {
+                "startRow": 1,
+                "rowSpan": 11,
+                "text": "Abwechselnd Schichten: nudelplatten, Pfanne 1, nudelplatten, Pfanne 2, etc. Am Ende Käse oben rauf."
+              }
+            ]
+          },
+          {
+            "id": "I",
+            "widthSpec": { "kind": "fit", "logicalPixels": null },
+            "cells": [
+              { "startRow": 1, "rowSpan": 11, "text": "30 min backen bei 180°" }
             ]
           }
         ]

@@ -291,17 +291,14 @@ class RecipeDslCodec {
       ..sort((left, right) => left.id.compareTo(right.id));
     final widthColumns = [
       for (final column in sortedColumns)
-        if (column.widthSpec != null) column,
+        if (column.widthSpec?.kind == ColumnWidthKind.fixed) column,
     ];
 
     if (widthColumns.isNotEmpty) {
       buffer.writeln('widths:');
       for (final column in widthColumns) {
         final widthSpec = column.widthSpec!;
-        final value = switch (widthSpec.kind) {
-          ColumnWidthKind.fit => 'fit',
-          ColumnWidthKind.fixed => _formatLogicalPixels(widthSpec.logicalPixels!),
-        };
+        final value = _formatLogicalPixels(widthSpec.logicalPixels!);
         buffer.writeln('${column.id}: $value');
       }
       buffer.writeln();

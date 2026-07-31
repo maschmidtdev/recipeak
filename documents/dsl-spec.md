@@ -13,7 +13,7 @@ The DSL now covers:
 - recipe metadata
 - prep rows
 - chart columns and cells
-- optional column widths
+- optional explicit column widths
 
 It is intended for:
 
@@ -118,7 +118,6 @@ prep:
 
 ```text
 widths:
-A: fit
 B: 180
 ```
 
@@ -126,6 +125,12 @@ Supported width values:
 
 - `fit`
 - positive numeric logical pixels
+
+Rules:
+
+- omitting a width means the column uses the default auto-fit behavior
+- `fit` is valid on import but usually omitted on export because it is the default
+- use the `widths` section only when you want to force explicit widths
 
 ## Workflow columns
 
@@ -260,6 +265,7 @@ Recommended behavior:
 - omit empty metadata entries
 - omit `favorite` when false
 - omit empty sections
+- omit `widths` entries for columns using default `fit` behavior
 - sort columns alphabetically
 - sort cells by starting row within each column
 
