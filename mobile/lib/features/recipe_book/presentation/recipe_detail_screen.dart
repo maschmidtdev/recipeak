@@ -66,28 +66,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     Navigator.of(context).pop(const RecipeEditorResult.deleted());
   }
 
-  Future<bool> _handleBackNavigation() async {
-    if (_hasUnsyncedChanges) {
-      Navigator.of(
-        context,
-      ).pop(RecipeEditorResult.saved(_recipe, availableTags: _availableTags));
-      return false;
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final recipe = _recipe;
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     final durationText = recipe.duration.trim();
     final yieldText = recipe.yieldText.trim();
     final hasDuration = durationText.isNotEmpty;
     final hasYield = yieldText.isNotEmpty;
 
-    return WillPopScope(
-      onWillPop: _handleBackNavigation,
+    return PopScope(
+      canPop: !_hasUnsyncedChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !_hasUnsyncedChanges) {
+          return;
+        }
+        Navigator.of(
+          context,
+        ).pop(RecipeEditorResult.saved(_recipe, availableTags: _availableTags));
+      },
       child: Scaffold(
         appBar: AppBar(
           title: Text(recipe.title),
@@ -168,7 +166,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ],
                       ),
                     ],
-                ],
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
@@ -225,7 +223,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 }
 
 String _tagLabel(BuildContext context, String tag) {
-  final localizations = AppLocalizations.of(context)!;
+  final localizations = AppLocalizations.of(context);
   return switch (tag) {
     recipeTagBreakfast => localizations.breakfastFilter,
     recipeTagBaking => localizations.bakingFilter,

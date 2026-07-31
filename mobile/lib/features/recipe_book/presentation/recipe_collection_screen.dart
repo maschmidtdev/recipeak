@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/dev_flags.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
@@ -22,7 +23,7 @@ class RecipeCollectionScreen extends StatefulWidget {
 }
 
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
-  late final List<RecipeSummary> _recipes = List.of(_sampleRecipes);
+  late final List<RecipeSummary> _recipes = List.of(_seedRecipes);
   final Set<String> _availableTags = {};
   final TextEditingController _searchController = TextEditingController();
   bool _showAllFilter = true;
@@ -57,7 +58,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     });
 
     final messenger = ScaffoldMessenger.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     messenger.hideCurrentSnackBar();
     final toastToken = ++_deleteToastToken;
 
@@ -98,7 +99,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<void> _openNewRecipeFlow() async {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     final result = await Navigator.of(context).push<RecipeEditorResult>(
       MaterialPageRoute(
         builder: (context) => RecipeEditorScreen(
@@ -168,19 +169,19 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final recipeEntries = _filteredRecipeEntries;
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)!.appTitle,
+          AppLocalizations.of(context).appTitle,
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
             onPressed: _openSettings,
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
+            tooltip: localizations.settingsTooltip,
           ),
         ],
       ),
@@ -388,7 +389,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       context: context,
       showDragHandle: true,
       builder: (context) {
-        final localizations = AppLocalizations.of(context)!;
+        final localizations = AppLocalizations.of(context);
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
@@ -516,10 +517,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     );
   }
 
-  Future<void> _openTagManager() async {
-    await _openDeleteTagManager();
-  }
-
   Future<void> _openDeleteTagManager() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -527,7 +524,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final localizations = AppLocalizations.of(context)!;
+            final localizations = AppLocalizations.of(context);
             final tagUsage = _tagUsageCounts();
             return SafeArea(
               child: Padding(
@@ -641,13 +638,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     final tag = await showDialog<String>(
       context: context,
       builder: (context) {
-        final localizations = AppLocalizations.of(context)!;
+        final localizations = AppLocalizations.of(context);
         return AlertDialog(
           title: Text(localizations.addTagTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Dessert'),
+            decoration: InputDecoration(hintText: localizations.tagNameHint),
           ),
           actions: [
             TextButton(
@@ -686,7 +683,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) {
-          final localizations = AppLocalizations.of(context)!;
+          final localizations = AppLocalizations.of(context);
           return AlertDialog(
             title: Text(localizations.deleteTagTitle),
             content: Text(localizations.tagDeleteConfirmation(usageCount)),
@@ -731,13 +728,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     final nextTag = await showDialog<String>(
       context: context,
       builder: (context) {
-        final localizations = AppLocalizations.of(context)!;
+        final localizations = AppLocalizations.of(context);
         return AlertDialog(
           title: Text('${localizations.edit} ${localizations.tagsTitle}'),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Vegetarian'),
+            decoration: InputDecoration(hintText: localizations.tagNameHint),
           ),
           actions: [
             TextButton(
@@ -906,7 +903,11 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-const _sampleRecipes = [
+final _seedRecipes = kIncludeDevSeedContent
+    ? List<RecipeSummary>.unmodifiable(_devSampleRecipes)
+    : const <RecipeSummary>[];
+
+const _devSampleRecipes = [
   RecipeSummary(
     title: 'Overnight Oats',
     description:
@@ -944,7 +945,7 @@ const _sampleRecipes = [
       ],
       rowCount: 3,
     ),
-    tags: const [recipeTagBreakfast],
+    tags: [recipeTagBreakfast],
   ),
   RecipeSummary(
     title: 'Tomato Toast',
@@ -980,7 +981,7 @@ const _sampleRecipes = [
       ],
       rowCount: 2,
     ),
-    tags: const [recipeTagBreakfast],
+    tags: [recipeTagBreakfast],
   ),
   RecipeSummary(
     title: 'Roasted Broccoli',
@@ -1021,7 +1022,7 @@ const _sampleRecipes = [
       ],
       rowCount: 3,
     ),
-    tags: const ['vegetarian'],
+    tags: ['vegetarian'],
   ),
   RecipeSummary(
     title: 'Banana Nut Bread',
@@ -1039,7 +1040,7 @@ const _sampleRecipes = [
       columns: [
         WorkflowColumn(
           id: 'A',
-          widthSpec: const ColumnWidthSpec.fit(),
+          widthSpec: ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 1, text: '2 ripe bananas'),
             WorkflowCell(startRow: 2, rowSpan: 1, text: '6 Tbs. butter'),
@@ -1051,7 +1052,7 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'B',
-          widthSpec: const ColumnWidthSpec.fit(),
+          widthSpec: ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 1, text: 'mash'),
             WorkflowCell(startRow: 2, rowSpan: 1, text: 'melt'),
@@ -1062,7 +1063,7 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'C',
-          widthSpec: const ColumnWidthSpec.fit(),
+          widthSpec: ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 4, text: 'mash until smooth'),
           ],
@@ -1075,7 +1076,7 @@ const _sampleRecipes = [
         ),
         WorkflowColumn(
           id: 'E',
-          widthSpec: const ColumnWidthSpec.fit(),
+          widthSpec: ColumnWidthSpec.fit(),
           cells: [
             WorkflowCell(startRow: 1, rowSpan: 6, text: 'bake 350°F\n55 min.'),
           ],
@@ -1083,7 +1084,7 @@ const _sampleRecipes = [
       ],
       rowCount: 6,
     ),
-    tags: const [recipeTagBaking],
+    tags: [recipeTagBaking],
     isFavorite: true,
   ),
 ];
@@ -1096,7 +1097,7 @@ class _RecipeEntry {
 }
 
 String _tagLabel(BuildContext context, String tag) {
-  final localizations = AppLocalizations.of(context)!;
+  final localizations = AppLocalizations.of(context);
   return switch (tag) {
     recipeTagBreakfast => localizations.breakfastFilter,
     recipeTagBaking => localizations.bakingFilter,

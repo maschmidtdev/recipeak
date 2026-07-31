@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/recipe_document.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecipeChartView extends StatelessWidget {
   const RecipeChartView({
@@ -25,6 +26,7 @@ class RecipeChartView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context);
     final layout = _BasicChartLayout.tryFrom(document);
 
     if (layout == null) {
@@ -39,14 +41,14 @@ class RecipeChartView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Chart preview is currently limited.',
+              localizations.chartPreviewLimitedTitle,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'This preview currently supports simple vertical spans only. More advanced chart behavior will come next.',
+              localizations.chartPreviewLimitedMessage,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF5E675F),
               ),

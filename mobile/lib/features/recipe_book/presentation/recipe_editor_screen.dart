@@ -78,7 +78,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
     final title = _titleController.text.trim();
     final yieldText = _yieldController.text.trim();
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
 
     try {
       final document = RecipeDslCodec.parse(
@@ -175,6 +175,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   Future<void> _editPrepRow({int? index}) async {
+    final localizations = AppLocalizations.of(context);
     final controller = TextEditingController(
       text: index == null ? '' : _currentDocument.prepRows[index].text,
     );
@@ -182,20 +183,24 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(index == null ? 'Add Prep Row' : 'Edit Prep Row'),
+          title: Text(
+            index == null
+                ? localizations.addPrepRowTitle
+                : localizations.editPrepRowTitle,
+          ),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Preheat oven'),
+            decoration: InputDecoration(hintText: localizations.prepRowHint),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Save'),
+              child: Text(localizations.save),
             ),
           ],
         );
@@ -305,10 +310,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _addColumn() {
+    final localizations = AppLocalizations.of(context);
     final nextId = _nextColumnId(_currentDocument.columns);
     if (nextId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No more column letters available.')),
+        SnackBar(content: Text(localizations.noMoreColumnLetters)),
       );
       return;
     }
@@ -341,6 +347,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     int? initialStartRow,
     int? initialEndRow,
   }) async {
+    final localizations = AppLocalizations.of(context);
     final textController = TextEditingController(text: existingCell?.text ?? '');
     final startController = TextEditingController(
       text: (existingCell?.startRow ?? initialStartRow ?? 1).toString(),
@@ -356,14 +363,18 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(existingCell == null ? 'Add Cell' : 'Edit Cell'),
+          title: Text(
+            existingCell == null
+                ? localizations.addCellTitle
+                : localizations.editCell,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: textController,
                 autofocus: true,
-                decoration: const InputDecoration(hintText: 'Cell text'),
+                decoration: InputDecoration(hintText: localizations.cellTextHint),
                 minLines: 1,
                 maxLines: 4,
               ),
@@ -374,7 +385,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     child: TextField(
                       controller: startController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Start row'),
+                      decoration: InputDecoration(
+                        labelText: localizations.startRowLabel,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -382,7 +395,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     child: TextField(
                       controller: endController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'End row'),
+                      decoration: InputDecoration(
+                        labelText: localizations.endRowLabel,
+                      ),
                     ),
                   ),
                 ],
@@ -392,7 +407,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -406,7 +421,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   _CellDraft(startRow: startRow, endRow: endRow, text: text),
                 );
               },
-              child: const Text('Save'),
+              child: Text(localizations.save),
             ),
           ],
         );
@@ -423,7 +438,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Rows must stay between 1 and ${_currentDocument.rowCount}, and end row must be after start row.',
+            localizations.invalidRowRangeMessage(_currentDocument.rowCount),
           ),
         ),
       );
@@ -439,7 +454,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'That row range overlaps another cell in column $columnId.',
+            localizations.overlappingRowRangeMessage(columnId),
           ),
         ),
       );
@@ -687,6 +702,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
+        final localizations = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -698,7 +714,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Prep Rows',
+                        localizations.prepRowsTitle,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -710,14 +726,15 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                         _editPrepRow();
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('Add'),
+                      label: Text(localizations.addLabel),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 if (_currentDocument.prepRows.isEmpty)
-                  const _EditorPlaceholder(
-                    text: 'No prep rows yet. Add one to create the top instructions.',
+                  _EditorPlaceholder(
+                    text:
+                        '${localizations.noPrepRowsPlaceholder} ${localizations.createTopInstructionsHint}',
                   )
                 else
                   Flexible(
@@ -729,7 +746,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                             index++)
                           _EditorListRow(
                             title: _currentDocument.prepRows[index].text,
-                            subtitle: 'Prep row ${index + 1}',
+                            subtitle: localizations.prepRowNumberLabel(index + 1),
                             onEdit: () {
                               Navigator.of(context).pop();
                               _editPrepRow(index: index);
@@ -756,6 +773,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
+        final localizations = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -767,7 +785,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Workflow Cells',
+                        localizations.workflowCellsTitle,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -779,14 +797,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                         _addColumn();
                       },
                       icon: const Icon(Icons.view_column),
-                      label: const Text('Add Column'),
+                      label: Text(localizations.addColumnLabel),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 if (_currentDocument.columns.isEmpty)
-                  const _EditorPlaceholder(
-                    text: 'No workflow columns yet. Add a column to start placing cells.',
+                  _EditorPlaceholder(
+                    text: localizations.noWorkflowColumnsPlaceholder,
                   )
                 else
                   Flexible(
@@ -807,16 +825,19 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                             child: Column(
                               children: [
                                 if (column.cells.isEmpty)
-                                  const _EditorPlaceholder(
-                                    text: 'No cells in this column yet.',
+                                  _EditorPlaceholder(
+                                    text: localizations.noCellsInColumnPlaceholder,
                                   )
                                 else
                                   for (final cell in column.cells)
                                     _EditorListRow(
                                       title: cell.text,
                                       subtitle: cell.rowSpan == 1
-                                          ? 'Row ${cell.startRow}'
-                                          : 'Rows ${cell.startRow}-${cell.startRow + cell.rowSpan - 1}',
+                                          ? localizations.singleRowLabel(cell.startRow)
+                                          : localizations.rowRangeLabel(
+                                              cell.startRow,
+                                              cell.startRow + cell.rowSpan - 1,
+                                            ),
                                       actionMenu: PopupMenuButton<_CellAction>(
                                         onSelected: (action) {
                                           Navigator.of(context).pop();
@@ -842,28 +863,28 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                           }
                                         },
                                         itemBuilder: (context) => [
-                                          const PopupMenuItem(
+                                          PopupMenuItem(
                                             value: _CellAction.edit,
-                                            child: Text('Edit'),
+                                            child: Text(localizations.edit),
                                           ),
                                           if (_canMergeUp(column.id, cell))
-                                            const PopupMenuItem(
+                                            PopupMenuItem(
                                               value: _CellAction.mergeUp,
-                                              child: Text('Merge With Above'),
+                                              child: Text(localizations.mergeWithAbove),
                                             ),
                                           if (_canMergeDown(column.id, cell))
-                                            const PopupMenuItem(
+                                            PopupMenuItem(
                                               value: _CellAction.mergeDown,
-                                              child: Text('Merge With Below'),
+                                              child: Text(localizations.mergeWithBelow),
                                             ),
                                           if (cell.rowSpan > 1)
-                                            const PopupMenuItem(
+                                            PopupMenuItem(
                                               value: _CellAction.unmerge,
-                                              child: Text('Unmerge'),
+                                              child: Text(localizations.unmerge),
                                             ),
-                                          const PopupMenuItem(
+                                          PopupMenuItem(
                                             value: _CellAction.delete,
-                                            child: Text('Delete'),
+                                            child: Text(localizations.delete),
                                           ),
                                         ],
                                       ),
@@ -924,7 +945,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _saveRecipe() {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -963,26 +984,27 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   Future<void> _addTag() async {
+    final localizations = AppLocalizations.of(context);
     final controller = TextEditingController();
     final tag = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add Tag'),
+          title: Text(localizations.addTagTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Dessert'),
+            decoration: InputDecoration(hintText: localizations.tagNameHint),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Add'),
+              child: Text(localizations.addDialogConfirm),
             ),
           ],
         );
@@ -1019,11 +1041,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.initialRecipe.title.trim().isEmpty ? 'New Recipe' : 'Edit Recipe',
+          widget.initialRecipe.title.trim().isEmpty
+              ? localizations.newRecipe
+              : localizations.editRecipe,
         ),
       ),
       body: SafeArea(
@@ -1043,8 +1068,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   children: [
                     Text(
                       widget.initialRecipe.title.trim().isEmpty
-                          ? 'Start visually and use DSL only when you want it.'
-                          : 'Edit the recipe visually and keep DSL as an advanced option.',
+                          ? localizations.newRecipeEditorHeadline
+                          : localizations.editRecipeEditorHeadline,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         height: 1.1,
@@ -1052,7 +1077,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Use buttons to build prep rows, workflow rows, columns, and merged chart cells. The DSL stays available as a fallback.',
+                      localizations.editorIntroBody,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: const Color(0xFF5E675F),
                       ),
@@ -1062,14 +1087,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 20),
               _FieldLabel(
-                label: 'Recipe title',
+                label: localizations.recipeTitleLabel,
                 child: TextFormField(
                   controller: _titleController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: 'Banana Nut Bread'),
+                  decoration: InputDecoration(
+                    hintText: localizations.recipeTitleHint,
+                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Enter a recipe title.';
+                      return localizations.recipeTitleRequired;
                     }
                     return null;
                   },
@@ -1077,43 +1104,45 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 16),
               _FieldLabel(
-                label: 'Yield',
+                label: localizations.yieldLabel,
                 child: TextFormField(
                   controller: _yieldController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: '10 servings'),
+                  decoration: InputDecoration(hintText: localizations.yieldHint),
                 ),
               ),
               const SizedBox(height: 16),
               _FieldLabel(
-                label: 'Duration',
+                label: localizations.durationLabel,
                 child: TextFormField(
                   controller: _durationController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(hintText: '1 hr 20 min'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _FieldLabel(
-                label: 'Notes',
-                child: TextFormField(
-                  controller: _notesController,
-                  minLines: 4,
-                  maxLines: 6,
-                  decoration: const InputDecoration(
-                    hintText: 'Optional notes about the recipe before you build the workflow chart.',
+                  decoration: InputDecoration(
+                    hintText: localizations.durationHint,
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               _FieldLabel(
-                label: 'Tags',
+                label: localizations.notesLabel,
+                child: TextFormField(
+                  controller: _notesController,
+                  minLines: 4,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    hintText: localizations.notesHint,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _FieldLabel(
+                label: localizations.tagsTitle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Favorite'),
+                      title: Text(localizations.favoriteLabel),
                       value: _isFavorite,
                       onChanged: (value) {
                         setState(() {
@@ -1142,7 +1171,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           ),
                         ActionChip(
                           avatar: const Icon(Icons.add, size: 18),
-                          label: const Text('Add Tag'),
+                          label: Text(localizations.addTagLabel),
                           onPressed: _addTag,
                         ),
                       ],
@@ -1178,14 +1207,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Chart DSL',
+                                    localizations.chartDslLabel,
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Optional advanced editing and paste/import flow.',
+                                    localizations.chartDslDescription,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: const Color(0xFF5E675F),
                                     ),
@@ -1213,9 +1242,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             height: 1.35,
                           ),
-                          decoration: const InputDecoration(
-                            hintText:
-                                'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk',
+                          decoration: InputDecoration(
+                            hintText: localizations.chartDslHint,
                             alignLabelWithHint: true,
                           ),
                         ),
@@ -1235,7 +1263,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   border: Border.all(color: const Color(0xFFD7CCBE)),
                 ),
                 child: Text(
-                  'Prep rows: ${_currentDocument.prepRows.length}  |  Workflow rows: ${_currentDocument.rowCount}  |  Columns: ${_currentDocument.columns.length}',
+                  localizations.chartStructureSummary(
+                    _currentDocument.prepRows.length,
+                    _currentDocument.rowCount,
+                    _currentDocument.columns.length,
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF5E675F),
                     fontWeight: FontWeight.w600,
@@ -1244,7 +1276,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                AppLocalizations.of(context)!.chartPreview,
+                localizations.chartPreview,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -1290,11 +1322,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                         initialStartRow: _selectedCell!.startRow,
                         initialEndRow: _selectedCell!.startRow,
                       ),
-                      child: const Text('Create Cell'),
+                      child: Text(localizations.createCell),
                     ),
                     FilledButton.tonal(
                       onPressed: _clearSelection,
-                      child: const Text('Cancel'),
+                      child: Text(localizations.cancel),
                     ),
                   ] else if (_currentCell != null) ...[
                     FilledButton(
@@ -1302,18 +1334,18 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                         columnId: _selectedCell!.columnId,
                         existingCell: _currentCell,
                       ),
-                      child: const Text('Edit Cell'),
+                      child: Text(localizations.editCell),
                     ),
                     FilledButton.tonal(
                       onPressed: () =>
                           _deleteCell(_selectedCell!.columnId, _currentCell!),
-                      child: const Text('Delete Cell'),
+                      child: Text(localizations.deleteCell),
                     ),
                     if (_canMergeUp(_selectedCell!.columnId, _currentCell!))
                       FilledButton.tonal(
                         onPressed: () =>
                             _mergeCellUp(_selectedCell!.columnId, _currentCell!),
-                        child: const Text('Merge Up'),
+                        child: Text(localizations.mergeUp),
                       ),
                     if (_canMergeDown(_selectedCell!.columnId, _currentCell!))
                       FilledButton.tonal(
@@ -1321,43 +1353,43 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                           _selectedCell!.columnId,
                           _currentCell!,
                         ),
-                        child: const Text('Merge Down'),
+                        child: Text(localizations.mergeDown),
                       ),
                     if (_currentCell!.rowSpan > 1)
                       FilledButton.tonal(
                         onPressed: () =>
                             _unmergeCell(_selectedCell!.columnId, _currentCell!),
-                        child: const Text('Unmerge'),
+                        child: Text(localizations.unmerge),
                       ),
                     FilledButton.tonal(
                       onPressed: _clearSelection,
-                      child: const Text('Done'),
+                      child: Text(localizations.done),
                     ),
                   ] else ...[
                   FilledButton.tonalIcon(
                     onPressed: _openPrepManager,
                     icon: const Icon(Icons.format_list_bulleted),
-                    label: const Text('Prep'),
+                    label: Text(localizations.prepLabel),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _removeWorkflowRow,
                     icon: const Icon(Icons.remove),
-                    label: const Text('Row'),
+                    label: Text(localizations.rowLabel),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _addWorkflowRow,
                     icon: const Icon(Icons.add),
-                    label: const Text('Row'),
+                    label: Text(localizations.rowLabel),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _addColumn,
                     icon: const Icon(Icons.view_column),
-                    label: const Text('Column'),
+                    label: Text(localizations.columnLabel),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _openCellManager,
                     icon: const Icon(Icons.dashboard_customize),
-                    label: const Text('Cells'),
+                    label: Text(localizations.cellsLabel),
                   ),
                   ],
                 ],
@@ -1371,7 +1403,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   child: FilledButton.tonalIcon(
                       onPressed: _discardChanges,
                       icon: const Icon(Icons.close),
-                      label: Text(AppLocalizations.of(context)!.discard),
+                      label: Text(localizations.discard),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -1382,7 +1414,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   child: FilledButton.icon(
                       onPressed: _saveRecipe,
                       icon: const Icon(Icons.check),
-                      label: Text(AppLocalizations.of(context)!.save),
+                      label: Text(localizations.save),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -1439,107 +1471,6 @@ class _EditorErrorBanner extends StatelessWidget {
           color: const Color(0xFF8A2E24),
           fontWeight: FontWeight.w600,
         ),
-      ),
-    );
-  }
-}
-
-class _InvalidChartPreview extends StatelessWidget {
-  const _InvalidChartPreview({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE3B1A9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Chart preview unavailable',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF8A2E24),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditorSectionCard extends StatelessWidget {
-  const _EditorSectionCard({
-    required this.title,
-    required this.child,
-    this.subtitle,
-    this.action,
-  });
-
-  final String title;
-  final String? subtitle;
-  final Widget child;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD7CCBE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF5E675F),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (action != null) action!,
-            ],
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
       ),
     );
   }
@@ -1719,7 +1650,7 @@ List<String> _sortedTags(Iterable<String> tags) {
 }
 
 String _tagLabel(BuildContext context, String tag) {
-  final localizations = AppLocalizations.of(context)!;
+  final localizations = AppLocalizations.of(context);
   return switch (tag) {
     recipeTagBreakfast => localizations.breakfastFilter,
     recipeTagBaking => localizations.bakingFilter,

@@ -23,6 +23,7 @@ abstract class AppLocalizations {
   String get appTitle;
   String get collectionTitle;
   String get newRecipe;
+  String get editRecipe;
   String get searchRecipes;
   String get allFilter;
   String get favoritesFilter;
@@ -32,6 +33,7 @@ abstract class AppLocalizations {
   String get englishLanguage;
   String get germanLanguage;
   String get settingsTitle;
+  String get settingsTooltip;
   String get tagsTitle;
   String get tagMatchingLabel;
   String get matchAnyLabel;
@@ -47,25 +49,103 @@ abstract class AppLocalizations {
   String get renameOrRemoveTags;
   String get removeTagsFromAllRecipes;
   String get noTagsAvailableToDelete;
+  String get cancel;
   String get deleteDialogCancel;
   String get addDialogConfirm;
-  String recipesCountLabel(int count);
-  String tagsAvailableCountLabel(int count);
-  String tagDeleteConfirmation(int count);
   String get delete;
   String get edit;
   String get save;
   String get discard;
   String get chartPreview;
+  String get chartPreviewLimitedTitle;
+  String get chartPreviewLimitedMessage;
+  String get chartPreviewUnavailable;
   String get timeTbd;
   String get yieldTbd;
   String get undo;
+  String get tagNameHint;
+  String get recipeTitleLabel;
+  String get recipeTitleHint;
+  String get recipeTitleRequired;
+  String get yieldLabel;
+  String get yieldHint;
+  String get durationLabel;
+  String get durationHint;
+  String get notesLabel;
+  String get notesHint;
+  String get favoriteLabel;
+  String get chartDslLabel;
+  String get chartDslDescription;
+  String get chartDslHint;
+  String get newRecipeEditorHeadline;
+  String get editRecipeEditorHeadline;
+  String get editorIntroBody;
+  String get createCell;
+  String get editCell;
+  String get deleteCell;
+  String get mergeUp;
+  String get mergeDown;
+  String get mergeWithAbove;
+  String get mergeWithBelow;
+  String get unmerge;
+  String get done;
+  String get prepLabel;
+  String get rowLabel;
+  String get columnLabel;
+  String get cellsLabel;
+  String get addLabel;
+  String get addColumnLabel;
+  String get prepRowsTitle;
+  String get workflowCellsTitle;
+  String get noPrepRowsPlaceholder;
+  String get noWorkflowColumnsPlaceholder;
+  String get noCellsInColumnPlaceholder;
+  String get addPrepRowTitle;
+  String get editPrepRowTitle;
+  String get prepRowHint;
+  String get addCellTitle;
+  String get cellTextHint;
+  String get startRowLabel;
+  String get endRowLabel;
+  String get noMoreColumnLetters;
+  String get optionalAdvancedEditing;
+  String get createTopInstructionsHint;
 
   String deletedMessage(String title);
+  String recipesCountLabel(int count);
+  String tagsAvailableCountLabel(int count);
+  String tagDeleteConfirmation(int count);
+  String invalidRowRangeMessage(int maxRow);
+  String overlappingRowRangeMessage(String columnId);
+  String prepRowNumberLabel(int index);
+  String singleRowLabel(int row);
+  String rowRangeLabel(int startRow, int endRow);
+  String chartStructureSummary(int prepRows, int workflowRows, int columns);
 }
 
 class AppLocalizationsEn extends AppLocalizations {
   const AppLocalizationsEn();
+
+  @override
+  String get addCellTitle => 'Add Cell';
+
+  @override
+  String get addColumnLabel => 'Add Column';
+
+  @override
+  String get addDialogConfirm => 'Add';
+
+  @override
+  String get addLabel => 'Add';
+
+  @override
+  String get addPrepRowTitle => 'Add Prep Row';
+
+  @override
+  String get addTagLabel => 'Add Tag';
+
+  @override
+  String get addTagTitle => 'Add Tag';
 
   @override
   String get allFilter => 'All';
@@ -80,101 +160,227 @@ class AppLocalizationsEn extends AppLocalizations {
   String get breakfastFilter => 'Breakfast';
 
   @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get cellTextHint => 'Cell text';
+
+  @override
+  String get cellsLabel => 'Cells';
+
+  @override
+  String get chartDslDescription =>
+      'Optional advanced editing and paste/import flow.';
+
+  @override
+  String get chartDslHint =>
+      'prep:\n- Warm a small pan\n\nA:\n1. 1 egg\n\nB:\n1. crack\n\nC:\n1. whisk';
+
+  @override
+  String get chartDslLabel => 'Chart DSL';
+
+  @override
   String get chartPreview => 'Chart Preview';
+
+  @override
+  String chartStructureSummary(int prepRows, int workflowRows, int columns) =>
+      'Prep rows: $prepRows  |  Workflow rows: $workflowRows  |  Columns: $columns';
+
+  @override
+  String get chartPreviewLimitedMessage =>
+      'This preview currently supports simple vertical spans only. More advanced chart behavior will come next.';
+
+  @override
+  String get chartPreviewLimitedTitle => 'Chart preview is currently limited.';
+
+  @override
+  String get chartPreviewUnavailable => 'Chart preview unavailable';
 
   @override
   String get collectionTitle => 'My Recipes';
 
   @override
-  String get delete => 'Delete';
+  String get columnLabel => 'Column';
+
+  @override
+  String get createCell => 'Create Cell';
+
+  @override
+  String get createTopInstructionsHint =>
+      'Add one to create the top instructions.';
 
   @override
   String deletedMessage(String title) => '$title deleted';
 
   @override
-  String get discard => 'Discard';
+  String get delete => 'Delete';
 
   @override
-  String get edit => 'Edit';
-
-  @override
-  String get favoritesFilter => 'Favorites';
-
-  @override
-  String get languageLabel => 'Language';
-
-  @override
-  String get englishLanguage => 'English';
-
-  @override
-  String get germanLanguage => 'German';
-
-  @override
-  String get settingsTitle => 'Settings';
-
-  @override
-  String get tagsTitle => 'Tags';
-
-  @override
-  String get tagMatchingLabel => 'Tag matching';
-
-  @override
-  String get matchAnyLabel => 'Any';
-
-  @override
-  String get matchAllLabel => 'All';
-
-  @override
-  String get matchAnySelectedTags => 'Match any selected tags';
-
-  @override
-  String get matchAllSelectedTags => 'Match all selected tags';
-
-  @override
-  String get addTagLabel => 'Add tag';
-
-  @override
-  String get addTagTitle => 'Add Tag';
-
-  @override
-  String get editDeleteTagsLabel => 'Edit / delete tags';
-
-  @override
-  String get deleteTagLabel => 'Delete tag';
-
-  @override
-  String get deleteTagTitle => 'Delete Tag';
-
-  @override
-  String get tagsAvailableLabel => 'tags available';
-
-  @override
-  String get renameOrRemoveTags => 'Rename or remove tags';
-
-  @override
-  String get removeTagsFromAllRecipes => 'Remove tags from all recipes';
-
-  @override
-  String get noTagsAvailableToDelete => 'No tags available to delete.';
+  String get deleteCell => 'Delete Cell';
 
   @override
   String get deleteDialogCancel => 'Cancel';
 
   @override
-  String get addDialogConfirm => 'Add';
+  String get deleteTagLabel => 'Delete Tag';
+
+  @override
+  String get deleteTagTitle => 'Delete Tag';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get durationHint => '1 hr 20 min';
+
+  @override
+  String get durationLabel => 'Duration';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get editCell => 'Edit Cell';
+
+  @override
+  String get editDeleteTagsLabel => 'Edit / delete tags';
+
+  @override
+  String get editPrepRowTitle => 'Edit Prep Row';
+
+  @override
+  String get editRecipeEditorHeadline =>
+      'Edit the recipe visually and keep DSL as an advanced option.';
+
+  @override
+  String get englishLanguage => 'English';
+
+  @override
+  String get endRowLabel => 'End row';
+
+  @override
+  String get editorIntroBody =>
+      'Use buttons to build prep rows, workflow rows, columns, and merged chart cells. The DSL stays available as a fallback.';
+
+  @override
+  String get favoriteLabel => 'Favorite';
+
+  @override
+  String get favoritesFilter => 'Favorites';
+
+  @override
+  String get germanLanguage => 'German';
+
+  @override
+  String invalidRowRangeMessage(int maxRow) =>
+      'Rows must stay between 1 and $maxRow, and end row must be after start row.';
+
+  @override
+  String get languageLabel => 'Language';
+
+  @override
+  String get matchAllLabel => 'All';
+
+  @override
+  String get matchAllSelectedTags => 'Match all selected tags';
+
+  @override
+  String get matchAnyLabel => 'Any';
+
+  @override
+  String get matchAnySelectedTags => 'Match any selected tags';
+
+  @override
+  String get mergeDown => 'Merge Down';
+
+  @override
+  String get mergeUp => 'Merge Up';
+
+  @override
+  String get mergeWithAbove => 'Merge With Above';
+
+  @override
+  String get mergeWithBelow => 'Merge With Below';
+
+  @override
+  String get newRecipe => 'New Recipe';
+
+  @override
+  String get editRecipe => 'Edit Recipe';
+
+  @override
+  String get newRecipeEditorHeadline =>
+      'Start visually and use DSL only when you want it.';
+
+  @override
+  String get noCellsInColumnPlaceholder => 'No cells in this column yet.';
+
+  @override
+  String get noMoreColumnLetters => 'No more column letters available.';
+
+  @override
+  String get noPrepRowsPlaceholder => 'No prep rows yet.';
+
+  @override
+  String get notesHint =>
+      'Optional notes about the recipe before you build the workflow chart.';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get noTagsAvailableToDelete => 'No tags available to delete.';
+
+  @override
+  String get noWorkflowColumnsPlaceholder =>
+      'No workflow columns yet. Add a column to start placing cells.';
+
+  @override
+  String get optionalAdvancedEditing =>
+      'Optional advanced editing and paste/import flow.';
+
+  @override
+  String overlappingRowRangeMessage(String columnId) =>
+      'That row range overlaps another cell in column $columnId.';
+
+  @override
+  String get prepLabel => 'Prep';
+
+  @override
+  String get prepRowHint => 'Preheat oven';
+
+  @override
+  String prepRowNumberLabel(int index) => 'Prep row $index';
+
+  @override
+  String get prepRowsTitle => 'Prep Rows';
+
+  @override
+  String get recipeTitleHint => 'Banana Nut Bread';
+
+  @override
+  String get recipeTitleLabel => 'Recipe title';
+
+  @override
+  String get recipeTitleRequired => 'Enter a recipe title.';
 
   @override
   String recipesCountLabel(int count) => '$count recipes';
 
   @override
-  String tagsAvailableCountLabel(int count) => '$count tags available';
+  String get removeTagsFromAllRecipes => 'Remove tags from all recipes';
 
   @override
-  String tagDeleteConfirmation(int count) =>
-      'Tag used in $count recipes, delete?';
+  String get renameOrRemoveTags => 'Rename or remove tags';
 
   @override
-  String get newRecipe => 'New Recipe';
+  String rowRangeLabel(int startRow, int endRow) => 'Rows $startRow-$endRow';
+
+  @override
+  String get rowLabel => 'Row';
 
   @override
   String get save => 'Save';
@@ -183,10 +389,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchRecipes => 'Search recipes';
 
   @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsTooltip => 'Settings';
+
+  @override
+  String singleRowLabel(int row) => 'Row $row';
+
+  @override
+  String get startRowLabel => 'Start row';
+
+  @override
+  String get tagMatchingLabel => 'Tag matching';
+
+  @override
+  String tagDeleteConfirmation(int count) =>
+      'Tag used in $count recipes, delete?';
+
+  @override
+  String get tagNameHint => 'Dessert';
+
+  @override
+  String get tagsAvailableLabel => 'tags available';
+
+  @override
+  String tagsAvailableCountLabel(int count) => '$count tags available';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
   String get timeTbd => 'Time TBD';
 
   @override
   String get undo => 'Undo';
+
+  @override
+  String get unmerge => 'Unmerge';
+
+  @override
+  String get workflowCellsTitle => 'Workflow Cells';
+
+  @override
+  String get yieldHint => '10 servings';
+
+  @override
+  String get yieldLabel => 'Yield';
 
   @override
   String get yieldTbd => 'Yield TBD';
@@ -194,6 +443,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
 class AppLocalizationsDe extends AppLocalizations {
   const AppLocalizationsDe();
+
+  @override
+  String get addCellTitle => 'Zelle hinzuf\u00fcgen';
+
+  @override
+  String get addColumnLabel => 'Spalte hinzuf\u00fcgen';
+
+  @override
+  String get addDialogConfirm => 'Hinzuf\u00fcgen';
+
+  @override
+  String get addLabel => 'Hinzuf\u00fcgen';
+
+  @override
+  String get addPrepRowTitle => 'Vorbereitungszeile hinzuf\u00fcgen';
+
+  @override
+  String get addTagLabel => 'Tag hinzuf\u00fcgen';
+
+  @override
+  String get addTagTitle => 'Tag hinzuf\u00fcgen';
 
   @override
   String get allFilter => 'Alle';
@@ -205,104 +475,234 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bakingFilter => 'Backen';
 
   @override
-  String get breakfastFilter => 'Frühstück';
+  String get breakfastFilter => 'Fr\u00fchst\u00fcck';
+
+  @override
+  String get cancel => 'Abbrechen';
+
+  @override
+  String get cellTextHint => 'Zellentext';
+
+  @override
+  String get cellsLabel => 'Zellen';
+
+  @override
+  String get chartDslDescription =>
+      'Optionale erweiterte Bearbeitung und Einf\u00fcgen/Import per DSL.';
+
+  @override
+  String get chartDslHint =>
+      'prep:\n- Kleine Pfanne erw\u00e4rmen\n\nA:\n1. 1 Ei\n\nB:\n1. aufschlagen\n\nC:\n1. verquirlen';
+
+  @override
+  String get chartDslLabel => 'Chart-DSL';
 
   @override
   String get chartPreview => 'Diagrammvorschau';
 
   @override
+  String chartStructureSummary(int prepRows, int workflowRows, int columns) =>
+      'Vorbereitung: $prepRows  |  Workflow-Zeilen: $workflowRows  |  Spalten: $columns';
+
+  @override
+  String get chartPreviewLimitedMessage =>
+      'Diese Vorschau unterst\u00fctzt derzeit nur einfache vertikale Zellspannen. Erweiterteres Chart-Verhalten folgt als N\u00e4chstes.';
+
+  @override
+  String get chartPreviewLimitedTitle =>
+      'Die Diagrammvorschau ist derzeit eingeschr\u00e4nkt.';
+
+  @override
+  String get chartPreviewUnavailable => 'Diagrammvorschau nicht verf\u00fcgbar';
+
+  @override
   String get collectionTitle => 'Meine Rezepte';
 
   @override
-  String get delete => 'Löschen';
+  String get columnLabel => 'Spalte';
 
   @override
-  String deletedMessage(String title) => '$title gelöscht';
+  String get createCell => 'Zelle erstellen';
 
   @override
-  String get discard => 'Verwerfen';
+  String get createTopInstructionsHint =>
+      'F\u00fcge eine hinzu, um die oberen Anweisungen anzulegen.';
 
   @override
-  String get edit => 'Bearbeiten';
+  String deletedMessage(String title) => '$title gel\u00f6scht';
 
   @override
-  String get favoritesFilter => 'Favoriten';
+  String get delete => 'L\u00f6schen';
 
   @override
-  String get languageLabel => 'Sprache';
-
-  @override
-  String get englishLanguage => 'Englisch';
-
-  @override
-  String get germanLanguage => 'Deutsch';
-
-  @override
-  String get settingsTitle => 'Einstellungen';
-
-  @override
-  String get tagsTitle => 'Tags';
-
-  @override
-  String get tagMatchingLabel => 'Tag-Abgleich';
-
-  @override
-  String get matchAnyLabel => 'Beliebig';
-
-  @override
-  String get matchAllLabel => 'Alle';
-
-  @override
-  String get matchAnySelectedTags => 'Mindestens einen gewählten Tag treffen';
-
-  @override
-  String get matchAllSelectedTags => 'Alle gewählten Tags treffen';
-
-  @override
-  String get addTagLabel => 'Tag hinzufügen';
-
-  @override
-  String get addTagTitle => 'Tag hinzufügen';
-
-  @override
-  String get editDeleteTagsLabel => 'Tags bearbeiten / löschen';
-
-  @override
-  String get deleteTagLabel => 'Tag löschen';
-
-  @override
-  String get deleteTagTitle => 'Tag löschen';
-
-  @override
-  String get tagsAvailableLabel => 'Tags verfügbar';
-
-  @override
-  String get renameOrRemoveTags => 'Tags umbenennen oder löschen';
-
-  @override
-  String get removeTagsFromAllRecipes => 'Tags aus allen Rezepten entfernen';
-
-  @override
-  String get noTagsAvailableToDelete => 'Keine Tags zum Löschen verfügbar.';
+  String get deleteCell => 'Zelle l\u00f6schen';
 
   @override
   String get deleteDialogCancel => 'Abbrechen';
 
   @override
-  String get addDialogConfirm => 'Hinzufügen';
+  String get deleteTagLabel => 'Tag l\u00f6schen';
+
+  @override
+  String get deleteTagTitle => 'Tag l\u00f6schen';
+
+  @override
+  String get discard => 'Verwerfen';
+
+  @override
+  String get done => 'Fertig';
+
+  @override
+  String get durationHint => '1 Std. 20 Min.';
+
+  @override
+  String get durationLabel => 'Dauer';
+
+  @override
+  String get edit => 'Bearbeiten';
+
+  @override
+  String get editCell => 'Zelle bearbeiten';
+
+  @override
+  String get editDeleteTagsLabel => 'Tags bearbeiten / l\u00f6schen';
+
+  @override
+  String get editPrepRowTitle => 'Vorbereitungszeile bearbeiten';
+
+  @override
+  String get editRecipeEditorHeadline =>
+      'Bearbeite das Rezept visuell und nutze DSL nur bei Bedarf als erweiterte Option.';
+
+  @override
+  String get englishLanguage => 'Englisch';
+
+  @override
+  String get endRowLabel => 'Endzeile';
+
+  @override
+  String get editorIntroBody =>
+      'Nutze die Buttons, um Vorbereitungszeilen, Workflow-Zeilen, Spalten und verbundene Chart-Zellen zu bauen. Die DSL bleibt als Fallback verf\u00fcgbar.';
+
+  @override
+  String get favoriteLabel => 'Favorit';
+
+  @override
+  String get favoritesFilter => 'Favoriten';
+
+  @override
+  String get germanLanguage => 'Deutsch';
+
+  @override
+  String invalidRowRangeMessage(int maxRow) =>
+      'Zeilen m\u00fcssen zwischen 1 und $maxRow liegen, und die Endzeile muss nach der Startzeile kommen.';
+
+  @override
+  String get languageLabel => 'Sprache';
+
+  @override
+  String get matchAllLabel => 'Alle';
+
+  @override
+  String get matchAllSelectedTags => 'Alle gew\u00e4hlten Tags treffen';
+
+  @override
+  String get matchAnyLabel => 'Beliebig';
+
+  @override
+  String get matchAnySelectedTags => 'Mindestens einen gew\u00e4hlten Tag treffen';
+
+  @override
+  String get mergeDown => 'Nach unten verbinden';
+
+  @override
+  String get mergeUp => 'Nach oben verbinden';
+
+  @override
+  String get mergeWithAbove => 'Mit oberer Zelle verbinden';
+
+  @override
+  String get mergeWithBelow => 'Mit unterer Zelle verbinden';
+
+  @override
+  String get newRecipe => 'Neues Rezept';
+
+  @override
+  String get editRecipe => 'Rezept bearbeiten';
+
+  @override
+  String get newRecipeEditorHeadline =>
+      'Starte visuell und nutze DSL nur dann, wenn du es m\u00f6chtest.';
+
+  @override
+  String get noCellsInColumnPlaceholder =>
+      'In dieser Spalte gibt es noch keine Zellen.';
+
+  @override
+  String get noMoreColumnLetters => 'Keine weiteren Spaltenbuchstaben verf\u00fcgbar.';
+
+  @override
+  String get noPrepRowsPlaceholder => 'Noch keine Vorbereitungszeilen.';
+
+  @override
+  String get notesHint =>
+      'Optionale Notizen zum Rezept, bevor du den Workflow-Chart baust.';
+
+  @override
+  String get notesLabel => 'Notizen';
+
+  @override
+  String get noTagsAvailableToDelete =>
+      'Keine Tags zum L\u00f6schen verf\u00fcgbar.';
+
+  @override
+  String get noWorkflowColumnsPlaceholder =>
+      'Noch keine Workflow-Spalten. F\u00fcge eine Spalte hinzu, um Zellen zu platzieren.';
+
+  @override
+  String get optionalAdvancedEditing =>
+      'Optionale erweiterte Bearbeitung und Einf\u00fcgen/Import per DSL.';
+
+  @override
+  String overlappingRowRangeMessage(String columnId) =>
+      'Dieser Zeilenbereich \u00fcberschneidet eine andere Zelle in Spalte $columnId.';
+
+  @override
+  String get prepLabel => 'Vorb.';
+
+  @override
+  String get prepRowHint => 'Ofen vorheizen';
+
+  @override
+  String prepRowNumberLabel(int index) => 'Vorbereitungszeile $index';
+
+  @override
+  String get prepRowsTitle => 'Vorbereitungszeilen';
+
+  @override
+  String get recipeTitleHint => 'Bananenbrot';
+
+  @override
+  String get recipeTitleLabel => 'Rezepttitel';
+
+  @override
+  String get recipeTitleRequired => 'Bitte einen Rezepttitel eingeben.';
 
   @override
   String recipesCountLabel(int count) => '$count Rezepte';
 
   @override
-  String tagsAvailableCountLabel(int count) => '$count Tags verfügbar';
+  String get removeTagsFromAllRecipes => 'Tags aus allen Rezepten entfernen';
 
   @override
-  String tagDeleteConfirmation(int count) =>
-      'Tag wird in $count Rezepten verwendet, löschen?';
+  String get renameOrRemoveTags => 'Tags umbenennen oder l\u00f6schen';
 
   @override
-  String get newRecipe => 'Neues Rezept';
+  String rowRangeLabel(int startRow, int endRow) =>
+      'Zeilen $startRow-$endRow';
+
+  @override
+  String get rowLabel => 'Zeile';
 
   @override
   String get save => 'Speichern';
@@ -311,10 +711,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchRecipes => 'Rezepte suchen';
 
   @override
+  String get settingsTitle => 'Einstellungen';
+
+  @override
+  String get settingsTooltip => 'Einstellungen';
+
+  @override
+  String singleRowLabel(int row) => 'Zeile $row';
+
+  @override
+  String get startRowLabel => 'Startzeile';
+
+  @override
+  String get tagMatchingLabel => 'Tag-Abgleich';
+
+  @override
+  String tagDeleteConfirmation(int count) =>
+      'Tag wird in $count Rezepten verwendet, l\u00f6schen?';
+
+  @override
+  String get tagNameHint => 'Dessert';
+
+  @override
+  String get tagsAvailableLabel => 'Tags verf\u00fcgbar';
+
+  @override
+  String tagsAvailableCountLabel(int count) => '$count Tags verf\u00fcgbar';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
   String get timeTbd => 'Zeit offen';
 
   @override
-  String get undo => 'Rückgängig';
+  String get undo => 'R\u00fcckg\u00e4ngig';
+
+  @override
+  String get unmerge => 'Verbindung aufheben';
+
+  @override
+  String get workflowCellsTitle => 'Workflow-Zellen';
+
+  @override
+  String get yieldHint => '10 Portionen';
+
+  @override
+  String get yieldLabel => 'Menge';
 
   @override
   String get yieldTbd => 'Menge offen';

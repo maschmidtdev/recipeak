@@ -41,7 +41,7 @@ class _RecipeakAppState extends State<RecipeakApp> {
 
     return MaterialApp(
       locale: activeLocale,
-      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       theme: RecipeakTheme.light(),
       localizationsDelegates: const [
