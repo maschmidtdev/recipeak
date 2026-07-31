@@ -227,34 +227,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Visual recipes, not walls of text.',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Build and read recipes as workflow charts designed for phone screens.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFFF3F8F5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
             TextField(
               decoration: InputDecoration(
                 hintText: localizations.searchRecipes,
