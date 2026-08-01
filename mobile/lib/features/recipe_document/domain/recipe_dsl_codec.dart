@@ -29,7 +29,7 @@ class RecipeDslCodec {
     final columnsById = <String, List<WorkflowCell>>{};
     final widthsById = <String, ColumnWidthSpec>{};
     String? currentSection;
-    String? currentColumnId;
+    _ColumnSection? currentColumnSection;
     var title = '';
     var description = '';
     var duration = '';
@@ -47,15 +47,16 @@ class RecipeDslCodec {
         if (_isBlankCellContinuation(
           lines: normalizedLines,
           currentIndex: index,
-          currentColumnId: currentColumnId,
+          currentColumnId: currentColumnSection?.startColumnId,
           columnsById: columnsById,
         )) {
-          final existingCells = columnsById[currentColumnId]!;
+          final existingCells = columnsById[currentColumnSection!.startColumnId]!;
           final previousCell = existingCells.removeLast();
           existingCells.add(
             WorkflowCell(
               startRow: previousCell.startRow,
               rowSpan: previousCell.rowSpan,
+              columnSpan: previousCell.columnSpan,
               text: '${previousCell.text}\n',
             ),
           );
@@ -65,15 +66,19 @@ class RecipeDslCodec {
 
       final columnMatch = _columnHeaderPattern.firstMatch(trimmed);
       if (columnMatch != null) {
-        final columnId = columnMatch.group(1)!;
-        if (columnsById.containsKey(columnId)) {
-          throw FormatException(
-            'Line $lineNumber: duplicate column "$columnId".',
-          );
+        final startColumnId = columnMatch.group(1)!;
+        final endColumnId = columnMatch.group(2) ?? startColumnId;
+        final section = _ColumnSection.fromIds(
+          startColumnId: startColumnId,
+          endColumnId: endColumnId,
+          lineNumber: lineNumber,
+        );
+        for (var code = section.startCode; code <= section.endCode; code++) {
+          final columnId = String.fromCharCode(code);
+          columnsById.putIfAbsent(columnId, () => <WorkflowCell>[]);
         }
-        columnsById[columnId] = <WorkflowCell>[];
-        currentSection = columnId;
-        currentColumnId = columnId;
+        currentSection = section.startColumnId;
+        currentColumnSection = section;
         continue;
       }
 
@@ -81,7 +86,7 @@ class RecipeDslCodec {
       if (metadataMatch != null) {
         final key = metadataMatch.group(1)!.toLowerCase();
         final value = (metadataMatch.group(2) ?? '').trim();
-        currentColumnId = null;
+        currentColumnSection = null;
 
         switch (key) {
           case 'title':
@@ -176,14 +181,15 @@ class RecipeDslCodec {
 
       final cellMatch = _cellPattern.firstMatch(trimmed);
       if (cellMatch == null) {
-        if (currentColumnId != null) {
-          final existingCells = columnsById[currentColumnId]!;
+        if (currentColumnSection != null) {
+          final existingCells = columnsById[currentColumnSection.startColumnId]!;
           if (existingCells.isNotEmpty) {
             final previousCell = existingCells.removeLast();
             existingCells.add(
               WorkflowCell(
                 startRow: previousCell.startRow,
                 rowSpan: previousCell.rowSpan,
+                columnSpan: previousCell.columnSpan,
                 text: '${previousCell.text}\n$trimmed',
               ),
             );
@@ -214,21 +220,32 @@ class RecipeDslCodec {
         throw FormatException('Line $lineNumber: cell text cannot be empty.');
       }
 
-      final cells = columnsById[currentSection]!;
-      for (final existing in cells) {
-        final existingEnd = existing.startRow + existing.rowSpan - 1;
-        final overlaps = startRow <= existingEnd && endRow >= existing.startRow;
-        if (overlaps) {
-          throw FormatException(
-            'Line $lineNumber: rows $startRow-$endRow overlap in column $currentSection.',
-          );
+      final section = currentColumnSection;
+      if (section == null) {
+        throw FormatException(
+          'Line $lineNumber: expected a column section before row entries.',
+        );
+      }
+
+      for (var code = section.startCode; code <= section.endCode; code++) {
+        final columnId = String.fromCharCode(code);
+        final cells = columnsById[columnId]!;
+        for (final existing in cells) {
+          final existingEnd = existing.startRow + existing.rowSpan - 1;
+          final overlaps = startRow <= existingEnd && endRow >= existing.startRow;
+          if (overlaps) {
+            throw FormatException(
+              'Line $lineNumber: rows $startRow-$endRow overlap in column $columnId.',
+            );
+          }
         }
       }
 
-      cells.add(
+      columnsById[section.startColumnId]!.add(
         WorkflowCell(
           startRow: startRow,
           rowSpan: endRow - startRow + 1,
+          columnSpan: section.columnSpan,
           text: text,
         ),
       );
@@ -253,6 +270,7 @@ class RecipeDslCodec {
           )),
         ),
     ];
+    _validateRectangularCells(columns);
 
     return RecipeDslData(
       title: title,
@@ -320,29 +338,94 @@ class RecipeDslCodec {
       buffer.writeln();
     }
 
-    for (var index = 0; index < sortedColumns.length; index++) {
-      final column = sortedColumns[index];
-      buffer.writeln('${column.id}:');
-      final sortedCells = [...column.cells]
-        ..sort((left, right) => left.startRow.compareTo(right.startRow));
-      for (final cell in sortedCells) {
-        final endRow = cell.startRow + cell.rowSpan - 1;
-        final lines = cell.text.split('\n');
-        if (cell.rowSpan == 1) {
-          buffer.writeln('${cell.startRow}. ${lines.first}');
-        } else {
-          buffer.writeln('${cell.startRow}-$endRow: ${lines.first}');
-        }
-        for (final continuation in lines.skip(1)) {
-          buffer.writeln(continuation);
+    final coveredColumnIds = <String>{};
+    for (final column in sortedColumns) {
+      for (final cell in column.cells) {
+        for (var offset = 1; offset < cell.columnSpan; offset++) {
+          coveredColumnIds.add(
+            String.fromCharCode(column.id.codeUnitAt(0) + offset),
+          );
         }
       }
-      if (index != sortedColumns.length - 1) {
+    }
+    final exportColumns = [
+      for (final column in sortedColumns)
+        if (!coveredColumnIds.contains(column.id)) column,
+    ];
+
+    for (var index = 0; index < exportColumns.length; index++) {
+      final column = exportColumns[index];
+      final sortedCells = [...column.cells]
+        ..sort((left, right) => left.startRow.compareTo(right.startRow));
+      final hasHorizontalSpans = sortedCells.any((cell) => cell.columnSpan > 1);
+      if (!hasHorizontalSpans) {
+        buffer.writeln('${column.id}:');
+        for (final cell in sortedCells) {
+          _writeCell(buffer, cell);
+        }
+      } else if (sortedCells.isEmpty) {
+        buffer.writeln('${column.id}:');
+      } else {
+        for (final cell in sortedCells) {
+          final columnEndId = String.fromCharCode(
+            column.id.codeUnitAt(0) + cell.columnSpan - 1,
+          );
+          final sectionHeader = cell.columnSpan == 1
+              ? '${column.id}:'
+              : '${column.id}-$columnEndId:';
+          buffer.writeln(sectionHeader);
+          _writeCell(buffer, cell);
+        }
+      }
+      if (index != exportColumns.length - 1) {
         buffer.writeln();
       }
     }
 
     return buffer.toString().trimRight();
+  }
+}
+
+void _writeCell(StringBuffer buffer, WorkflowCell cell) {
+  final endRow = cell.startRow + cell.rowSpan - 1;
+  final lines = cell.text.split('\n');
+  if (cell.rowSpan == 1) {
+    buffer.writeln('${cell.startRow}. ${lines.first}');
+  } else {
+    buffer.writeln('${cell.startRow}-$endRow: ${lines.first}');
+  }
+  for (final continuation in lines.skip(1)) {
+    buffer.writeln(continuation);
+  }
+}
+
+void _validateRectangularCells(List<WorkflowColumn> columns) {
+  final cells = <_RectCell>[];
+  for (final column in columns) {
+    final startColumn = column.id.codeUnitAt(0);
+    for (final cell in column.cells) {
+      cells.add(
+        _RectCell(
+          startColumn: startColumn,
+          endColumn: startColumn + cell.columnSpan - 1,
+          startRow: cell.startRow,
+          endRow: cell.endRow,
+        ),
+      );
+    }
+  }
+
+  for (var leftIndex = 0; leftIndex < cells.length; leftIndex++) {
+    final left = cells[leftIndex];
+    for (var rightIndex = leftIndex + 1; rightIndex < cells.length; rightIndex++) {
+      final right = cells[rightIndex];
+      final columnsOverlap =
+          left.startColumn <= right.endColumn && left.endColumn >= right.startColumn;
+      final rowsOverlap = left.startRow <= right.endRow && left.endRow >= right.startRow;
+      if (columnsOverlap && rowsOverlap) {
+        throw const FormatException('Cell ranges overlap.');
+      }
+    }
   }
 }
 
@@ -414,11 +497,58 @@ bool _isBlankCellContinuation({
   return false;
 }
 
+class _RectCell {
+  const _RectCell({
+    required this.startColumn,
+    required this.endColumn,
+    required this.startRow,
+    required this.endRow,
+  });
+
+  final int startColumn;
+  final int endColumn;
+  final int startRow;
+  final int endRow;
+}
+
 final _metadataPattern = RegExp(
   r'^(title|description|duration|yield|tags|favorite|prep|widths):(?:\s*(.*))?$',
   caseSensitive: false,
 );
-final _columnHeaderPattern = RegExp(r'^([A-Z]):$');
+final _columnHeaderPattern = RegExp(r'^([A-Z])(?:-([A-Z]))?:$');
 final _prepItemPattern = RegExp(r'^-\s+(.+)$');
 final _widthPattern = RegExp(r'^([A-Z]):\s*(fit|\d+(?:\.\d+)?)$', caseSensitive: false);
 final _cellPattern = RegExp(r'^(\d+)(?:-(\d+))?[.:]\s*(.+)$');
+
+class _ColumnSection {
+  const _ColumnSection({
+    required this.startColumnId,
+    required this.startCode,
+    required this.endCode,
+  });
+
+  factory _ColumnSection.fromIds({
+    required String startColumnId,
+    required String endColumnId,
+    required int lineNumber,
+  }) {
+    final startCode = startColumnId.codeUnitAt(0);
+    final endCode = endColumnId.codeUnitAt(0);
+    if (endCode < startCode) {
+      throw FormatException(
+        'Line $lineNumber: column ranges must go from low to high.',
+      );
+    }
+    return _ColumnSection(
+      startColumnId: startColumnId,
+      startCode: startCode,
+      endCode: endCode,
+    );
+  }
+
+  final String startColumnId;
+  final int startCode;
+  final int endCode;
+
+  int get columnSpan => endCode - startCode + 1;
+}

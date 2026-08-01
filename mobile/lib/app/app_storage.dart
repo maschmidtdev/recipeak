@@ -160,6 +160,7 @@ class AppStorage {
                 {
                   'startRow': cell.startRow,
                   'rowSpan': cell.rowSpan,
+                  'columnSpan': cell.columnSpan,
                   'text': cell.text,
                 },
             ],
@@ -188,6 +189,7 @@ class AppStorage {
                     (cell) => WorkflowCell(
                       startRow: cell['startRow'] as int? ?? 1,
                       rowSpan: cell['rowSpan'] as int? ?? 1,
+                      columnSpan: cell['columnSpan'] as int? ?? 1,
                       text: cell['text'] as String? ?? '',
                     ),
                   )

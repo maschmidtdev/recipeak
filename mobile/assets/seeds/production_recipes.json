@@ -87,7 +87,11 @@
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
               { "startRow": 1, "rowSpan": 1, "text": "1L Tomatensoße" },
-              { "startRow": 2, "rowSpan": 1, "text": "1/2 Packung Tomatenmark" },
+              {
+                "startRow": 2,
+                "rowSpan": 1,
+                "text": "1/2 Packung Tomatenmark"
+              },
               { "startRow": 3, "rowSpan": 1, "text": "2 Zwiebeln" },
               { "startRow": 4, "rowSpan": 1, "text": "Knoblauch" },
               { "startRow": 5, "rowSpan": 1, "text": "Gemüsebrühe" },
@@ -112,16 +116,14 @@
           {
             "id": "C",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
-            "cells": [
-              { "startRow": 2, "rowSpan": 3, "text": "anbraten" }
-            ]
+            "cells": [{ "startRow": 2, "rowSpan": 3, "text": "anbraten" }]
           },
           {
             "id": "D",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 2, "rowSpan": 2, "text": "haelfte in pfanne" },
-              { "startRow": 4, "rowSpan": 1, "text": "haelfte in mixer" }
+              { "startRow": 2, "rowSpan": 2, "text": "hälfte in pfanne" },
+              { "startRow": 4, "rowSpan": 1, "text": "hälfte in mixer" }
             ]
           },
           {

@@ -10,12 +10,16 @@ class RecipeChartView extends StatelessWidget {
     this.rowCountOverride,
     this.selectedCell,
     this.onCellTap,
+    this.allowHorizontalScroll = true,
+    this.expandToAvailableWidth = true,
   });
 
   final RecipeDocument document;
   final int? rowCountOverride;
   final RecipeChartSelection? selectedCell;
   final ValueChanged<RecipeChartSelection>? onCellTap;
+  final bool allowHorizontalScroll;
+  final bool expandToAvailableWidth;
 
   static const _borderColor = Color(0xFFD7CCBE);
   static const _chartRadius = 16.0;
@@ -85,49 +89,42 @@ class RecipeChartView extends StatelessWidget {
         borderRadius: BorderRadius.circular(_chartRadius),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final columnWidths = _distributeExtraWidth(
-              baseWidths: fittedColumnWidths,
-              availableWidth: constraints.maxWidth,
-            );
+            final columnWidths = expandToAvailableWidth
+                ? _distributeExtraWidth(
+                    baseWidths: fittedColumnWidths,
+                    availableWidth: constraints.maxWidth,
+                  )
+                : fittedColumnWidths;
             final chartWidth = columnWidths.fold<double>(
               0,
               (sum, width) => sum + width,
             );
 
+            final chart = SizedBox(
+              width: chartWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final prepRow in document.prepRows)
+                    _PrepRow(text: prepRow.text),
+                  _WorkflowGrid(
+                    layout: layout,
+                    columnWidths: columnWidths,
+                    selectedCell: selectedCell,
+                    onCellTap: onCellTap,
+                  ),
+                ],
+              ),
+            );
+
+            if (!allowHorizontalScroll) {
+              return chart;
+            }
+
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: chartWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final prepRow in document.prepRows)
-                      _PrepRow(text: prepRow.text),
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(
-                          layout.columns.length,
-                          (index) => SizedBox(
-                            width: columnWidths[index],
-                            child: _WorkflowColumn(
-                              columnId: layout.columnIds[index],
-                              columnIndex: index,
-                              rows: layout.rowCount,
-                              cells: layout.columns[index],
-                              columnWidth: columnWidths[index],
-                              selectedCell: selectedCell,
-                              onCellTap: onCellTap,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: chart,
             );
           },
         ),
@@ -144,6 +141,9 @@ class RecipeChartView extends StatelessWidget {
     final widths = <double>[];
     final sortedColumns = [...columns]
       ..sort((left, right) => left.id.compareTo(right.id));
+    if (sortedColumns.isEmpty) {
+      return [_emptyColumnWidth];
+    }
 
     for (final column in sortedColumns) {
       final widthSpec = column.widthSpec;
@@ -155,22 +155,13 @@ class RecipeChartView extends StatelessWidget {
 
       var widestWord = 0.0;
       for (final cell in column.cells) {
-        for (final paragraph in cell.text.split('\n')) {
-          for (final word in paragraph.split(RegExp(r'\s+'))) {
-            final trimmedWord = word.trim();
-            if (trimmedWord.isEmpty) {
-              continue;
-            }
-
-            final wordWidth = _measureTextWidth(
-              text: trimmedWord,
-              textStyle: textStyle,
-              textDirection: textDirection,
-            );
-            if (wordWidth > widestWord) {
-              widestWord = wordWidth;
-            }
-          }
+        final cellWidestWord = _widestWordWidth(
+          cell.text,
+          textStyle: textStyle,
+          textDirection: textDirection,
+        );
+        if (cellWidestWord > widestWord) {
+          widestWord = cellWidestWord;
         }
       }
 
@@ -180,7 +171,68 @@ class RecipeChartView extends StatelessWidget {
       );
     }
 
+    for (var columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
+      final column = sortedColumns[columnIndex];
+      for (final cell in column.cells) {
+        if (cell.columnSpan <= 1) {
+          continue;
+        }
+
+        final endColumnIndex = columnIndex + cell.columnSpan - 1;
+        if (endColumnIndex >= widths.length) {
+          continue;
+        }
+
+        final neededWidth = _widestWordWidth(
+              cell.text,
+              textStyle: textStyle,
+              textDirection: textDirection,
+            ) +
+            (_cellHorizontalPadding * 2) +
+            _columnGapSafety;
+        final currentWidth = widths
+            .skip(columnIndex)
+            .take(cell.columnSpan)
+            .fold<double>(0, (sum, width) => sum + width);
+        final deficit = neededWidth - currentWidth;
+        if (deficit <= 0) {
+          continue;
+        }
+
+        final extraPerColumn = deficit / cell.columnSpan;
+        for (var index = columnIndex; index <= endColumnIndex; index++) {
+          widths[index] += extraPerColumn;
+        }
+      }
+    }
+
     return widths;
+  }
+
+  double _widestWordWidth(
+    String text, {
+    required TextStyle? textStyle,
+    required TextDirection textDirection,
+  }) {
+    var widestWord = 0.0;
+    for (final paragraph in text.split('\n')) {
+      for (final word in paragraph.split(RegExp(r'\s+'))) {
+        final trimmedWord = word.trim();
+        if (trimmedWord.isEmpty) {
+          continue;
+        }
+
+        final wordWidth = _measureTextWidth(
+          text: trimmedWord,
+          textStyle: textStyle,
+          textDirection: textDirection,
+        );
+        if (wordWidth > widestWord) {
+          widestWord = wordWidth;
+        }
+      }
+    }
+    return widestWord;
   }
 
   List<double> _distributeExtraWidth({
@@ -253,38 +305,63 @@ class _PrepRow extends StatelessWidget {
   }
 }
 
-class _WorkflowColumn extends StatelessWidget {
-  const _WorkflowColumn({
-    required this.columnId,
-    required this.columnIndex,
-    required this.rows,
-    required this.cells,
-    required this.columnWidth,
+class _WorkflowGrid extends StatelessWidget {
+  const _WorkflowGrid({
+    required this.layout,
+    required this.columnWidths,
     this.selectedCell,
     this.onCellTap,
   });
 
-  final String columnId;
-  final int columnIndex;
-  final int rows;
-  final List<_BasicChartCell> cells;
-  final double columnWidth;
+  final _BasicChartLayout layout;
+  final List<double> columnWidths;
   final RecipeChartSelection? selectedCell;
   final ValueChanged<RecipeChartSelection>? onCellTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var rowIndex = 1; rowIndex <= rows; rowIndex++)
-          if (_cellStartingAt(rowIndex) case final cell?)
-            Expanded(
-              flex: cell.rowSpan,
+    final rowHeight = RecipeChartView._cellMinHeight;
+    final totalWidth = columnWidths.fold<double>(0, (sum, width) => sum + width);
+    final totalHeight = rowHeight * layout.rowCount;
+    final positionedCells = layout.cells;
+
+    return SizedBox(
+      width: totalWidth,
+      height: totalHeight,
+      child: Stack(
+        children: [
+          for (var columnIndex = 0; columnIndex < layout.columnIds.length; columnIndex++)
+            for (var row = 1; row <= layout.rowCount; row++)
+              Positioned(
+                left: _columnLeft(columnIndex),
+                top: (row - 1) * rowHeight,
+                width: columnWidths[columnIndex],
+                height: rowHeight,
+                child: _EmptyWorkflowCell(
+                  isSelected:
+                      selectedCell?.columnId == layout.columnIds[columnIndex] &&
+                      selectedCell?.startRow == row,
+                  onTap: onCellTap == null
+                      ? null
+                      : () => onCellTap!(
+                            RecipeChartSelection(
+                              columnId: layout.columnIds[columnIndex],
+                              startRow: row,
+                            ),
+                          ),
+                  showLeftBorder: columnIndex > 0,
+                  showTopBorder: row > 1,
+                ),
+              ),
+          for (final cell in positionedCells)
+            Positioned(
+              left: _columnLeft(cell.columnIndex),
+              top: (cell.startRow - 1) * rowHeight,
+              width: _spannedWidth(cell.columnIndex, cell.columnSpan),
+              height: rowHeight * cell.rowSpan,
               child: _WorkflowCell(
                 text: cell.text,
-                columnWidth: columnWidth,
+                columnWidth: _spannedWidth(cell.columnIndex, cell.columnSpan),
                 rowSpan: cell.rowSpan,
                 isSelected:
                     selectedCell?.columnId == cell.columnId &&
@@ -298,49 +375,29 @@ class _WorkflowColumn extends StatelessWidget {
                           ),
                         ),
                 showLeftBorder: cell.columnIndex > 0,
-                showTopBorder: rowIndex > 1,
-              ),
-            )
-          else if (!_isCoveredBySpan(rowIndex))
-            Expanded(
-              child: _EmptyWorkflowCell(
-                isSelected:
-                    selectedCell?.columnId == columnId &&
-                    selectedCell?.startRow == rowIndex,
-                onTap: onCellTap == null
-                    ? null
-                    : () => onCellTap!(
-                          RecipeChartSelection(
-                            columnId: columnId,
-                            startRow: rowIndex,
-                          ),
-                        ),
-                showLeftBorder: columnIndex > 0,
-                showTopBorder: rowIndex > 1,
+                showTopBorder: cell.startRow > 1,
               ),
             ),
-      ],
+        ],
+      ),
     );
   }
 
-  _BasicChartCell? _cellStartingAt(int row) {
-    for (final cell in cells) {
-      if (cell.startRow == row) {
-        return cell;
-      }
+  double _columnLeft(int columnIndex) {
+    var left = 0.0;
+    for (var index = 0; index < columnIndex; index++) {
+      left += columnWidths[index];
     }
-    return null;
+    return left;
   }
 
-  bool _isCoveredBySpan(int row) {
-    for (final cell in cells) {
-      if (row > cell.startRow && row < cell.startRow + cell.rowSpan) {
-        return true;
-      }
+  double _spannedWidth(int columnIndex, int columnSpan) {
+    var width = 0.0;
+    for (var index = columnIndex; index < columnIndex + columnSpan; index++) {
+      width += columnWidths[index];
     }
-    return false;
+    return width;
   }
-
 }
 
 class _WorkflowCell extends StatelessWidget {
@@ -369,7 +426,7 @@ class _WorkflowCell extends StatelessWidget {
     return Material(
       color: isSelected
           ? theme.colorScheme.primary.withValues(alpha: 0.10)
-          : Colors.transparent,
+          : theme.colorScheme.surface,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -491,11 +548,13 @@ class _BasicChartLayout {
     required this.rowCount,
     required this.columns,
     required this.columnIds,
+    required this.cells,
   });
 
   final int rowCount;
   final List<List<_BasicChartCell>> columns;
   final List<String> columnIds;
+  final List<_BasicChartCell> cells;
 
   static _BasicChartLayout? tryFrom(
     RecipeDocument document, {
@@ -508,7 +567,12 @@ class _BasicChartLayout {
     }
 
     if (rowCount == 0) {
-      return const _BasicChartLayout(rowCount: 0, columns: [], columnIds: []);
+      return const _BasicChartLayout(
+        rowCount: 0,
+        columns: [],
+        columnIds: [],
+        cells: [],
+      );
     }
 
     if (document.columns.isEmpty) {
@@ -516,6 +580,7 @@ class _BasicChartLayout {
         rowCount: rowCount,
         columns: const [[]],
         columnIds: const ['A'],
+        cells: const [],
       );
     }
 
@@ -523,6 +588,7 @@ class _BasicChartLayout {
       ..sort((left, right) => left.id.compareTo(right.id));
     final columns = <List<_BasicChartCell>>[];
     final columnIds = <String>[];
+    final allCells = <_BasicChartCell>[];
 
     for (
       var columnIndex = 0;
@@ -533,40 +599,59 @@ class _BasicChartLayout {
       columnIds.add(column.id);
       final orderedCells = [...column.cells]
         ..sort((left, right) => left.startRow.compareTo(right.startRow));
-      var nextOpenRow = 1;
       final mappedCells = <_BasicChartCell>[];
 
       for (final cell in orderedCells) {
-        final endRow = cell.startRow + cell.rowSpan - 1;
+        final endRow = cell.endRow;
+        final endColumnIndex = columnIndex + cell.columnSpan - 1;
         if (cell.startRow < 1 ||
             cell.rowSpan < 1 ||
+            cell.columnSpan < 1 ||
             cell.startRow > rowCount ||
-            endRow > rowCount) {
-          return null;
-        }
-        if (cell.startRow < nextOpenRow) {
+            endRow > rowCount ||
+            endColumnIndex >= sortedColumns.length) {
           return null;
         }
 
-        mappedCells.add(
-          _BasicChartCell(
-            columnIndex: columnIndex,
-            columnId: column.id,
-            startRow: cell.startRow,
-            rowSpan: cell.rowSpan,
-            text: cell.text,
-          ),
+        final chartCell = _BasicChartCell(
+          columnIndex: columnIndex,
+          columnId: column.id,
+          startRow: cell.startRow,
+          rowSpan: cell.rowSpan,
+          columnSpan: cell.columnSpan,
+          text: cell.text,
         );
-        nextOpenRow = endRow + 1;
+        mappedCells.add(chartCell);
+        allCells.add(chartCell);
       }
 
       columns.add(mappedCells);
+    }
+
+    for (var leftIndex = 0; leftIndex < columns.length; leftIndex++) {
+      for (final leftCell in columns[leftIndex]) {
+        final leftEndColumn = leftIndex + leftCell.columnSpan - 1;
+        for (var rightIndex = leftIndex; rightIndex <= leftEndColumn; rightIndex++) {
+          for (final rightCell in columns[rightIndex]) {
+            if (identical(leftCell, rightCell)) {
+              continue;
+            }
+            final columnsOverlap = rightIndex >= leftIndex && rightIndex <= leftEndColumn;
+            final rowsOverlap = leftCell.startRow <= rightCell.endRow &&
+                leftCell.endRow >= rightCell.startRow;
+            if (columnsOverlap && rowsOverlap) {
+              return null;
+            }
+          }
+        }
+      }
     }
 
     return _BasicChartLayout(
       rowCount: rowCount,
       columns: columns,
       columnIds: columnIds,
+      cells: allCells,
     );
   }
 }
@@ -577,6 +662,7 @@ class _BasicChartCell {
     required this.columnId,
     required this.startRow,
     required this.rowSpan,
+    required this.columnSpan,
     required this.text,
   });
 
@@ -584,7 +670,10 @@ class _BasicChartCell {
   final String columnId;
   final int startRow;
   final int rowSpan;
+  final int columnSpan;
   final String text;
+
+  int get endRow => startRow + rowSpan - 1;
 }
 
 class _EmptyWorkflowCell extends StatelessWidget {

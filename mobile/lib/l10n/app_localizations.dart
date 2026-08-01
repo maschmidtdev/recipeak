@@ -58,6 +58,10 @@ abstract class AppLocalizations {
   String get save;
   String get discard;
   String get chartPreview;
+  String get exportChartImage;
+  String get shareChartImage;
+  String get chartImageSaved;
+  String get chartImageSaveFailed;
   String get chartPreviewLimitedTitle;
   String get chartPreviewLimitedMessage;
   String get chartPreviewUnavailable;
@@ -189,6 +193,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartPreview => 'Recipe Flow';
+
+  @override
+  String get exportChartImage => 'Export chart image';
+
+  @override
+  String get shareChartImage => 'Share chart image';
+
+  @override
+  String get chartImageSaved => 'Chart image saved';
+
+  @override
+  String get chartImageSaveFailed => 'Could not save chart image';
 
   @override
   String chartStructureSummary(int prepRows, int workflowRows, int columns) =>
@@ -531,6 +547,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chartPreview => 'Rezeptablauf';
+
+  @override
+  String get exportChartImage => 'Diagramm als Bild exportieren';
+
+  @override
+  String get shareChartImage => 'Diagramm als Bild teilen';
+
+  @override
+  String get chartImageSaved => 'Diagramm als Bild gespeichert';
+
+  @override
+  String get chartImageSaveFailed => 'Diagramm konnte nicht gespeichert werden';
 
   @override
   String chartStructureSummary(int prepRows, int workflowRows, int columns) =>

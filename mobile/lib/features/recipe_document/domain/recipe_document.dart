@@ -11,7 +11,7 @@ class RecipeDocument {
     var highestRow = 0;
     for (final column in columns) {
       for (final cell in column.cells) {
-        final endRow = cell.startRow + cell.rowSpan - 1;
+        final endRow = cell.endRow;
         if (endRow > highestRow) {
           highestRow = endRow;
         }
@@ -54,11 +54,16 @@ class WorkflowCell {
     required this.startRow,
     required this.rowSpan,
     required this.text,
+    this.columnSpan = 1,
   });
 
   final int startRow;
   final int rowSpan;
+  final int columnSpan;
   final String text;
+
+  int get endRow => startRow + rowSpan - 1;
+  int endColumnIndex(int startColumnIndex) => startColumnIndex + columnSpan - 1;
 }
 
 class ColumnWidthSpec {

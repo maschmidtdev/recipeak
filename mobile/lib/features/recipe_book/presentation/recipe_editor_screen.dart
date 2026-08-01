@@ -393,6 +393,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 WorkflowCell(
                   startRow: cell.startRow,
                   rowSpan: _clampedRowSpan(cell, newRowCount),
+                  columnSpan: cell.columnSpan,
                   text: cell.text,
                 ),
           ],
@@ -472,80 +473,74 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     final draft = await showDialog<_CellDraft>(
       context: context,
       builder: (context) {
-        final viewInsets = MediaQuery.of(context).viewInsets;
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: viewInsets.bottom),
-          child: AlertDialog(
-            scrollable: true,
-            title: Text(
-              existingCell == null
-                  ? localizations.addCellTitle
-                  : localizations.editCell,
-            ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: textController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: localizations.cellTextHint,
-                    ),
-                    minLines: 1,
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: startController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: localizations.startRowLabel,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: endController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: localizations.endRowLabel,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(localizations.cancel),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final startRow = int.tryParse(startController.text.trim());
-                  final endRow = int.tryParse(endController.text.trim());
-                  final text = textController.text.trim();
-                  if (startRow == null || endRow == null || text.isEmpty) {
-                    return;
-                  }
-                  Navigator.of(context).pop(
-                    _CellDraft(startRow: startRow, endRow: endRow, text: text),
-                  );
-                },
-                child: Text(localizations.save),
-              ),
-            ],
+        return AlertDialog(
+          scrollable: true,
+          title: Text(
+            existingCell == null
+                ? localizations.addCellTitle
+                : localizations.editCell,
           ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: textController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: localizations.cellTextHint,
+                  ),
+                  minLines: 1,
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: startController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.startRowLabel,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: endController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.endRowLabel,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final startRow = int.tryParse(startController.text.trim());
+                final endRow = int.tryParse(endController.text.trim());
+                final text = textController.text.trim();
+                if (startRow == null || endRow == null || text.isEmpty) {
+                  return;
+                }
+                Navigator.of(context).pop(
+                  _CellDraft(startRow: startRow, endRow: endRow, text: text),
+                );
+              },
+              child: Text(localizations.save),
+            ),
+          ],
         );
       },
     );
@@ -595,6 +590,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               WorkflowCell(
                 startRow: draft.startRow,
                 rowSpan: draft.endRow - draft.startRow + 1,
+                columnSpan: existingCell?.columnSpan ?? 1,
                 text: draft.text,
               ),
             ),
@@ -631,6 +627,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     }
     return cell.startRow == other.startRow &&
         cell.rowSpan == other.rowSpan &&
+        cell.columnSpan == other.columnSpan &&
         cell.text == other.text;
   }
 
@@ -739,6 +736,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       newCell: WorkflowCell(
         startRow: cell.startRow,
         rowSpan: 1,
+        columnSpan: 1,
         text: cell.text,
       ),
     );
@@ -785,6 +783,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           newCell: WorkflowCell(
             startRow: cell.startRow + offset,
             rowSpan: cell.rowSpan,
+            columnSpan: cell.columnSpan,
             text: cell.text,
           ),
         );
@@ -804,11 +803,13 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         WorkflowCell(
           startRow: cell.startRow + offset,
           rowSpan: cell.rowSpan,
+          columnSpan: cell.columnSpan,
           text: cell.text,
         ),
         WorkflowCell(
           startRow: displacedRow,
           rowSpan: targetCell.rowSpan,
+          columnSpan: targetCell.columnSpan,
           text: targetCell.text,
         ),
       ]..sort((left, right) => left.startRow.compareTo(right.startRow));
@@ -839,12 +840,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       WorkflowCell(
         startRow: targetRow,
         rowSpan: cell.rowSpan,
+        columnSpan: cell.columnSpan,
         text: cell.text,
       ),
       if (targetCell != null)
         WorkflowCell(
           startRow: cell.startRow,
           rowSpan: targetCell.rowSpan,
+          columnSpan: targetCell.columnSpan,
           text: targetCell.text,
         ),
     ]..sort((left, right) => left.startRow.compareTo(right.startRow));
@@ -907,6 +910,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     final replacement = WorkflowCell(
       startRow: startRow,
       rowSpan: endRow - startRow + 1,
+      columnSpan: baseCell.columnSpan,
       text: mergedText.isEmpty ? baseCell.text : mergedText,
     );
 
