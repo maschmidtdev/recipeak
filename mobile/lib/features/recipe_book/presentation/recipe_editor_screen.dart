@@ -475,11 +475,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       builder: (context) {
         return AlertDialog(
           scrollable: true,
-          title: Text(
-            existingCell == null
-                ? localizations.addCellTitle
-                : localizations.editCell,
-          ),
+          title: Text(localizations.editCell),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 360),
             child: Column(
@@ -673,6 +669,15 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     if (!_canMoveUp(columnId, cell)) {
       return;
     }
+    if (!_selectedCellIsStored) {
+      setState(() {
+        _selectedCell = RecipeChartSelection(
+          columnId: columnId,
+          startRow: cell.startRow - 1,
+        );
+      });
+      return;
+    }
     _moveCellByOffset(columnId: columnId, cell: cell, offset: -1);
     setState(() {
       _selectedCell = RecipeChartSelection(
@@ -684,6 +689,15 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
   void _moveCellDown(String columnId, WorkflowCell cell) {
     if (!_canMoveDown(columnId, cell)) {
+      return;
+    }
+    if (!_selectedCellIsStored) {
+      setState(() {
+        _selectedCell = RecipeChartSelection(
+          columnId: columnId,
+          startRow: cell.startRow + 1,
+        );
+      });
       return;
     }
     _moveCellByOffset(columnId: columnId, cell: cell, offset: 1);
@@ -1235,6 +1249,21 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     return null;
   }
 
+  WorkflowCell? get _selectedCellForActions {
+    final selection = _selectedCell;
+    if (selection == null) {
+      return null;
+    }
+    return _currentCell ??
+        WorkflowCell(
+          startRow: selection.startRow,
+          rowSpan: 1,
+          text: '',
+        );
+  }
+
+  bool get _selectedCellIsStored => _currentCell != null;
+
   void _clearSelection() {
     setState(() {
       _selectedCell = null;
@@ -1552,97 +1581,99 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFD7CCBE)),
               ),
-              child: _currentCell != null || _selectedCell != null
+              child: _selectedCellForActions != null && _selectedCell != null
                   ? _ActionGrid(
                       children: [
-                        if (_selectedCell != null && _currentCell == null) ...[
-                          _ActionIconButton(
-                            onPressed: () => _editCell(
-                              columnId: _selectedCell!.columnId,
-                              initialStartRow: _selectedCell!.startRow,
-                              initialEndRow: _selectedCell!.startRow,
-                            ),
-                            icon: Icons.add_box_outlined,
-                            tooltip: localizations.createCell,
-                            isPrimary: true,
+                        _ActionIconButton(
+                          onPressed: () => _editCell(
+                            columnId: _selectedCell!.columnId,
+                            existingCell: _currentCell,
+                            initialStartRow: _selectedCell!.startRow,
+                            initialEndRow: _selectedCell!.startRow,
                           ),
-                          _ActionIconButton(
-                            onPressed: _clearSelection,
-                            icon: Icons.close,
-                            tooltip: localizations.cancel,
-                          ),
-                        ] else if (_currentCell != null) ...[
-                          _ActionIconButton(
-                            onPressed: () => _editCell(
-                              columnId: _selectedCell!.columnId,
-                              existingCell: _currentCell,
-                            ),
-                            icon: Icons.edit_outlined,
-                            tooltip: localizations.editCell,
-                            isPrimary: true,
-                          ),
-                          if (_canMoveUp(_selectedCell!.columnId, _currentCell!))
-                            _ActionIconButton(
-                              onPressed: () => _moveCellUp(
-                                _selectedCell!.columnId,
-                                _currentCell!,
-                              ),
-                              icon: Icons.arrow_upward,
-                              tooltip: localizations.moveUp,
-                            ),
-                          if (_canMergeUp(_selectedCell!.columnId, _currentCell!))
-                            _ActionIconButton(
-                              onPressed: () => _mergeCellUp(
-                                _selectedCell!.columnId,
-                                _currentCell!,
-                              ),
-                              icon: Icons.vertical_align_top,
-                              tooltip: localizations.mergeUp,
-                            ),
-                          _ActionIconButton(
-                            onPressed: () => _deleteCell(
-                              _selectedCell!.columnId,
-                              _currentCell!,
-                            ),
-                            icon: Icons.delete_outline,
-                            tooltip: localizations.deleteCell,
-                          ),
-                          if (_canMoveDown(_selectedCell!.columnId, _currentCell!))
-                            _ActionIconButton(
-                              onPressed: () => _moveCellDown(
-                                _selectedCell!.columnId,
-                                _currentCell!,
-                              ),
-                              icon: Icons.arrow_downward,
-                              tooltip: localizations.moveDown,
-                            ),
-                          if (_canMergeDown(
+                          icon: Icons.edit_outlined,
+                          tooltip: localizations.editCell,
+                          isPrimary: true,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _selectedCellIsStored
+                              ? () => _deleteCell(
+                                    _selectedCell!.columnId,
+                                    _currentCell!,
+                                  )
+                              : null,
+                          icon: Icons.delete_outline,
+                          tooltip: localizations.deleteCell,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _canMoveUp(
                             _selectedCell!.columnId,
-                            _currentCell!,
-                          ))
-                            _ActionIconButton(
-                              onPressed: () => _mergeCellDown(
-                                _selectedCell!.columnId,
-                                _currentCell!,
-                              ),
-                              icon: Icons.vertical_align_bottom,
-                              tooltip: localizations.mergeDown,
-                            ),
-                          if (_currentCell!.rowSpan > 1)
-                            _ActionIconButton(
-                              onPressed: () => _unmergeCell(
-                                _selectedCell!.columnId,
-                                _currentCell!,
-                              ),
-                              icon: Icons.call_split,
-                              tooltip: localizations.unmerge,
-                            ),
-                          _ActionIconButton(
-                            onPressed: _clearSelection,
-                            icon: Icons.check,
-                            tooltip: localizations.done,
-                          ),
-                        ],
+                            _selectedCellForActions!,
+                          )
+                              ? () => _moveCellUp(
+                                    _selectedCell!.columnId,
+                                    _selectedCellForActions!,
+                                  )
+                              : null,
+                          icon: Icons.arrow_upward,
+                          tooltip: localizations.moveUp,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _canMoveDown(
+                            _selectedCell!.columnId,
+                            _selectedCellForActions!,
+                          )
+                              ? () => _moveCellDown(
+                                    _selectedCell!.columnId,
+                                    _selectedCellForActions!,
+                                  )
+                              : null,
+                          icon: Icons.arrow_downward,
+                          tooltip: localizations.moveDown,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _canMergeUp(
+                            _selectedCell!.columnId,
+                            _selectedCellForActions!,
+                          )
+                              ? () => _mergeCellUp(
+                                    _selectedCell!.columnId,
+                                    _selectedCellForActions!,
+                                  )
+                              : null,
+                          icon: Icons.vertical_align_top,
+                          tooltip: localizations.mergeUp,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _canMergeDown(
+                            _selectedCell!.columnId,
+                            _selectedCellForActions!,
+                          )
+                              ? () => _mergeCellDown(
+                                    _selectedCell!.columnId,
+                                    _selectedCellForActions!,
+                                  )
+                              : null,
+                          icon: Icons.vertical_align_bottom,
+                          tooltip: localizations.mergeDown,
+                        ),
+                        _ActionIconButton(
+                          onPressed:
+                              _selectedCellForActions!.rowSpan > 1 ||
+                                      _selectedCellForActions!.columnSpan > 1
+                                  ? () => _unmergeCell(
+                                        _selectedCell!.columnId,
+                                        _selectedCellForActions!,
+                                      )
+                                  : null,
+                          icon: Icons.call_split,
+                          tooltip: localizations.unmerge,
+                        ),
+                        _ActionIconButton(
+                          onPressed: _clearSelection,
+                          icon: Icons.check,
+                          tooltip: localizations.done,
+                        ),
                       ],
                     )
                   : Wrap(
@@ -1790,7 +1821,7 @@ class _ActionIconButton extends StatelessWidget {
     this.isPrimary = false,
   });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData icon;
   final String tooltip;
   final bool isPrimary;
