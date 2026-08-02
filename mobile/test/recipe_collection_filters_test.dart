@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:recipeek_mobile/features/recipe_book/domain/recipe_collection_filters.dart';
-import 'package:recipeek_mobile/features/recipe_book/domain/recipe_summary.dart';
-import 'package:recipeek_mobile/features/recipe_document/domain/recipe_document.dart';
+import 'package:mobile/features/recipe_book/domain/recipe_collection_filters.dart';
+import 'package:mobile/features/recipe_book/domain/recipe_summary.dart';
+import 'package:mobile/features/recipe_document/domain/recipe_document.dart';
 
 void main() {
   const emptyDocument = RecipeDocument(prepRows: [], columns: []);

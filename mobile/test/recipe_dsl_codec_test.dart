@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:recipeek_mobile/features/recipe_document/domain/recipe_dsl_codec.dart';
-import 'package:recipeek_mobile/features/recipe_document/domain/recipe_document.dart';
+import 'package:mobile/features/recipe_document/domain/recipe_dsl_codec.dart';
+import 'package:mobile/features/recipe_document/domain/recipe_document.dart';
 
 void main() {
   test('parses full recipe metadata and rectangular cells', () {
