@@ -4,6 +4,7 @@ import '../../../app/dev_flags.dart';
 import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
+import 'widgets/dsl_editor_widgets.dart';
 import 'widgets/editor_action_grid.dart';
 import 'widgets/editor_form_widgets.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
@@ -113,62 +114,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
-        final theme = Theme.of(context);
         final localizations = AppLocalizations.of(context);
-        final mediaQuery = MediaQuery.of(context);
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: mediaQuery.size.height * 0.82,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${localizations.edit} ${localizations.chartDslLabel}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations.chartDslDescription,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF5E675F),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: TextField(
-                          controller: _dslController,
-                          minLines: 12,
-                          maxLines: null,
-                          keyboardType: TextInputType.multiline,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.35,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: localizations.chartDslHint,
-                            alignLabelWithHint: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        return DslEditorSheet(
+          controller: _dslController,
+          title: '${localizations.edit} ${localizations.chartDslLabel}',
+          description: localizations.chartDslDescription,
+          hintText: localizations.chartDslHint,
         );
       },
     );
@@ -179,15 +130,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(localizations.chartDslLabel),
-          content: Text(localizations.chartDslInfoBody),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(localizations.done),
-            ),
-          ],
+        return DslInfoDialog(
+          title: localizations.chartDslLabel,
+          body: localizations.chartDslInfoBody,
+          doneLabel: localizations.done,
         );
       },
     );
