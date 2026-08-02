@@ -72,7 +72,7 @@ void main() {
     expect(initialAvailableTags(recipes), {'Vegan', 'Dinner', 'Breakfast'});
     expect(
       tagUsageCounts(availableTags: {'Vegan', 'Dinner'}, recipes: recipes),
-      {'Vegan': 1, 'Dinner': 1},
+      {'Vegan': 1, 'Dinner': 1, 'Breakfast': 1},
     );
   });
 
