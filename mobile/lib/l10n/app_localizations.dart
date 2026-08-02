@@ -91,11 +91,21 @@ abstract class AppLocalizations {
   String get deleteCell;
   String get moveUp;
   String get moveDown;
+  String get moveLeft;
+  String get moveRight;
+  String get merge;
   String get mergeUp;
   String get mergeDown;
+  String get mergeLeft;
+  String get mergeRight;
   String get mergeWithAbove;
   String get mergeWithBelow;
   String get unmerge;
+  String get unmergeUp;
+  String get unmergeDown;
+  String get unmergeLeft;
+  String get unmergeRight;
+  String get back;
   String get done;
   String get prepLabel;
   String get rowLabel;
@@ -318,16 +328,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchAnySelectedTags => 'Match any selected tags';
 
   @override
+  String get merge => 'Merge';
+
+  @override
   String get mergeDown => 'Merge Down';
 
   @override
   String get mergeUp => 'Merge Up';
 
   @override
+  String get mergeLeft => 'Merge Left';
+
+  @override
+  String get mergeRight => 'Merge Right';
+
+  @override
   String get moveDown => 'Move Down';
 
   @override
   String get moveUp => 'Move Up';
+
+  @override
+  String get moveLeft => 'Move Left';
+
+  @override
+  String get moveRight => 'Move Right';
 
   @override
   String get mergeWithAbove => 'Merge With Above';
@@ -471,6 +496,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unmerge => 'Unmerge';
+
+  @override
+  String get unmergeUp => 'Unmerge Up';
+
+  @override
+  String get unmergeDown => 'Unmerge Down';
+
+  @override
+  String get unmergeLeft => 'Unmerge Left';
+
+  @override
+  String get unmergeRight => 'Unmerge Right';
+
+  @override
+  String get back => 'Back';
 
   @override
   String get workflowCellsTitle => 'Workflow Cells';
@@ -674,16 +714,31 @@ class AppLocalizationsDe extends AppLocalizations {
       'Mindestens einen gew\u00e4hlten Tag treffen';
 
   @override
+  String get merge => 'Verbinden';
+
+  @override
   String get mergeDown => 'Nach unten verbinden';
 
   @override
   String get mergeUp => 'Nach oben verbinden';
 
   @override
+  String get mergeLeft => 'Nach links verbinden';
+
+  @override
+  String get mergeRight => 'Nach rechts verbinden';
+
+  @override
   String get moveDown => 'Nach unten verschieben';
 
   @override
   String get moveUp => 'Nach oben verschieben';
+
+  @override
+  String get moveLeft => 'Nach links verschieben';
+
+  @override
+  String get moveRight => 'Nach rechts verschieben';
 
   @override
   String get mergeWithAbove => 'Mit oberer Zelle verbinden';
@@ -830,6 +885,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get unmerge => 'Verbindung aufheben';
+
+  @override
+  String get unmergeUp => 'Oben l\u00f6sen';
+
+  @override
+  String get unmergeDown => 'Unten l\u00f6sen';
+
+  @override
+  String get unmergeLeft => 'Links l\u00f6sen';
+
+  @override
+  String get unmergeRight => 'Rechts l\u00f6sen';
+
+  @override
+  String get back => 'Zur\u00fcck';
 
   @override
   String get workflowCellsTitle => 'Workflow-Zellen';

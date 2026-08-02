@@ -6,10 +6,16 @@
   "searchRecipes": "Rezepte suchen",
   "allFilter": "Alle",
   "favoritesFilter": "Favoriten",
-  "breakfastFilter": "Frühstück",
+  "breakfastFilter": "Fr\u00fchst\u00fcck",
   "bakingFilter": "Backen",
-  "delete": "Löschen",
+  "delete": "L\u00f6schen",
   "edit": "Bearbeiten",
+  "back": "Zur\u00fcck",
+  "merge": "Verbinden",
+  "mergeLeft": "Nach links verbinden",
+  "mergeRight": "Nach rechts verbinden",
+  "moveLeft": "Nach links verschieben",
+  "moveRight": "Nach rechts verschieben",
   "save": "Speichern",
   "discard": "Verwerfen",
   "chartPreview": "Diagrammvorschau",
@@ -19,13 +25,17 @@
   "chartImageSaveFailed": "Diagramm konnte nicht gespeichert werden",
   "timeTbd": "Zeit offen",
   "yieldTbd": "Menge offen",
-  "chartDslDescription": "Erweitertes Textformat für direkte Bearbeitung sowie Rezept-Import und -Export.",
-  "chartDslInfoBody": "DSL ist das Textformat des Rezepts. Du kannst es für direkte Bearbeitung nutzen, um Rezepte einzufügen oder zu importieren, oder um ein Rezept als Text zu kopieren und zu exportieren.",
-  "deletedMessage": "{title} gelöscht",
+  "chartDslDescription": "Erweitertes Textformat f\u00fcr direkte Bearbeitung sowie Rezept-Import und -Export.",
+  "chartDslInfoBody": "DSL ist das Textformat des Rezepts. Du kannst es f\u00fcr direkte Bearbeitung nutzen, um Rezepte einzuf\u00fcgen oder zu importieren, oder um ein Rezept als Text zu kopieren und zu exportieren.",
+  "deletedMessage": "{title} gel\u00f6scht",
   "@deletedMessage": {
     "placeholders": {
       "title": {}
     }
   },
-  "undo": "Rückgängig"
+  "undo": "R\u00fcckg\u00e4ngig",
+  "unmergeUp": "Oben l\u00f6sen",
+  "unmergeDown": "Unten l\u00f6sen",
+  "unmergeLeft": "Links l\u00f6sen",
+  "unmergeRight": "Rechts l\u00f6sen"
 }

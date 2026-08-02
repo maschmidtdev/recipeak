@@ -10,6 +10,12 @@
   "bakingFilter": "Baking",
   "delete": "Delete",
   "edit": "Edit",
+  "back": "Back",
+  "merge": "Merge",
+  "mergeLeft": "Merge Left",
+  "mergeRight": "Merge Right",
+  "moveLeft": "Move Left",
+  "moveRight": "Move Right",
   "save": "Save",
   "discard": "Discard",
   "chartPreview": "Chart Preview",
@@ -27,5 +33,9 @@
       "title": {}
     }
   },
-  "undo": "Undo"
+  "undo": "Undo",
+  "unmergeUp": "Unmerge Up",
+  "unmergeDown": "Unmerge Down",
+  "unmergeLeft": "Unmerge Left",
+  "unmergeRight": "Unmerge Right"
 }

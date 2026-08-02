@@ -34,6 +34,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   String? _dslError;
   bool _isSyncingDslText = false;
   RecipeChartSelection? _selectedCell;
+  _CellActionPanel _cellActionPanel = _CellActionPanel.main;
   late bool _isFavorite;
   late final Set<String> _selectedTags;
   late final Set<String> _availableTags;
@@ -197,6 +198,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           : normalized.rowCount;
       _dslError = null;
       _selectedCell = _resolvedSelection(_selectedCell, normalized);
+      if (_selectedCell == null) {
+        _cellActionPanel = _CellActionPanel.main;
+      }
     });
     _syncDslFromDocument();
   }
@@ -678,11 +682,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
+    final targetCell = _cellCoveringRow(
+      columnId,
+      cell.startRow - 1,
+      excluding: cell,
+    );
     _moveCellByOffset(columnId: columnId, cell: cell, offset: -1);
     setState(() {
       _selectedCell = RecipeChartSelection(
         columnId: columnId,
-        startRow: cell.startRow - 1,
+        startRow: targetCell?.startRow ?? cell.startRow - 1,
       );
     });
   }
@@ -700,17 +709,62 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
+    final endRow = cell.startRow + cell.rowSpan - 1;
+    final targetCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
+    final nextStartRow = targetCell == null
+        ? cell.startRow + 1
+        : targetCell.startRow + targetCell.rowSpan - cell.rowSpan;
     _moveCellByOffset(columnId: columnId, cell: cell, offset: 1);
     setState(() {
       _selectedCell = RecipeChartSelection(
         columnId: columnId,
-        startRow: cell.startRow + 1,
+        startRow: nextStartRow,
       );
     });
   }
 
+  void _moveCellLeft(String columnId, WorkflowCell cell) {
+    if (!_canMoveLeft(columnId, cell)) {
+      return;
+    }
+    if (!_selectedCellIsStored) {
+      final nextColumnId = _columnIdByOffset(columnId, -1);
+      if (nextColumnId == null) {
+        return;
+      }
+      setState(() {
+        _selectedCell = RecipeChartSelection(
+          columnId: nextColumnId,
+          startRow: cell.startRow,
+        );
+      });
+      return;
+    }
+    _moveCellHorizontally(columnId: columnId, cell: cell, offset: -1);
+  }
+
+  void _moveCellRight(String columnId, WorkflowCell cell) {
+    if (!_canMoveRight(columnId, cell)) {
+      return;
+    }
+    if (!_selectedCellIsStored) {
+      final nextColumnId = _columnIdByOffset(columnId, 1);
+      if (nextColumnId == null) {
+        return;
+      }
+      setState(() {
+        _selectedCell = RecipeChartSelection(
+          columnId: nextColumnId,
+          startRow: cell.startRow,
+        );
+      });
+      return;
+    }
+    _moveCellHorizontally(columnId: columnId, cell: cell, offset: 1);
+  }
+
   void _mergeCellUp(String columnId, WorkflowCell cell) {
-    if (cell.startRow <= 1) {
+    if (!_canMergeUp(columnId, cell)) {
       return;
     }
     final aboveCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
@@ -725,13 +779,13 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _mergeCellDown(String columnId, WorkflowCell cell) {
+    if (!_canMergeDown(columnId, cell)) {
+      return;
+    }
     final currentEndRow = cell.startRow + cell.rowSpan - 1;
     final belowCell = _cellCoveringRow(columnId, currentEndRow + 1, excluding: cell);
     final newEndRow =
         belowCell?.startRow != null ? belowCell!.startRow + belowCell.rowSpan - 1 : currentEndRow + 1;
-    if (newEndRow > _currentWorkflowRowCount) {
-      return;
-    }
     _mergeIntoRange(
       columnId: columnId,
       baseCell: cell,
@@ -740,8 +794,40 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     );
   }
 
+  void _mergeCellLeft(String columnId, WorkflowCell cell) {
+    if (!_canMergeLeft(columnId, cell)) {
+      return;
+    }
+    final targetColumnId = _columnIdByOffset(columnId, -1);
+    if (targetColumnId == null) {
+      return;
+    }
+    _mergeIntoColumnRange(
+      baseColumnId: columnId,
+      targetColumnId: targetColumnId,
+      baseCell: cell,
+      textOrder: _HorizontalMergeTextOrder.targetThenBase,
+    );
+  }
+
+  void _mergeCellRight(String columnId, WorkflowCell cell) {
+    if (!_canMergeRight(columnId, cell)) {
+      return;
+    }
+    final targetColumnId = _columnIdByOffset(columnId, cell.columnSpan);
+    if (targetColumnId == null) {
+      return;
+    }
+    _mergeIntoColumnRange(
+      baseColumnId: columnId,
+      targetColumnId: targetColumnId,
+      baseCell: cell,
+      textOrder: _HorizontalMergeTextOrder.baseThenTarget,
+    );
+  }
+
   void _unmergeCell(String columnId, WorkflowCell cell) {
-    if (cell.rowSpan == 1) {
+    if (cell.rowSpan == 1 && cell.columnSpan == 1) {
       return;
     }
     _replaceCell(
@@ -756,6 +842,90 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     );
   }
 
+  void _unmergeCellUp(String columnId, WorkflowCell cell) {
+    if (!_canUnmergeUp(cell)) {
+      return;
+    }
+    _replaceCell(
+      columnId: columnId,
+      oldCell: cell,
+      newCell: WorkflowCell(
+        startRow: cell.startRow,
+        rowSpan: cell.rowSpan - 1,
+        columnSpan: cell.columnSpan,
+        text: cell.text,
+      ),
+    );
+  }
+
+  void _unmergeCellDown(String columnId, WorkflowCell cell) {
+    if (!_canUnmergeDown(cell)) {
+      return;
+    }
+    _replaceCell(
+      columnId: columnId,
+      oldCell: cell,
+      newCell: WorkflowCell(
+        startRow: cell.startRow + 1,
+        rowSpan: cell.rowSpan - 1,
+        columnSpan: cell.columnSpan,
+        text: cell.text,
+      ),
+    );
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: columnId,
+        startRow: cell.startRow + 1,
+      );
+      _cellActionPanel = _CellActionPanel.unmerge;
+    });
+  }
+
+  void _unmergeCellLeft(String columnId, WorkflowCell cell) {
+    if (!_canUnmergeLeft(columnId, cell)) {
+      return;
+    }
+    _replaceCell(
+      columnId: columnId,
+      oldCell: cell,
+      newCell: WorkflowCell(
+        startRow: cell.startRow,
+        rowSpan: cell.rowSpan,
+        columnSpan: cell.columnSpan - 1,
+        text: cell.text,
+      ),
+    );
+  }
+
+  void _unmergeCellRight(String columnId, WorkflowCell cell) {
+    if (!_canUnmergeRight(columnId, cell)) {
+      return;
+    }
+    final nextColumnId = _columnIdByOffset(columnId, 1);
+    if (nextColumnId == null) {
+      return;
+    }
+
+    _replaceCellAcrossColumns(
+      oldColumnId: columnId,
+      oldCell: cell,
+      newColumnId: nextColumnId,
+      newCell: WorkflowCell(
+        startRow: cell.startRow,
+        rowSpan: cell.rowSpan,
+        columnSpan: cell.columnSpan - 1,
+        text: cell.text,
+      ),
+    );
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: nextColumnId,
+        startRow: cell.startRow,
+      );
+      _cellActionPanel = _CellActionPanel.unmerge;
+    });
+  }
+
   void _replaceCell({
     required String columnId,
     required WorkflowCell oldCell,
@@ -768,6 +938,38 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             id: column.id,
             widthSpec: column.widthSpec,
             cells: _updatedCells(column.cells, oldCell, newCell),
+          )
+        else
+          column,
+    ];
+    _setDocument(_currentDocument.copyWith(columns: columns));
+  }
+
+  void _replaceCellAcrossColumns({
+    required String oldColumnId,
+    required WorkflowCell oldCell,
+    required String newColumnId,
+    required WorkflowCell newCell,
+  }) {
+    final columns = [
+      for (final column in _currentDocument.columns)
+        if (column.id == oldColumnId)
+          WorkflowColumn(
+            id: column.id,
+            widthSpec: column.widthSpec,
+            cells: [
+              for (final cell in column.cells)
+                if (!_sameCell(cell, oldCell)) cell,
+            ],
+          )
+        else if (column.id == newColumnId)
+          WorkflowColumn(
+            id: column.id,
+            widthSpec: column.widthSpec,
+            cells: [
+              ...column.cells,
+              newCell,
+            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
           )
         else
           column,
@@ -807,21 +1009,24 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       final column = _currentDocument.columns.firstWhere(
         (item) => item.id == columnId,
       );
-      final displacedRow = offset < 0
-          ? cell.startRow + cell.rowSpan - 1
+      final movedCellStartRow = offset < 0
+          ? targetCell.startRow
+          : targetCell.startRow + targetCell.rowSpan - cell.rowSpan;
+      final movedTargetStartRow = offset < 0
+          ? movedCellStartRow + cell.rowSpan
           : cell.startRow;
       final nextCells = <WorkflowCell>[
         for (final existing in column.cells)
           if (!_sameCell(existing, cell) && !_sameCell(existing, targetCell))
             existing,
         WorkflowCell(
-          startRow: cell.startRow + offset,
+          startRow: movedCellStartRow,
           rowSpan: cell.rowSpan,
           columnSpan: cell.columnSpan,
           text: cell.text,
         ),
         WorkflowCell(
-          startRow: displacedRow,
+          startRow: movedTargetStartRow,
           rowSpan: targetCell.rowSpan,
           columnSpan: targetCell.columnSpan,
           text: targetCell.text,
@@ -880,6 +1085,72 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _setDocument(_currentDocument.copyWith(columns: columns));
   }
 
+  void _moveCellHorizontally({
+    required String columnId,
+    required WorkflowCell cell,
+    required int offset,
+  }) {
+    final movePlan = _horizontalMovePlan(columnId: columnId, cell: cell, offset: offset);
+    if (movePlan == null) {
+      return;
+    }
+
+    final overlappingCells = _cellsIntersectingRect(
+      startColumnId: movePlan.newColumnId,
+      columnSpan: cell.columnSpan,
+      startRow: cell.startRow,
+      endRow: cell.endRow,
+      excludingColumnId: columnId,
+      excludingCell: cell,
+    );
+    final movedCell = WorkflowCell(
+      startRow: cell.startRow,
+      rowSpan: cell.rowSpan,
+      columnSpan: cell.columnSpan,
+      text: cell.text,
+    );
+    final swappedReplacement = movePlan.swappedCell == null
+        ? null
+        : WorkflowCell(
+            startRow: movePlan.swappedCell!.cell.startRow,
+            rowSpan: movePlan.swappedCell!.cell.rowSpan,
+            columnSpan: movePlan.swappedCell!.cell.columnSpan,
+            text: movePlan.swappedCell!.cell.text,
+          );
+
+    final columns = [
+      for (final column in _currentDocument.columns)
+        WorkflowColumn(
+          id: column.id,
+          widthSpec: column.widthSpec,
+          cells: [
+            for (final existing in column.cells)
+              if (!_sameColumnCell(column.id, existing, columnId, cell) &&
+                  !overlappingCells.any(
+                    (entry) => _sameColumnCell(
+                      column.id,
+                      existing,
+                      entry.columnId,
+                      entry.cell,
+                    ),
+                  ))
+                existing,
+            if (column.id == movePlan.newColumnId) movedCell,
+            if (swappedReplacement != null && column.id == columnId)
+              swappedReplacement,
+          ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
+        ),
+    ];
+
+    _setDocument(_currentDocument.copyWith(columns: columns));
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: movePlan.newColumnId,
+        startRow: cell.startRow,
+      );
+    });
+  }
+
   WorkflowCell? _cellCoveringRow(
     String columnId,
     int row, {
@@ -904,20 +1175,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     required int startRow,
     required int endRow,
   }) {
-    final column = _currentDocument.columns.firstWhere((item) => item.id == columnId);
-    final absorbedCells = <WorkflowCell>[
-      for (final cell in column.cells)
-        if (_rangesOverlap(
-          startRow,
-          endRow,
-          cell.startRow,
-          cell.startRow + cell.rowSpan - 1,
-        ))
-          cell,
-    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
-
+    final absorbedCells = _absorbedCellsForVerticalMerge(
+      columnId: columnId,
+      baseCell: baseCell,
+      startRow: startRow,
+      endRow: endRow,
+    );
     final mergedText = absorbedCells
-        .map((cell) => cell.text.trim())
+        .map((entry) => entry.cell.text.trim())
         .where((text) => text.isNotEmpty)
         .join('\n');
 
@@ -936,9 +1201,18 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             widthSpec: item.widthSpec,
             cells: [
               for (final cell in item.cells)
-                if (!absorbedCells.any((absorbed) => _sameCell(cell, absorbed))) cell,
+                if (!_absorbedCellsContain(absorbedCells, item.id, cell)) cell,
               replacement,
             ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
+          )
+        else if (_columnIsInsideSpan(columnId, baseCell.columnSpan, item.id))
+          WorkflowColumn(
+            id: item.id,
+            widthSpec: item.widthSpec,
+            cells: [
+              for (final cell in item.cells)
+                if (!_absorbedCellsContain(absorbedCells, item.id, cell)) cell,
+            ],
           )
         else
           item,
@@ -950,7 +1224,250 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         columnId: columnId,
         startRow: startRow,
       );
+      _cellActionPanel = _CellActionPanel.merge;
     });
+  }
+
+  void _mergeIntoColumnRange({
+    required String baseColumnId,
+    required String targetColumnId,
+    required WorkflowCell baseCell,
+    required _HorizontalMergeTextOrder textOrder,
+  }) {
+    final startRow = baseCell.startRow;
+    final endRow = baseCell.endRow;
+    final targetColumn = _currentDocument.columns.firstWhere(
+      (column) => column.id == targetColumnId,
+    );
+    final absorbedTargetCells = [
+      for (final cell in targetColumn.cells)
+        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) cell,
+    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
+
+    final targetText = absorbedTargetCells
+        .map((cell) => cell.text.trim())
+        .where((text) => text.isNotEmpty)
+        .join('\n');
+    final baseText = baseCell.text.trim();
+    final mergedTextParts = textOrder == _HorizontalMergeTextOrder.baseThenTarget
+        ? [baseText, targetText]
+        : [targetText, baseText];
+    final mergedText = mergedTextParts
+        .where((text) => text.isNotEmpty)
+        .join('\n');
+    final replacementColumnId = textOrder == _HorizontalMergeTextOrder.baseThenTarget
+        ? baseColumnId
+        : targetColumnId;
+    final replacement = WorkflowCell(
+      startRow: startRow,
+      rowSpan: baseCell.rowSpan,
+      columnSpan: baseCell.columnSpan + 1,
+      text: mergedText.isEmpty ? baseCell.text : mergedText,
+    );
+
+    final columns = [
+      for (final column in _currentDocument.columns)
+        if (column.id == baseColumnId && column.id == targetColumnId)
+          WorkflowColumn(
+            id: column.id,
+            widthSpec: column.widthSpec,
+            cells: [
+              for (final cell in column.cells)
+                if (!_sameCell(cell, baseCell) &&
+                    !absorbedTargetCells.any((absorbed) => _sameCell(cell, absorbed)))
+                  cell,
+              replacement,
+            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
+          )
+        else if (column.id == baseColumnId)
+          WorkflowColumn(
+            id: column.id,
+            widthSpec: column.widthSpec,
+            cells: [
+              for (final cell in column.cells)
+                if (!_sameCell(cell, baseCell)) cell,
+              if (replacementColumnId == baseColumnId) replacement,
+            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
+          )
+        else if (column.id == targetColumnId)
+          WorkflowColumn(
+            id: column.id,
+            widthSpec: column.widthSpec,
+            cells: [
+              for (final cell in column.cells)
+                if (!absorbedTargetCells.any((absorbed) => _sameCell(cell, absorbed)))
+                  cell,
+              if (replacementColumnId == targetColumnId) replacement,
+            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
+          )
+        else
+          column,
+    ];
+
+    _setDocument(_currentDocument.copyWith(columns: columns));
+    setState(() {
+      _selectedCell = RecipeChartSelection(
+        columnId: replacementColumnId,
+        startRow: startRow,
+      );
+      _cellActionPanel = _CellActionPanel.merge;
+    });
+  }
+
+  List<_AbsorbedWorkflowCell> _absorbedCellsForVerticalMerge({
+    required String columnId,
+    required WorkflowCell baseCell,
+    required int startRow,
+    required int endRow,
+  }) {
+    final absorbedCells = <_AbsorbedWorkflowCell>[];
+    for (final column in _columnsInsideSpan(columnId, baseCell.columnSpan)) {
+      for (final cell in column.cells) {
+        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) {
+          absorbedCells.add(_AbsorbedWorkflowCell(columnId: column.id, cell: cell));
+        }
+      }
+    }
+    absorbedCells.sort((left, right) {
+      final rowComparison = left.cell.startRow.compareTo(right.cell.startRow);
+      if (rowComparison != 0) {
+        return rowComparison;
+      }
+      return _columnIndex(left.columnId).compareTo(_columnIndex(right.columnId));
+    });
+    return absorbedCells;
+  }
+
+  bool _absorbedCellsContain(
+    List<_AbsorbedWorkflowCell> absorbedCells,
+    String columnId,
+    WorkflowCell cell,
+  ) {
+    return absorbedCells.any(
+      (absorbed) => absorbed.columnId == columnId && _sameCell(absorbed.cell, cell),
+    );
+  }
+
+  Iterable<WorkflowColumn> _columnsInsideSpan(String columnId, int columnSpan) {
+    final startIndex = _columnIndex(columnId);
+    if (startIndex < 0) {
+      return const [];
+    }
+    final endIndex = startIndex + columnSpan - 1;
+    return [
+      for (var index = startIndex;
+          index < _currentDocument.columns.length && index <= endIndex;
+          index++)
+        _currentDocument.columns[index],
+    ];
+  }
+
+  bool _columnIsInsideSpan(
+    String startColumnId,
+    int columnSpan,
+    String targetColumnId,
+  ) {
+    final startIndex = _columnIndex(startColumnId);
+    final targetIndex = _columnIndex(targetColumnId);
+    return startIndex >= 0 &&
+        targetIndex >= startIndex &&
+        targetIndex <= startIndex + columnSpan - 1;
+  }
+
+  String? _horizontalMoveColumnId(
+    String columnId,
+    WorkflowCell cell,
+    int offset,
+  ) {
+    final currentIndex = _columnIndex(columnId);
+    if (currentIndex < 0) {
+      return null;
+    }
+    final nextIndex = currentIndex + offset;
+    final nextEndIndex = nextIndex + cell.columnSpan - 1;
+    if (nextIndex < 0 || nextEndIndex >= _currentDocument.columns.length) {
+      return null;
+    }
+    return _currentDocument.columns[nextIndex].id;
+  }
+
+  _HorizontalMovePlan? _horizontalMovePlan({
+    required String columnId,
+    required WorkflowCell cell,
+    required int offset,
+  }) {
+    final shiftedColumnId = _horizontalMoveColumnId(columnId, cell, offset);
+    if (shiftedColumnId == null) {
+      return null;
+    }
+    final shiftedOverlaps = _cellsIntersectingRect(
+      startColumnId: shiftedColumnId,
+      columnSpan: cell.columnSpan,
+      startRow: cell.startRow,
+      endRow: cell.endRow,
+      excludingColumnId: columnId,
+      excludingCell: cell,
+    );
+    final nonEmptyOverlaps = [
+      for (final entry in shiftedOverlaps)
+        if (entry.cell.text.trim().isNotEmpty) entry,
+    ];
+    if (nonEmptyOverlaps.isEmpty) {
+      return _HorizontalMovePlan(newColumnId: shiftedColumnId);
+    }
+    if (nonEmptyOverlaps.length != 1) {
+      return null;
+    }
+    final swappedCell = nonEmptyOverlaps.single;
+    if (!_canSwapHorizontally(
+      columnId: columnId,
+      cell: cell,
+      targetColumnId: swappedCell.columnId,
+      targetCell: swappedCell.cell,
+    )) {
+      return null;
+    }
+    return _HorizontalMovePlan(
+      newColumnId: swappedCell.columnId,
+      swappedCell: swappedCell,
+    );
+  }
+
+  List<_AbsorbedWorkflowCell> _cellsIntersectingRect({
+    required String startColumnId,
+    required int columnSpan,
+    required int startRow,
+    required int endRow,
+    String? excludingColumnId,
+    WorkflowCell? excludingCell,
+  }) {
+    final entries = <_AbsorbedWorkflowCell>[];
+    for (final column in _columnsInsideSpan(startColumnId, columnSpan)) {
+      for (final cell in column.cells) {
+        if (excludingColumnId != null &&
+            column.id == excludingColumnId &&
+            _sameCell(cell, excludingCell)) {
+          continue;
+        }
+        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) {
+          entries.add(_AbsorbedWorkflowCell(columnId: column.id, cell: cell));
+        }
+      }
+    }
+    return entries;
+  }
+
+  bool _sameColumnCell(
+    String leftColumnId,
+    WorkflowCell leftCell,
+    String rightColumnId,
+    WorkflowCell rightCell,
+  ) {
+    return leftColumnId == rightColumnId && _sameCell(leftCell, rightCell);
+  }
+
+  int _columnIndex(String columnId) {
+    return _currentDocument.columns.indexWhere((column) => column.id == columnId);
   }
 
   bool _rangesOverlap(
@@ -1159,7 +1676,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                               value: _CellAction.mergeDown,
                                               child: Text(localizations.mergeWithBelow),
                                             ),
-                                          if (cell.rowSpan > 1)
+                                          if (cell.rowSpan > 1 || cell.columnSpan > 1)
                                             PopupMenuItem(
                                               value: _CellAction.unmerge,
                                               child: Text(localizations.unmerge),
@@ -1191,13 +1708,88 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     if (cell.startRow <= 1) {
       return false;
     }
-    return true;
+    final aboveCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
+    final newStartRow = aboveCell?.startRow ?? (cell.startRow - 1);
+    return _canAbsorbVerticalRange(
+      columnId: columnId,
+      cell: cell,
+      startRow: newStartRow,
+      endRow: cell.endRow,
+    );
   }
 
   bool _canMergeDown(String columnId, WorkflowCell cell) {
     final endRow = cell.startRow + cell.rowSpan - 1;
     if (endRow >= _currentWorkflowRowCount) {
       return false;
+    }
+    final belowCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
+    final newEndRow = belowCell?.startRow != null
+        ? belowCell!.startRow + belowCell.rowSpan - 1
+        : endRow + 1;
+    return newEndRow <= _currentWorkflowRowCount &&
+        _canAbsorbVerticalRange(
+          columnId: columnId,
+          cell: cell,
+          startRow: cell.startRow,
+          endRow: newEndRow,
+        );
+  }
+
+  bool _canMergeLeft(String columnId, WorkflowCell cell) {
+    final targetColumnId = _columnIdByOffset(columnId, -1);
+    return targetColumnId != null &&
+        _canAbsorbHorizontalTargetColumn(
+          targetColumnId: targetColumnId,
+          cell: cell,
+        );
+  }
+
+  bool _canMergeRight(String columnId, WorkflowCell cell) {
+    final targetColumnId = _columnIdByOffset(columnId, cell.columnSpan);
+    return targetColumnId != null &&
+        _canAbsorbHorizontalTargetColumn(
+          targetColumnId: targetColumnId,
+          cell: cell,
+        );
+  }
+
+  bool _canAbsorbHorizontalTargetColumn({
+    required String targetColumnId,
+    required WorkflowCell cell,
+  }) {
+    final targetColumn = _currentDocument.columns.firstWhere(
+      (column) => column.id == targetColumnId,
+    );
+    for (final targetCell in targetColumn.cells) {
+      if (!_rangesOverlap(cell.startRow, cell.endRow, targetCell.startRow, targetCell.endRow)) {
+        continue;
+      }
+      if (targetCell.text.trim().isNotEmpty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _canAbsorbVerticalRange({
+    required String columnId,
+    required WorkflowCell cell,
+    required int startRow,
+    required int endRow,
+  }) {
+    for (final column in _columnsInsideSpan(columnId, cell.columnSpan)) {
+      for (final targetCell in column.cells) {
+        if (column.id == columnId && _sameCell(targetCell, cell)) {
+          continue;
+        }
+        if (!_rangesOverlap(startRow, endRow, targetCell.startRow, targetCell.endRow)) {
+          continue;
+        }
+        if (targetCell.text.trim().isNotEmpty) {
+          return false;
+        }
+      }
     }
     return true;
   }
@@ -1212,10 +1804,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         cell.startRow - 1,
         excluding: cell,
       );
-      return targetCell == null || targetCell.rowSpan == 1;
+      return targetCell == null || targetCell.columnSpan == cell.columnSpan;
     }
     final targetCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
-    return targetCell == null || targetCell.rowSpan == 1;
+    return targetCell == null ||
+        (targetCell.rowSpan == 1 && targetCell.columnSpan == cell.columnSpan);
   }
 
   bool _canMoveDown(String columnId, WorkflowCell cell) {
@@ -1225,10 +1818,83 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     }
     if (cell.rowSpan > 1) {
       final targetCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
-      return targetCell == null || targetCell.rowSpan == 1;
+      return targetCell == null || targetCell.columnSpan == cell.columnSpan;
     }
     final targetCell = _cellCoveringRow(columnId, cell.startRow + 1, excluding: cell);
-    return targetCell == null || targetCell.rowSpan == 1;
+    return targetCell == null ||
+        (targetCell.rowSpan == 1 && targetCell.columnSpan == cell.columnSpan);
+  }
+
+  bool _canMoveLeft(String columnId, WorkflowCell cell) {
+    if (!_selectedCellIsStored) {
+      return _columnIdByOffset(columnId, -1) != null;
+    }
+    return _canMoveHorizontally(columnId: columnId, cell: cell, offset: -1);
+  }
+
+  bool _canMoveRight(String columnId, WorkflowCell cell) {
+    if (!_selectedCellIsStored) {
+      return _columnIdByOffset(columnId, 1) != null;
+    }
+    return _canMoveHorizontally(columnId: columnId, cell: cell, offset: 1);
+  }
+
+  bool _canMoveHorizontally({
+    required String columnId,
+    required WorkflowCell cell,
+    required int offset,
+  }) {
+    return _horizontalMovePlan(columnId: columnId, cell: cell, offset: offset) !=
+        null;
+  }
+
+  bool _canSwapHorizontally({
+    required String columnId,
+    required WorkflowCell cell,
+    required String targetColumnId,
+    required WorkflowCell targetCell,
+  }) {
+    final columnIndex = _columnIndex(columnId);
+    final targetColumnIndex = _columnIndex(targetColumnId);
+    if (columnIndex < 0 || targetColumnIndex < 0) {
+      return false;
+    }
+    final movedTargetEndIndex = columnIndex + targetCell.columnSpan - 1;
+    return cell.startRow == targetCell.startRow &&
+        cell.rowSpan == targetCell.rowSpan &&
+        cell.columnSpan == targetCell.columnSpan &&
+        movedTargetEndIndex < _currentDocument.columns.length;
+  }
+
+  bool _canUnmergeUp(WorkflowCell cell) {
+    return _selectedCellIsStored && cell.rowSpan > 1;
+  }
+
+  bool _canUnmergeDown(WorkflowCell cell) {
+    return _selectedCellIsStored && cell.rowSpan > 1;
+  }
+
+  bool _canUnmergeLeft(String columnId, WorkflowCell cell) {
+    return _selectedCellIsStored && cell.columnSpan > 1;
+  }
+
+  bool _canUnmergeRight(String columnId, WorkflowCell cell) {
+    return _selectedCellIsStored &&
+        cell.columnSpan > 1 &&
+        _columnIdByOffset(columnId, 1) != null;
+  }
+
+  String? _columnIdByOffset(String columnId, int offset) {
+    final columnIds = _currentDocument.columns.map((column) => column.id).toList();
+    final index = columnIds.indexOf(columnId);
+    if (index < 0) {
+      return null;
+    }
+    final nextIndex = index + offset;
+    if (nextIndex < 0 || nextIndex >= columnIds.length) {
+      return null;
+    }
+    return columnIds[nextIndex];
   }
 
   WorkflowCell? get _currentCell {
@@ -1264,9 +1930,28 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
   bool get _selectedCellIsStored => _currentCell != null;
 
+  bool get _hasAvailableMergeAction {
+    final selection = _selectedCell;
+    final cell = _selectedCellForActions;
+    if (selection == null || cell == null) {
+      return false;
+    }
+    return _canMergeUp(selection.columnId, cell) ||
+        _canMergeDown(selection.columnId, cell) ||
+        _canMergeLeft(selection.columnId, cell) ||
+        _canMergeRight(selection.columnId, cell);
+  }
+
   void _clearSelection() {
     setState(() {
       _selectedCell = null;
+      _cellActionPanel = _CellActionPanel.main;
+    });
+  }
+
+  void _returnToMainCellActions() {
+    setState(() {
+      _cellActionPanel = _CellActionPanel.main;
     });
   }
 
@@ -1561,6 +2246,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                             _selectedCell?.startRow == selection.startRow
                         ? null
                         : selection;
+                    _cellActionPanel = _CellActionPanel.main;
                   });
                 },
               ),
@@ -1582,100 +2268,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 border: Border.all(color: const Color(0xFFD7CCBE)),
               ),
               child: _selectedCellForActions != null && _selectedCell != null
-                  ? _ActionGrid(
-                      children: [
-                        _ActionIconButton(
-                          onPressed: () => _editCell(
-                            columnId: _selectedCell!.columnId,
-                            existingCell: _currentCell,
-                            initialStartRow: _selectedCell!.startRow,
-                            initialEndRow: _selectedCell!.startRow,
-                          ),
-                          icon: Icons.edit_outlined,
-                          tooltip: localizations.editCell,
-                          isPrimary: true,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _selectedCellIsStored
-                              ? () => _deleteCell(
-                                    _selectedCell!.columnId,
-                                    _currentCell!,
-                                  )
-                              : null,
-                          icon: Icons.delete_outline,
-                          tooltip: localizations.deleteCell,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _canMoveUp(
-                            _selectedCell!.columnId,
-                            _selectedCellForActions!,
-                          )
-                              ? () => _moveCellUp(
-                                    _selectedCell!.columnId,
-                                    _selectedCellForActions!,
-                                  )
-                              : null,
-                          icon: Icons.arrow_upward,
-                          tooltip: localizations.moveUp,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _canMoveDown(
-                            _selectedCell!.columnId,
-                            _selectedCellForActions!,
-                          )
-                              ? () => _moveCellDown(
-                                    _selectedCell!.columnId,
-                                    _selectedCellForActions!,
-                                  )
-                              : null,
-                          icon: Icons.arrow_downward,
-                          tooltip: localizations.moveDown,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _canMergeUp(
-                            _selectedCell!.columnId,
-                            _selectedCellForActions!,
-                          )
-                              ? () => _mergeCellUp(
-                                    _selectedCell!.columnId,
-                                    _selectedCellForActions!,
-                                  )
-                              : null,
-                          icon: Icons.vertical_align_top,
-                          tooltip: localizations.mergeUp,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _canMergeDown(
-                            _selectedCell!.columnId,
-                            _selectedCellForActions!,
-                          )
-                              ? () => _mergeCellDown(
-                                    _selectedCell!.columnId,
-                                    _selectedCellForActions!,
-                                  )
-                              : null,
-                          icon: Icons.vertical_align_bottom,
-                          tooltip: localizations.mergeDown,
-                        ),
-                        _ActionIconButton(
-                          onPressed:
-                              _selectedCellForActions!.rowSpan > 1 ||
-                                      _selectedCellForActions!.columnSpan > 1
-                                  ? () => _unmergeCell(
-                                        _selectedCell!.columnId,
-                                        _selectedCellForActions!,
-                                      )
-                                  : null,
-                          icon: Icons.call_split,
-                          tooltip: localizations.unmerge,
-                        ),
-                        _ActionIconButton(
-                          onPressed: _clearSelection,
-                          icon: Icons.check,
-                          tooltip: localizations.done,
-                        ),
-                      ],
-                    )
+                  ? _cellActionPanelContent(localizations)
                   : Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -1741,6 +2334,159 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       ),
     );
   }
+
+  Widget _cellActionPanelContent(AppLocalizations localizations) {
+    switch (_cellActionPanel) {
+      case _CellActionPanel.main:
+        return _MainCellActionGrid(
+          merge: _ActionIconButton(
+            onPressed: _hasAvailableMergeAction
+                ? () => setState(() {
+                      _cellActionPanel = _CellActionPanel.merge;
+                    })
+                : null,
+            icon: Icons.merge_type,
+            tooltip: localizations.merge,
+          ),
+          moveUp: _ActionIconButton(
+            onPressed: _canMoveUp(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _moveCellUp(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.arrow_upward,
+            tooltip: localizations.moveUp,
+          ),
+          unmerge: _ActionIconButton(
+            onPressed: _selectedCellIsStored &&
+                    (_selectedCellForActions!.rowSpan > 1 ||
+                        _selectedCellForActions!.columnSpan > 1)
+                ? () => setState(() {
+                      _cellActionPanel = _CellActionPanel.unmerge;
+                    })
+                : null,
+            icon: Icons.call_split,
+            tooltip: localizations.unmerge,
+          ),
+          moveLeft: _ActionIconButton(
+            onPressed: _canMoveLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _moveCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.arrow_back,
+            tooltip: localizations.moveLeft,
+          ),
+          moveDown: _ActionIconButton(
+            onPressed: _canMoveDown(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _moveCellDown(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.arrow_downward,
+            tooltip: localizations.moveDown,
+          ),
+          moveRight: _ActionIconButton(
+            onPressed: _canMoveRight(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _moveCellRight(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.arrow_forward,
+            tooltip: localizations.moveRight,
+          ),
+          edit: _ActionIconButton(
+            onPressed: () => _editCell(
+              columnId: _selectedCell!.columnId,
+              existingCell: _currentCell,
+              initialStartRow: _selectedCell!.startRow,
+              initialEndRow: _selectedCell!.startRow,
+            ),
+            icon: Icons.edit_outlined,
+            tooltip: localizations.editCell,
+          ),
+          done: _ActionIconButton(
+            onPressed: _clearSelection,
+            icon: Icons.check,
+            tooltip: localizations.done,
+            isConfirm: true,
+          ),
+          delete: _ActionIconButton(
+            onPressed: _selectedCellIsStored
+                ? () => _deleteCell(_selectedCell!.columnId, _currentCell!)
+                : null,
+            icon: Icons.delete_outline,
+            tooltip: localizations.deleteCell,
+          ),
+        );
+      case _CellActionPanel.merge:
+        return _DirectionalActionGrid(
+          up: _ActionIconButton(
+            onPressed: _canMergeUp(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _mergeCellUp(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.vertical_align_top,
+            tooltip: localizations.mergeUp,
+          ),
+          left: _ActionIconButton(
+            onPressed: _canMergeLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _mergeCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.align_horizontal_left,
+            tooltip: localizations.mergeLeft,
+          ),
+          right: _ActionIconButton(
+            onPressed: _canMergeRight(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _mergeCellRight(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.align_horizontal_right,
+            tooltip: localizations.mergeRight,
+          ),
+          down: _ActionIconButton(
+            onPressed: _canMergeDown(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _mergeCellDown(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.vertical_align_bottom,
+            tooltip: localizations.mergeDown,
+          ),
+          done: _ActionIconButton(
+            onPressed: _returnToMainCellActions,
+            icon: Icons.check,
+            tooltip: localizations.done,
+            isConfirm: true,
+          ),
+        );
+      case _CellActionPanel.unmerge:
+        return _DirectionalActionGrid(
+          up: _ActionIconButton(
+            onPressed: _canUnmergeUp(_selectedCellForActions!)
+                ? () => _unmergeCellUp(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.vertical_align_top,
+            tooltip: localizations.unmergeUp,
+          ),
+          left: _ActionIconButton(
+            onPressed: _canUnmergeLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _unmergeCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.align_horizontal_left,
+            tooltip: localizations.unmergeLeft,
+          ),
+          right: _ActionIconButton(
+            onPressed: _canUnmergeRight(_selectedCell!.columnId, _selectedCellForActions!)
+                ? () => _unmergeCellRight(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.align_horizontal_right,
+            tooltip: localizations.unmergeRight,
+          ),
+          down: _ActionIconButton(
+            onPressed: _canUnmergeDown(_selectedCellForActions!)
+                ? () => _unmergeCellDown(_selectedCell!.columnId, _selectedCellForActions!)
+                : null,
+            icon: Icons.vertical_align_bottom,
+            tooltip: localizations.unmergeDown,
+          ),
+          done: _ActionIconButton(
+            onPressed: _returnToMainCellActions,
+            icon: Icons.check,
+            tooltip: localizations.done,
+            isConfirm: true,
+          ),
+        );
+    }
+  }
 }
 
 class _CellDraft {
@@ -1753,6 +2499,37 @@ class _CellDraft {
   final int startRow;
   final int endRow;
   final String text;
+}
+
+class _AbsorbedWorkflowCell {
+  const _AbsorbedWorkflowCell({
+    required this.columnId,
+    required this.cell,
+  });
+
+  final String columnId;
+  final WorkflowCell cell;
+}
+
+class _HorizontalMovePlan {
+  const _HorizontalMovePlan({
+    required this.newColumnId,
+    this.swappedCell,
+  });
+
+  final String newColumnId;
+  final _AbsorbedWorkflowCell? swappedCell;
+}
+
+enum _CellActionPanel {
+  main,
+  merge,
+  unmerge,
+}
+
+enum _HorizontalMergeTextOrder {
+  baseThenTarget,
+  targetThenBase,
 }
 
 enum _CellAction {
@@ -1791,23 +2568,99 @@ class _EditorErrorBanner extends StatelessWidget {
   }
 }
 
-class _ActionGrid extends StatelessWidget {
-  const _ActionGrid({required this.children});
+class _DirectionalActionGrid extends StatelessWidget {
+  const _DirectionalActionGrid({
+    required this.up,
+    required this.left,
+    required this.right,
+    required this.down,
+    required this.done,
+  });
+
+  final Widget up;
+  final Widget left;
+  final Widget right;
+  final Widget down;
+  final Widget done;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(child: up),
+            const SizedBox(width: 8),
+            Expanded(child: left),
+            const SizedBox(width: 8),
+            Expanded(child: right),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: down),
+            const SizedBox(width: 8),
+            Expanded(flex: 2, child: done),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MainCellActionGrid extends StatelessWidget {
+  const _MainCellActionGrid({
+    required this.merge,
+    required this.moveUp,
+    required this.unmerge,
+    required this.moveLeft,
+    required this.moveDown,
+    required this.moveRight,
+    required this.edit,
+    required this.done,
+    required this.delete,
+  });
+
+  final Widget merge;
+  final Widget moveUp;
+  final Widget unmerge;
+  final Widget moveLeft;
+  final Widget moveDown;
+  final Widget moveRight;
+  final Widget edit;
+  final Widget done;
+  final Widget delete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActionGridRow(children: [merge, moveUp, unmerge]),
+        const SizedBox(height: 8),
+        _ActionGridRow(children: [moveLeft, moveDown, moveRight]),
+        const SizedBox(height: 8),
+        _ActionGridRow(children: [edit, done, delete]),
+      ],
+    );
+  }
+}
+
+class _ActionGridRow extends StatelessWidget {
+  const _ActionGridRow({required this.children});
 
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
+    return Row(
       children: [
-        for (final child in children)
-          SizedBox(
-            width: 96,
-            child: child,
-          ),
+        for (var index = 0; index < children.length; index++) ...[
+          if (index > 0) const SizedBox(width: 8),
+          Expanded(child: children[index]),
+        ],
       ],
     );
   }
@@ -1818,17 +2671,17 @@ class _ActionIconButton extends StatelessWidget {
     required this.onPressed,
     required this.icon,
     required this.tooltip,
-    this.isPrimary = false,
+    this.isConfirm = false,
   });
 
   final VoidCallback? onPressed;
   final IconData icon;
   final String tooltip;
-  final bool isPrimary;
+  final bool isConfirm;
 
   @override
   Widget build(BuildContext context) {
-    final button = isPrimary
+    final button = isConfirm
         ? FilledButton(
             onPressed: onPressed,
             style: FilledButton.styleFrom(
