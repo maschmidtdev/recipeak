@@ -6,6 +6,7 @@ import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'widgets/dsl_editor_widgets.dart';
 import 'widgets/editor_action_grid.dart';
+import 'widgets/editor_bottom_actions.dart';
 import 'widgets/editor_form_widgets.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
@@ -1376,84 +1377,49 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFD7CCBE)),
-              ),
-              child: _selectedCellForActions != null && _selectedCell != null
-                  ? _cellActionPanelContent(localizations)
-                  : Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: _openPrepManager,
-                          icon: const Icon(Icons.format_list_bulleted),
-                          label: Text(localizations.prepLabel),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: _removeWorkflowRow,
-                          icon: const Icon(Icons.remove),
-                          label: Text(localizations.rowLabel),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: _addWorkflowRow,
-                          icon: const Icon(Icons.add),
-                          label: Text(localizations.rowLabel),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: _addColumn,
-                          icon: const Icon(Icons.view_column),
-                          label: Text(localizations.columnLabel),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: _openCellManager,
-                          icon: const Icon(Icons.dashboard_customize),
-                          label: Text(localizations.cellsLabel),
-                        ),
-                      ],
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                  child: FilledButton.tonalIcon(
-                      onPressed: _discardChanges,
-                      icon: const Icon(Icons.close),
-                      label: Text(localizations.discard),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                  child: FilledButton.icon(
-                      onPressed: _saveRecipe,
-                      icon: const Icon(Icons.check),
-                      label: Text(localizations.save),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: EditorBottomActions(
+        chartActions: _selectedCellForActions != null && _selectedCell != null
+            ? _cellActionPanelContent(localizations)
+            : _chartStructureActions(localizations),
+        onDiscard: _discardChanges,
+        onSave: _saveRecipe,
+        discardLabel: localizations.discard,
+        saveLabel: localizations.save,
       ),
+    );
+  }
+
+  Widget _chartStructureActions(AppLocalizations localizations) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        FilledButton.tonalIcon(
+          onPressed: _openPrepManager,
+          icon: const Icon(Icons.format_list_bulleted),
+          label: Text(localizations.prepLabel),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: _removeWorkflowRow,
+          icon: const Icon(Icons.remove),
+          label: Text(localizations.rowLabel),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: _addWorkflowRow,
+          icon: const Icon(Icons.add),
+          label: Text(localizations.rowLabel),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: _addColumn,
+          icon: const Icon(Icons.view_column),
+          label: Text(localizations.columnLabel),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: _openCellManager,
+          icon: const Icon(Icons.dashboard_customize),
+          label: Text(localizations.cellsLabel),
+        ),
+      ],
     );
   }
 
