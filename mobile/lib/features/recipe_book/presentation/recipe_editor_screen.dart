@@ -5,6 +5,7 @@ import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'widgets/editor_action_grid.dart';
+import 'widgets/editor_form_widgets.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
@@ -812,7 +813,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (_currentDocument.prepRows.isEmpty)
-                  _EditorPlaceholder(
+                  EditorPlaceholder(
                     text:
                         '${localizations.noPrepRowsPlaceholder} ${localizations.createTopInstructionsHint}',
                   )
@@ -824,7 +825,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                         for (var index = 0;
                             index < _currentDocument.prepRows.length;
                             index++)
-                          _EditorListRow(
+                          EditorListRow(
                             title: _currentDocument.prepRows[index].text,
                             subtitle: localizations.prepRowNumberLabel(index + 1),
                             onEdit: () {
@@ -883,7 +884,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (_currentDocument.columns.isEmpty)
-                  _EditorPlaceholder(
+                  EditorPlaceholder(
                     text: localizations.noWorkflowColumnsPlaceholder,
                   )
                 else
@@ -892,7 +893,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       shrinkWrap: true,
                       children: [
                         for (final column in _currentDocument.columns) ...[
-                          _ColumnEditorCard(
+                          ColumnEditorCard(
                             columnId: column.id,
                             onAddCell: () {
                               Navigator.of(context).pop();
@@ -905,12 +906,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                             child: Column(
                               children: [
                                 if (column.cells.isEmpty)
-                                  _EditorPlaceholder(
+                                  EditorPlaceholder(
                                     text: localizations.noCellsInColumnPlaceholder,
                                   )
                                 else
                                   for (final cell in column.cells)
-                                    _EditorListRow(
+                                    EditorListRow(
                                       title: cell.text,
                                       subtitle: cell.rowSpan == 1
                                           ? localizations.singleRowLabel(cell.startRow)
@@ -1268,7 +1269,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _FieldLabel(
+              FieldLabel(
                 label: localizations.recipeTitleLabel,
                 child: TextFormField(
                   controller: _titleController,
@@ -1285,7 +1286,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _FieldLabel(
+              FieldLabel(
                 label: localizations.yieldLabel,
                 child: TextFormField(
                   controller: _yieldController,
@@ -1294,7 +1295,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _FieldLabel(
+              FieldLabel(
                 label: localizations.durationLabel,
                 child: TextFormField(
                   controller: _durationController,
@@ -1305,7 +1306,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _FieldLabel(
+              FieldLabel(
                 label: localizations.notesLabel,
                 child: TextFormField(
                   controller: _notesController,
@@ -1317,7 +1318,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _FieldLabel(
+              FieldLabel(
                 label: localizations.tagsTitle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1380,7 +1381,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              if (_dslError != null) _EditorErrorBanner(message: _dslError!),
+              if (_dslError != null) EditorErrorBanner(message: _dslError!),
               if (_dslError != null) const SizedBox(height: 20),
               if (kIsDevelopmentMode) ...[
                 Container(
@@ -1690,190 +1691,6 @@ class _CellDraft {
   final int startRow;
   final int endRow;
   final String text;
-}
-
-class _EditorErrorBanner extends StatelessWidget {
-  const _EditorErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9E6E2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE3B1A9)),
-      ),
-      child: Text(
-        message,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF8A2E24),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _ColumnEditorCard extends StatelessWidget {
-  const _ColumnEditorCard({
-    required this.columnId,
-    required this.child,
-    required this.onAddCell,
-    required this.onDeleteColumn,
-  });
-
-  final String columnId;
-  final Widget child;
-  final VoidCallback onAddCell;
-  final VoidCallback onDeleteColumn;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD7CCBE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Column $columnId',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: onAddCell,
-                icon: const Icon(Icons.add_box_outlined),
-                tooltip: 'Add cell',
-              ),
-              IconButton(
-                onPressed: onDeleteColumn,
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete column',
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _EditorListRow extends StatelessWidget {
-  const _EditorListRow({
-    required this.title,
-    required this.subtitle,
-    this.onEdit,
-    this.onDelete,
-    this.actionMenu,
-  });
-
-  final String title;
-  final String subtitle;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-  final Widget? actionMenu;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE3DACD)),
-      ),
-      child: ListTile(
-        title: Text(title),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF5E675F),
-          ),
-        ),
-        trailing: actionMenu ??
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  IconButton(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                if (onDelete != null)
-                  IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline),
-                  ),
-              ],
-            ),
-      ),
-    );
-  }
-}
-
-class _EditorPlaceholder extends StatelessWidget {
-  const _EditorPlaceholder({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F3EA),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF5E675F),
-        ),
-      ),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
 }
 
 String _tagLabel(BuildContext context, String tag) {
