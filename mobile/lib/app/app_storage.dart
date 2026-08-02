@@ -72,7 +72,8 @@ class AppStorage {
         availableTags: availableTags,
         matchAllTags: matchAllTags,
       );
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Failed to load persisted recipe state: $error');
       return null;
     }
   }
@@ -110,7 +111,8 @@ class AppStorage {
           .whereType<Map<String, dynamic>>()
           .map(_recipeSummaryFromJson)
           .toList();
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Failed to load production seed recipes: $error');
       return const [];
     }
   }
@@ -123,7 +125,6 @@ class AppStorage {
       'yieldText': recipe.yieldText,
       'tags': recipe.tags,
       'isFavorite': recipe.isFavorite,
-      'isDraft': recipe.isDraft,
       'document': _recipeDocumentToJson(recipe.document),
     };
   }
@@ -138,7 +139,6 @@ class AppStorage {
           .whereType<String>()
           .toList(),
       isFavorite: json['isFavorite'] as bool? ?? false,
-      isDraft: json['isDraft'] as bool? ?? false,
       document: _recipeDocumentFromJson(
         json['document'] as Map<String, dynamic>? ?? const {},
       ),

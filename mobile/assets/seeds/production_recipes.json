@@ -7,7 +7,6 @@
       "yieldText": "4 servings",
       "tags": ["Vegan"],
       "isFavorite": true,
-      "isDraft": false,
       "document": {
         "prepRows": [
           { "text": "Set out a large skillet and a medium pot" },
@@ -75,7 +74,6 @@
       "yieldText": "4-5 Portionen",
       "tags": ["Vegan"],
       "isFavorite": true,
-      "isDraft": false,
       "document": {
         "prepRows": [
           { "text": "2 grosse Pfannen" },

@@ -1,4 +1,4 @@
-# Recipeak
+# Recipeek
 
 ## Architecture & Design Specification
 
@@ -8,7 +8,7 @@ Version: 1.0
 
 # 1. Project Vision
 
-Recipeak is a mobile-first digital recipe book for creating, organizing and viewing recipes as visual workflow charts.
+Recipeek is a mobile-first digital recipe book for creating, organizing and viewing recipes as visual workflow charts.
 
 The primary goal is to replace traditional paragraph-style recipes with an easier-to-follow visual representation while providing a clean editing experience.
 

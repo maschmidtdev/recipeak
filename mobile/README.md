@@ -1,17 +1,15 @@
-# mobile
+# Recipeek Mobile
 
-A new Flutter project.
+Flutter Android app for Recipeek, a chart-first recipe editor and viewer.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+Run from the `mobile` directory with a connected Android device or emulator:
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+The app stores local recipe state with `shared_preferences`. In development mode, settings include a reset action for restoring seed data.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The production seed recipes live in `assets/seeds/production_recipes.json`.

@@ -1,4 +1,4 @@
-# Recipeak Tech Stack
+# Recipeek Tech Stack
 
 Version: 1.0
 
@@ -12,7 +12,7 @@ The implementation stack should support:
 - deterministic chart layout and rendering
 - explicit visual editing
 - local-first persistence
-- import and export of the Recipeak DSL
+- import and export of the Recipeek DSL
 - PNG and PDF export
 - a small, maintainable dependency surface
 
@@ -403,4 +403,4 @@ The version 1 implementation stack is:
 - hand-written DSL parser
 - Flutter built-in test tools plus golden rendering tests
 
-This stack is intentionally conservative. The difficult part of Recipeak is not backend infrastructure. It is getting the document model, layout engine, and editor behavior correct.
+This stack is intentionally conservative. The difficult part of Recipeek is not backend infrastructure. It is getting the document model, layout engine, and editor behavior correct.

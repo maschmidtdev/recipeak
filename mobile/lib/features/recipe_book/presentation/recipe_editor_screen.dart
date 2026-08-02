@@ -2018,7 +2018,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           tags: _selectedTags.toList()..sort(),
           isFavorite: _isFavorite,
           duration: durationText,
-          isDraft: false,
         ),
         availableTags: _availableTags.toList()..sort(),
       ),

@@ -9,7 +9,6 @@ class RecipeSummary {
     required this.document,
     this.tags = const [],
     this.isFavorite = false,
-    this.isDraft = false,
   });
 
   final String title;
@@ -19,7 +18,6 @@ class RecipeSummary {
   final RecipeDocument document;
   final List<String> tags;
   final bool isFavorite;
-  final bool isDraft;
 
   RecipeSummary copyWith({
     String? title,
@@ -29,7 +27,6 @@ class RecipeSummary {
     RecipeDocument? document,
     List<String>? tags,
     bool? isFavorite,
-    bool? isDraft,
   }) {
     return RecipeSummary(
       title: title ?? this.title,
@@ -39,7 +36,6 @@ class RecipeSummary {
       document: document ?? this.document,
       tags: tags ?? this.tags,
       isFavorite: isFavorite ?? this.isFavorite,
-      isDraft: isDraft ?? this.isDraft,
     );
   }
 }

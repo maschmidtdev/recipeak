@@ -49,7 +49,11 @@ The chart grid still uses a global workflow row index:
 - missing cells are treated as empty cells
 - the final workflow height is determined by the highest referenced row number
 
-Version 1 supports vertical merges only.
+Version 1.1 supports rectangular cells:
+
+- vertical spans across multiple rows
+- horizontal spans across adjacent columns
+- mixed row and column spans in the same cell
 
 ---
 
@@ -82,6 +86,11 @@ Column identifiers:
 - must be a single uppercase letter from `A` to `Z`
 - must be unique
 - are rendered in alphabetical order
+
+Column section headers may also describe horizontal spans:
+
+- `A:` defines cells starting in column `A`
+- `B-D:` defines cells starting in column `B` and spanning through column `D`
 
 ---
 
@@ -149,13 +158,22 @@ C:
 2-4: cook until fragrant
 ```
 
+Horizontal or rectangular merged cells:
+
+```text
+D-F:
+1-7: simmer and finish
+```
+
 Rules:
 
 - single rows use `row. text` or `row: text`
 - merged cells use `start-end: text`
+- a column range such as `D-F:` creates cells with a horizontal span
 - row numbers must be positive integers
 - ranges must be ascending
 - overlapping row ranges in the same column are invalid
+- rectangular cell ranges must not overlap any existing cell range
 
 Cell text may continue on following lines if the continuation line is not a new DSL entry.
 
@@ -229,13 +247,14 @@ Invalid DSL must never be partially imported.
 
 ## Row and merge rules
 
-- overlapping row ranges within the same column are invalid
+- overlapping cell ranges are invalid
 - rows do not need to appear in column `A` first
 - any column may define any row independently
 - skipped row numbers are allowed
 - missing cells are treated as empty cells
 - row ranges must be continuous and ascending
-- only vertical merges are supported in version 1
+- column ranges must be continuous and ascending
+- vertical, horizontal, and mixed rectangular merges are supported
 
 ## Content rules
 
@@ -293,7 +312,6 @@ The chart remains a structured `RecipeDocument`, but the DSL now represents the 
 
 Version 1 still does not include:
 
-- horizontal merges
 - nested sections
 - inline styling
 - explicit row heights
