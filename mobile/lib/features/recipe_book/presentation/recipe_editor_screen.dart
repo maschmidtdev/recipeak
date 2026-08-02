@@ -5,6 +5,7 @@ import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'widgets/editor_action_grid.dart';
+import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
 import '../../recipe_document/presentation/recipe_chart_view.dart';
@@ -280,6 +281,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         : _currentDocument.rowCount;
   }
 
+  ChartDocumentEditor get _chartEditor => ChartDocumentEditor(
+    document: _currentDocument,
+    workflowRowCount: _currentWorkflowRowCount,
+  );
+
   Future<void> _editPrepRow({int? index}) async {
     final localizations = AppLocalizations.of(context);
     final controller = TextEditingController(
@@ -428,7 +434,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
   void _addColumn() {
     final localizations = AppLocalizations.of(context);
-    final nextId = _nextColumnId(_currentDocument.columns);
+    final nextId = _chartEditor.nextColumnId();
     if (nextId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(localizations.noMoreColumnLetters)),
@@ -436,26 +442,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    final columns = [..._currentDocument.columns, WorkflowColumn(id: nextId, cells: const [])];
-    _setDocument(_currentDocument.copyWith(columns: columns));
-  }
-
-  String? _nextColumnId(List<WorkflowColumn> columns) {
-    for (var code = 65; code <= 90; code++) {
-      final id = String.fromCharCode(code);
-      if (!columns.any((column) => column.id == id)) {
-        return id;
-      }
-    }
-    return null;
+    _setDocument(_chartEditor.addColumn(nextId));
   }
 
   void _deleteColumn(String columnId) {
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id != columnId) column,
-    ];
-    _setDocument(_currentDocument.copyWith(columns: columns));
+    _setDocument(_chartEditor.deleteColumn(columnId));
   }
 
   Future<void> _editCell({
@@ -564,7 +555,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    if (!_canPlaceCell(
+    if (!_chartEditor.canPlaceCell(
       columnId: columnId,
       startRow: draft.startRow,
       endRow: draft.endRow,
@@ -580,28 +571,18 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id == columnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: _updatedCells(
-              column.cells,
-              existingCell,
-              WorkflowCell(
-                startRow: draft.startRow,
-                rowSpan: draft.endRow - draft.startRow + 1,
-                columnSpan: existingCell?.columnSpan ?? 1,
-                text: draft.text,
-              ),
-            ),
-          )
-        else
-          column,
-    ];
-
-    _setDocument(_currentDocument.copyWith(columns: columns));
+    _setDocument(
+      _chartEditor.upsertCell(
+        columnId: columnId,
+        existingCell: existingCell,
+        newCell: WorkflowCell(
+          startRow: draft.startRow,
+          rowSpan: draft.endRow - draft.startRow + 1,
+          columnSpan: existingCell?.columnSpan ?? 1,
+          text: draft.text,
+        ),
+      ),
+    );
     setState(() {
       _selectedCell = RecipeChartSelection(
         columnId: columnId,
@@ -610,65 +591,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     });
   }
 
-  List<WorkflowCell> _updatedCells(
-    List<WorkflowCell> cells,
-    WorkflowCell? existingCell,
-    WorkflowCell replacement,
-  ) {
-    final nextCells = [
-      for (final cell in cells)
-        if (!_sameCell(cell, existingCell)) cell,
-      replacement,
-    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
-    return nextCells;
-  }
-
-  bool _sameCell(WorkflowCell cell, WorkflowCell? other) {
-    if (other == null) {
-      return false;
-    }
-    return cell.startRow == other.startRow &&
-        cell.rowSpan == other.rowSpan &&
-        cell.columnSpan == other.columnSpan &&
-        cell.text == other.text;
-  }
-
-  bool _canPlaceCell({
-    required String columnId,
-    required int startRow,
-    required int endRow,
-    WorkflowCell? excluding,
-  }) {
-    final column = _currentDocument.columns.firstWhere((item) => item.id == columnId);
-    for (final cell in column.cells) {
-      if (_sameCell(cell, excluding)) {
-        continue;
-      }
-      final cellEnd = cell.startRow + cell.rowSpan - 1;
-      final overlaps = startRow <= cellEnd && endRow >= cell.startRow;
-      if (overlaps) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   void _deleteCell(String columnId, WorkflowCell targetCell) {
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id == columnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              for (final cell in column.cells)
-                if (!_sameCell(cell, targetCell)) cell,
-            ],
-          )
-        else
-          column,
-    ];
-    _setDocument(_currentDocument.copyWith(columns: columns));
+    _setDocument(
+      _chartEditor.deleteCell(columnId: columnId, targetCell: targetCell),
+    );
   }
 
   void _moveCellUp(String columnId, WorkflowCell cell) {
@@ -708,7 +634,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
     if (!_selectedCellIsStored) {
-      final nextColumnId = _columnIdByOffset(columnId, -1);
+      final nextColumnId = _chartEditor.columnIdByOffset(columnId, -1);
       if (nextColumnId == null) {
         return;
       }
@@ -728,7 +654,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
     if (!_selectedCellIsStored) {
-      final nextColumnId = _columnIdByOffset(columnId, 1);
+      final nextColumnId = _chartEditor.columnIdByOffset(columnId, 1);
       if (nextColumnId == null) {
         return;
       }
@@ -744,217 +670,75 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   void _mergeCellUp(String columnId, WorkflowCell cell) {
-    if (!_canMergeUp(columnId, cell)) {
+    final result = _chartEditor.mergeCellUp(columnId, cell);
+    if (result == null) {
       return;
     }
-    final aboveCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
-    final newStartRow = aboveCell?.startRow ?? (cell.startRow - 1);
-    final newEndRow = cell.startRow + cell.rowSpan - 1;
-    _mergeIntoRange(
-      columnId: columnId,
-      baseCell: cell,
-      startRow: newStartRow,
-      endRow: newEndRow,
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.merge);
   }
 
   void _mergeCellDown(String columnId, WorkflowCell cell) {
-    if (!_canMergeDown(columnId, cell)) {
+    final result = _chartEditor.mergeCellDown(columnId, cell);
+    if (result == null) {
       return;
     }
-    final currentEndRow = cell.startRow + cell.rowSpan - 1;
-    final belowCell = _cellCoveringRow(columnId, currentEndRow + 1, excluding: cell);
-    final newEndRow =
-        belowCell?.startRow != null ? belowCell!.startRow + belowCell.rowSpan - 1 : currentEndRow + 1;
-    _mergeIntoRange(
-      columnId: columnId,
-      baseCell: cell,
-      startRow: cell.startRow,
-      endRow: newEndRow,
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.merge);
   }
 
   void _mergeCellLeft(String columnId, WorkflowCell cell) {
-    if (!_canMergeLeft(columnId, cell)) {
+    final result = _chartEditor.mergeCellLeft(columnId, cell);
+    if (result == null) {
       return;
     }
-    final targetColumnId = _columnIdByOffset(columnId, -1);
-    if (targetColumnId == null) {
-      return;
-    }
-    _mergeIntoColumnRange(
-      baseColumnId: columnId,
-      targetColumnId: targetColumnId,
-      baseCell: cell,
-      textOrder: _HorizontalMergeTextOrder.targetThenBase,
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.merge);
   }
 
   void _mergeCellRight(String columnId, WorkflowCell cell) {
-    if (!_canMergeRight(columnId, cell)) {
+    final result = _chartEditor.mergeCellRight(columnId, cell);
+    if (result == null) {
       return;
     }
-    final targetColumnId = _columnIdByOffset(columnId, cell.columnSpan);
-    if (targetColumnId == null) {
-      return;
-    }
-    _mergeIntoColumnRange(
-      baseColumnId: columnId,
-      targetColumnId: targetColumnId,
-      baseCell: cell,
-      textOrder: _HorizontalMergeTextOrder.baseThenTarget,
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.merge);
   }
 
   void _unmergeCell(String columnId, WorkflowCell cell) {
-    if (cell.rowSpan == 1 && cell.columnSpan == 1) {
+    final result = _chartEditor.unmergeCell(columnId, cell);
+    if (result == null) {
       return;
     }
-    _replaceCell(
-      columnId: columnId,
-      oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
-        rowSpan: 1,
-        columnSpan: 1,
-        text: cell.text,
-      ),
-    );
+    _applyChartEditResult(result);
   }
 
   void _unmergeCellUp(String columnId, WorkflowCell cell) {
-    if (!_canUnmergeUp(cell)) {
+    final result = _chartEditor.unmergeCellUp(columnId, cell);
+    if (result == null) {
       return;
     }
-    _replaceCell(
-      columnId: columnId,
-      oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
-        rowSpan: cell.rowSpan - 1,
-        columnSpan: cell.columnSpan,
-        text: cell.text,
-      ),
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.unmerge);
   }
 
   void _unmergeCellDown(String columnId, WorkflowCell cell) {
-    if (!_canUnmergeDown(cell)) {
+    final result = _chartEditor.unmergeCellDown(columnId, cell);
+    if (result == null) {
       return;
     }
-    _replaceCell(
-      columnId: columnId,
-      oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow + 1,
-        rowSpan: cell.rowSpan - 1,
-        columnSpan: cell.columnSpan,
-        text: cell.text,
-      ),
-    );
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: columnId,
-        startRow: cell.startRow + 1,
-      );
-      _cellActionPanel = _CellActionPanel.unmerge;
-    });
+    _applyChartEditResult(result, panel: _CellActionPanel.unmerge);
   }
 
   void _unmergeCellLeft(String columnId, WorkflowCell cell) {
-    if (!_canUnmergeLeft(columnId, cell)) {
+    final result = _chartEditor.unmergeCellLeft(columnId, cell);
+    if (result == null) {
       return;
     }
-    _replaceCell(
-      columnId: columnId,
-      oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
-        rowSpan: cell.rowSpan,
-        columnSpan: cell.columnSpan - 1,
-        text: cell.text,
-      ),
-    );
+    _applyChartEditResult(result, panel: _CellActionPanel.unmerge);
   }
 
   void _unmergeCellRight(String columnId, WorkflowCell cell) {
-    if (!_canUnmergeRight(columnId, cell)) {
+    final result = _chartEditor.unmergeCellRight(columnId, cell);
+    if (result == null) {
       return;
     }
-    final nextColumnId = _columnIdByOffset(columnId, 1);
-    if (nextColumnId == null) {
-      return;
-    }
-
-    _replaceCellAcrossColumns(
-      oldColumnId: columnId,
-      oldCell: cell,
-      newColumnId: nextColumnId,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
-        rowSpan: cell.rowSpan,
-        columnSpan: cell.columnSpan - 1,
-        text: cell.text,
-      ),
-    );
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: nextColumnId,
-        startRow: cell.startRow,
-      );
-      _cellActionPanel = _CellActionPanel.unmerge;
-    });
-  }
-
-  void _replaceCell({
-    required String columnId,
-    required WorkflowCell oldCell,
-    required WorkflowCell newCell,
-  }) {
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id == columnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: _updatedCells(column.cells, oldCell, newCell),
-          )
-        else
-          column,
-    ];
-    _setDocument(_currentDocument.copyWith(columns: columns));
-  }
-
-  void _replaceCellAcrossColumns({
-    required String oldColumnId,
-    required WorkflowCell oldCell,
-    required String newColumnId,
-    required WorkflowCell newCell,
-  }) {
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id == oldColumnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              for (final cell in column.cells)
-                if (!_sameCell(cell, oldCell)) cell,
-            ],
-          )
-        else if (column.id == newColumnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              ...column.cells,
-              newCell,
-            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-          )
-        else
-          column,
-    ];
-    _setDocument(_currentDocument.copyWith(columns: columns));
+    _applyChartEditResult(result, panel: _CellActionPanel.unmerge);
   }
 
   void _moveCellByDelta({
@@ -963,577 +747,33 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     required int rowDelta,
     required int columnDelta,
   }) {
-    final movePlan = _rectangleMovePlan(
+    final result = _chartEditor.moveCellByDelta(
       columnId: columnId,
       cell: cell,
       rowDelta: rowDelta,
       columnDelta: columnDelta,
     );
-    if (movePlan == null) {
+    if (result == null) {
       return;
     }
 
-    final movedCell = WorkflowCell(
-      startRow: movePlan.targetStartRow,
-      rowSpan: cell.rowSpan,
-      columnSpan: cell.columnSpan,
-      text: cell.text,
-    );
-    WorkflowCell? displacedCell;
-    final planDisplacedCell = movePlan.displacedCell;
-    final displacedTargetStartRow = movePlan.displacedTargetStartRow;
-    if (planDisplacedCell != null && displacedTargetStartRow != null) {
-      displacedCell = WorkflowCell(
-        startRow: displacedTargetStartRow,
-        rowSpan: planDisplacedCell.cell.rowSpan,
-        columnSpan: planDisplacedCell.cell.columnSpan,
-        text: planDisplacedCell.cell.text,
-      );
-    }
+    _applyChartEditResult(result);
+  }
 
-    final removedCells = [
-      _AbsorbedWorkflowCell(columnId: columnId, cell: cell),
-      ...movePlan.absorbedCells,
-    ];
-
-    final columns = [
-      for (final column in _currentDocument.columns)
-        WorkflowColumn(
-          id: column.id,
-          widthSpec: column.widthSpec,
-          cells: [
-            for (final existing in column.cells)
-              if (!removedCells.any(
-                (entry) => _sameColumnCell(
-                  column.id,
-                  existing,
-                  entry.columnId,
-                  entry.cell,
-                ),
-              ))
-                existing,
-            if (column.id == movePlan.targetColumnId) movedCell,
-            if (displacedCell != null &&
-                column.id == movePlan.displacedTargetColumnId)
-              displacedCell,
-          ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-        ),
-    ];
-
-    _setDocument(_currentDocument.copyWith(columns: columns));
+  void _applyChartEditResult(
+    ChartDocumentEditResult result, {
+    _CellActionPanel? panel,
+  }) {
+    _setDocument(result.document);
     setState(() {
       _selectedCell = RecipeChartSelection(
-        columnId: movePlan.targetColumnId,
-        startRow: movePlan.targetStartRow,
+        columnId: result.selectedColumnId,
+        startRow: result.selectedStartRow,
       );
+      if (panel != null) {
+        _cellActionPanel = panel;
+      }
     });
-  }
-
-  WorkflowCell? _cellCoveringRow(
-    String columnId,
-    int row, {
-    WorkflowCell? excluding,
-  }) {
-    final column = _currentDocument.columns.firstWhere((item) => item.id == columnId);
-    for (final cell in column.cells) {
-      if (_sameCell(cell, excluding)) {
-        continue;
-      }
-      final endRow = cell.startRow + cell.rowSpan - 1;
-      if (row >= cell.startRow && row <= endRow) {
-        return cell;
-      }
-    }
-    return null;
-  }
-
-  void _mergeIntoRange({
-    required String columnId,
-    required WorkflowCell baseCell,
-    required int startRow,
-    required int endRow,
-  }) {
-    final absorbedCells = _absorbedCellsForVerticalMerge(
-      columnId: columnId,
-      baseCell: baseCell,
-      startRow: startRow,
-      endRow: endRow,
-    );
-    final mergedText = absorbedCells
-        .map((entry) => entry.cell.text.trim())
-        .where((text) => text.isNotEmpty)
-        .join('\n');
-
-    final replacement = WorkflowCell(
-      startRow: startRow,
-      rowSpan: endRow - startRow + 1,
-      columnSpan: baseCell.columnSpan,
-      text: mergedText.isEmpty ? baseCell.text : mergedText,
-    );
-
-    final columns = [
-      for (final item in _currentDocument.columns)
-        if (item.id == columnId)
-          WorkflowColumn(
-            id: item.id,
-            widthSpec: item.widthSpec,
-            cells: [
-              for (final cell in item.cells)
-                if (!_absorbedCellsContain(absorbedCells, item.id, cell)) cell,
-              replacement,
-            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-          )
-        else if (_columnIsInsideSpan(columnId, baseCell.columnSpan, item.id))
-          WorkflowColumn(
-            id: item.id,
-            widthSpec: item.widthSpec,
-            cells: [
-              for (final cell in item.cells)
-                if (!_absorbedCellsContain(absorbedCells, item.id, cell)) cell,
-            ],
-          )
-        else
-          item,
-    ];
-
-    _setDocument(_currentDocument.copyWith(columns: columns));
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: columnId,
-        startRow: startRow,
-      );
-      _cellActionPanel = _CellActionPanel.merge;
-    });
-  }
-
-  void _mergeIntoColumnRange({
-    required String baseColumnId,
-    required String targetColumnId,
-    required WorkflowCell baseCell,
-    required _HorizontalMergeTextOrder textOrder,
-  }) {
-    final startRow = baseCell.startRow;
-    final endRow = baseCell.endRow;
-    final targetColumn = _currentDocument.columns.firstWhere(
-      (column) => column.id == targetColumnId,
-    );
-    final absorbedTargetCells = [
-      for (final cell in targetColumn.cells)
-        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) cell,
-    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
-
-    final targetText = absorbedTargetCells
-        .map((cell) => cell.text.trim())
-        .where((text) => text.isNotEmpty)
-        .join('\n');
-    final baseText = baseCell.text.trim();
-    final mergedTextParts = textOrder == _HorizontalMergeTextOrder.baseThenTarget
-        ? [baseText, targetText]
-        : [targetText, baseText];
-    final mergedText = mergedTextParts
-        .where((text) => text.isNotEmpty)
-        .join('\n');
-    final replacementColumnId = textOrder == _HorizontalMergeTextOrder.baseThenTarget
-        ? baseColumnId
-        : targetColumnId;
-    final replacement = WorkflowCell(
-      startRow: startRow,
-      rowSpan: baseCell.rowSpan,
-      columnSpan: baseCell.columnSpan + 1,
-      text: mergedText.isEmpty ? baseCell.text : mergedText,
-    );
-
-    final columns = [
-      for (final column in _currentDocument.columns)
-        if (column.id == baseColumnId && column.id == targetColumnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              for (final cell in column.cells)
-                if (!_sameCell(cell, baseCell) &&
-                    !absorbedTargetCells.any((absorbed) => _sameCell(cell, absorbed)))
-                  cell,
-              replacement,
-            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-          )
-        else if (column.id == baseColumnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              for (final cell in column.cells)
-                if (!_sameCell(cell, baseCell)) cell,
-              if (replacementColumnId == baseColumnId) replacement,
-            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-          )
-        else if (column.id == targetColumnId)
-          WorkflowColumn(
-            id: column.id,
-            widthSpec: column.widthSpec,
-            cells: [
-              for (final cell in column.cells)
-                if (!absorbedTargetCells.any((absorbed) => _sameCell(cell, absorbed)))
-                  cell,
-              if (replacementColumnId == targetColumnId) replacement,
-            ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
-          )
-        else
-          column,
-    ];
-
-    _setDocument(_currentDocument.copyWith(columns: columns));
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: replacementColumnId,
-        startRow: startRow,
-      );
-      _cellActionPanel = _CellActionPanel.merge;
-    });
-  }
-
-  List<_AbsorbedWorkflowCell> _absorbedCellsForVerticalMerge({
-    required String columnId,
-    required WorkflowCell baseCell,
-    required int startRow,
-    required int endRow,
-  }) {
-    final absorbedCells = <_AbsorbedWorkflowCell>[];
-    for (final column in _columnsInsideSpan(columnId, baseCell.columnSpan)) {
-      for (final cell in column.cells) {
-        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) {
-          absorbedCells.add(_AbsorbedWorkflowCell(columnId: column.id, cell: cell));
-        }
-      }
-    }
-    absorbedCells.sort((left, right) {
-      final rowComparison = left.cell.startRow.compareTo(right.cell.startRow);
-      if (rowComparison != 0) {
-        return rowComparison;
-      }
-      return _columnIndex(left.columnId).compareTo(_columnIndex(right.columnId));
-    });
-    return absorbedCells;
-  }
-
-  bool _absorbedCellsContain(
-    List<_AbsorbedWorkflowCell> absorbedCells,
-    String columnId,
-    WorkflowCell cell,
-  ) {
-    return absorbedCells.any(
-      (absorbed) => absorbed.columnId == columnId && _sameCell(absorbed.cell, cell),
-    );
-  }
-
-  Iterable<WorkflowColumn> _columnsInsideSpan(String columnId, int columnSpan) {
-    final startIndex = _columnIndex(columnId);
-    if (startIndex < 0) {
-      return const [];
-    }
-    final endIndex = startIndex + columnSpan - 1;
-    return [
-      for (var index = startIndex;
-          index < _currentDocument.columns.length && index <= endIndex;
-          index++)
-        _currentDocument.columns[index],
-    ];
-  }
-
-  bool _columnIsInsideSpan(
-    String startColumnId,
-    int columnSpan,
-    String targetColumnId,
-  ) {
-    final startIndex = _columnIndex(startColumnId);
-    final targetIndex = _columnIndex(targetColumnId);
-    return startIndex >= 0 &&
-        targetIndex >= startIndex &&
-        targetIndex <= startIndex + columnSpan - 1;
-  }
-
-  _RectangleMovePlan? _rectangleMovePlan({
-    required String columnId,
-    required WorkflowCell cell,
-    required int rowDelta,
-    required int columnDelta,
-  }) {
-    final sourceColumnIndex = _columnIndex(columnId);
-    if (sourceColumnIndex < 0) {
-      return null;
-    }
-    var targetColumnIndex = sourceColumnIndex + columnDelta;
-    var targetStartRow = cell.startRow + rowDelta;
-    if (!_rectIsInBounds(
-      columnIndex: targetColumnIndex,
-      columnSpan: cell.columnSpan,
-      startRow: targetStartRow,
-      rowSpan: cell.rowSpan,
-    )) {
-      return null;
-    }
-    final sourceEntry = _AbsorbedWorkflowCell(columnId: columnId, cell: cell);
-    var targetColumnId = _currentDocument.columns[targetColumnIndex].id;
-    var targetIntersections = _cellsIntersectingRect(
-      startColumnId: targetColumnId,
-      columnSpan: cell.columnSpan,
-      startRow: targetStartRow,
-      endRow: targetStartRow + cell.rowSpan - 1,
-      excludingColumnId: columnId,
-      excludingCell: cell,
-    );
-    var nonEmptyTargetIntersections = [
-      for (final entry in targetIntersections)
-        if (entry.cell.text.trim().isNotEmpty) entry,
-    ];
-    if (nonEmptyTargetIntersections.length > 1) {
-      return null;
-    }
-    final displacedCell = nonEmptyTargetIntersections.isEmpty
-        ? null
-        : nonEmptyTargetIntersections.single;
-
-    if (displacedCell != null) {
-      final displacedColumnIndex = _columnIndex(displacedCell.columnId);
-      if (displacedColumnIndex < 0) {
-        return null;
-      }
-      if (rowDelta < 0) {
-        targetStartRow = displacedCell.cell.startRow;
-      } else if (rowDelta > 0) {
-        targetStartRow = displacedCell.cell.endRow - cell.rowSpan + 1;
-      }
-      if (columnDelta < 0) {
-        targetColumnIndex = displacedColumnIndex;
-      } else if (columnDelta > 0) {
-        targetColumnIndex =
-            displacedColumnIndex + displacedCell.cell.columnSpan - cell.columnSpan;
-      }
-      if (!_rectIsInBounds(
-        columnIndex: targetColumnIndex,
-        columnSpan: cell.columnSpan,
-        startRow: targetStartRow,
-        rowSpan: cell.rowSpan,
-      )) {
-        return null;
-      }
-      targetColumnId = _currentDocument.columns[targetColumnIndex].id;
-      targetIntersections = _cellsIntersectingRect(
-        startColumnId: targetColumnId,
-        columnSpan: cell.columnSpan,
-        startRow: targetStartRow,
-        endRow: targetStartRow + cell.rowSpan - 1,
-        excludingColumnId: columnId,
-        excludingCell: cell,
-      );
-      nonEmptyTargetIntersections = [
-        for (final entry in targetIntersections)
-          if (entry.cell.text.trim().isNotEmpty) entry,
-      ];
-      if (nonEmptyTargetIntersections.length != 1 ||
-          !_sameColumnCell(
-            nonEmptyTargetIntersections.single.columnId,
-            nonEmptyTargetIntersections.single.cell,
-            displacedCell.columnId,
-            displacedCell.cell,
-          )) {
-        return null;
-      }
-    }
-
-    final absorbedCells = <_AbsorbedWorkflowCell>[...targetIntersections];
-    String? displacedTargetColumnId;
-    int? displacedTargetStartRow;
-
-    if (displacedCell != null) {
-      var displacedTargetColumnIndex = sourceColumnIndex;
-      var resolvedDisplacedTargetStartRow = cell.startRow;
-      if (rowDelta < 0) {
-        resolvedDisplacedTargetStartRow = targetStartRow + cell.rowSpan;
-      } else if (rowDelta > 0) {
-        resolvedDisplacedTargetStartRow =
-            targetStartRow - displacedCell.cell.rowSpan;
-      }
-      if (columnDelta < 0) {
-        displacedTargetColumnIndex = targetColumnIndex + cell.columnSpan;
-      } else if (columnDelta > 0) {
-        displacedTargetColumnIndex =
-            targetColumnIndex - displacedCell.cell.columnSpan;
-      }
-      if (!_rectIsInBounds(
-        columnIndex: displacedTargetColumnIndex,
-        columnSpan: displacedCell.cell.columnSpan,
-        startRow: resolvedDisplacedTargetStartRow,
-        rowSpan: displacedCell.cell.rowSpan,
-      )) {
-        return null;
-      }
-      final resolvedDisplacedTargetColumnId =
-          _currentDocument.columns[displacedTargetColumnIndex].id;
-      displacedTargetColumnId = resolvedDisplacedTargetColumnId;
-      displacedTargetStartRow = resolvedDisplacedTargetStartRow;
-      if (_rectanglesOverlap(
-        leftColumnId: targetColumnId,
-        leftCell: WorkflowCell(
-          startRow: targetStartRow,
-          rowSpan: cell.rowSpan,
-          columnSpan: cell.columnSpan,
-          text: cell.text,
-        ),
-        rightColumnId: resolvedDisplacedTargetColumnId,
-        rightCell: WorkflowCell(
-          startRow: resolvedDisplacedTargetStartRow,
-          rowSpan: displacedCell.cell.rowSpan,
-          columnSpan: displacedCell.cell.columnSpan,
-          text: displacedCell.cell.text,
-        ),
-      )) {
-        return null;
-      }
-      final displacedTargetIntersections = _cellsIntersectingRect(
-        startColumnId: resolvedDisplacedTargetColumnId,
-        columnSpan: displacedCell.cell.columnSpan,
-        startRow: resolvedDisplacedTargetStartRow,
-        endRow: resolvedDisplacedTargetStartRow + displacedCell.cell.rowSpan - 1,
-        excludingColumnId: columnId,
-        excludingCell: cell,
-      );
-      for (final entry in displacedTargetIntersections) {
-        if (_sameColumnCell(
-          entry.columnId,
-          entry.cell,
-          displacedCell.columnId,
-          displacedCell.cell,
-        )) {
-          continue;
-        }
-        if (entry.cell.text.trim().isNotEmpty) {
-          return null;
-        }
-        absorbedCells.add(entry);
-      }
-    }
-
-    return _RectangleMovePlan(
-      targetColumnId: targetColumnId,
-      targetStartRow: targetStartRow,
-      absorbedCells: _dedupeAbsorbedCells(absorbedCells, except: sourceEntry),
-      displacedCell: displacedCell,
-      displacedTargetColumnId: displacedTargetColumnId,
-      displacedTargetStartRow: displacedTargetStartRow,
-    );
-  }
-
-  List<_AbsorbedWorkflowCell> _cellsIntersectingRect({
-    required String startColumnId,
-    required int columnSpan,
-    required int startRow,
-    required int endRow,
-    String? excludingColumnId,
-    WorkflowCell? excludingCell,
-  }) {
-    final entries = <_AbsorbedWorkflowCell>[];
-    final queryCell = WorkflowCell(
-      startRow: startRow,
-      rowSpan: endRow - startRow + 1,
-      columnSpan: columnSpan,
-      text: '',
-    );
-    for (final column in _currentDocument.columns) {
-      for (final cell in column.cells) {
-        if (excludingColumnId != null &&
-            column.id == excludingColumnId &&
-            _sameCell(cell, excludingCell)) {
-          continue;
-        }
-        if (_rectanglesOverlap(
-          leftColumnId: startColumnId,
-          leftCell: queryCell,
-          rightColumnId: column.id,
-          rightCell: cell,
-        )) {
-          entries.add(_AbsorbedWorkflowCell(columnId: column.id, cell: cell));
-        }
-      }
-    }
-    return entries;
-  }
-
-  bool _rectanglesOverlap({
-    required String leftColumnId,
-    required WorkflowCell leftCell,
-    required String rightColumnId,
-    required WorkflowCell rightCell,
-  }) {
-    final leftColumnIndex = _columnIndex(leftColumnId);
-    final rightColumnIndex = _columnIndex(rightColumnId);
-    if (leftColumnIndex < 0 || rightColumnIndex < 0) {
-      return false;
-    }
-    final leftEndColumnIndex = leftColumnIndex + leftCell.columnSpan - 1;
-    final rightEndColumnIndex = rightColumnIndex + rightCell.columnSpan - 1;
-    return _rangesOverlap(
-          leftCell.startRow,
-          leftCell.endRow,
-          rightCell.startRow,
-          rightCell.endRow,
-        ) &&
-        leftColumnIndex <= rightEndColumnIndex &&
-        leftEndColumnIndex >= rightColumnIndex;
-  }
-
-  bool _rectIsInBounds({
-    required int columnIndex,
-    required int columnSpan,
-    required int startRow,
-    required int rowSpan,
-  }) {
-    return columnIndex >= 0 &&
-        columnIndex + columnSpan - 1 < _currentDocument.columns.length &&
-        startRow >= 1 &&
-        startRow + rowSpan - 1 <= _currentWorkflowRowCount;
-  }
-
-  List<_AbsorbedWorkflowCell> _dedupeAbsorbedCells(
-    List<_AbsorbedWorkflowCell> cells, {
-    required _AbsorbedWorkflowCell except,
-  }) {
-    final result = <_AbsorbedWorkflowCell>[];
-    for (final cell in cells) {
-      if (_sameColumnCell(cell.columnId, cell.cell, except.columnId, except.cell)) {
-        continue;
-      }
-      if (result.any(
-        (existing) =>
-            _sameColumnCell(existing.columnId, existing.cell, cell.columnId, cell.cell),
-      )) {
-        continue;
-      }
-      result.add(cell);
-    }
-    return result;
-  }
-
-  bool _sameColumnCell(
-    String leftColumnId,
-    WorkflowCell leftCell,
-    String rightColumnId,
-    WorkflowCell rightCell,
-  ) {
-    return leftColumnId == rightColumnId && _sameCell(leftCell, rightCell);
-  }
-
-  int _columnIndex(String columnId) {
-    return _currentDocument.columns.indexWhere((column) => column.id == columnId);
-  }
-
-  bool _rangesOverlap(
-    int startA,
-    int endA,
-    int startB,
-    int endB,
-  ) {
-    return startA <= endB && endA >= startB;
   }
 
   Future<void> _openPrepManager() async {
@@ -1762,176 +1002,83 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   bool _canMergeUp(String columnId, WorkflowCell cell) {
-    if (cell.startRow <= 1) {
-      return false;
-    }
-    final aboveCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
-    final newStartRow = aboveCell?.startRow ?? (cell.startRow - 1);
-    return _canAbsorbVerticalRange(
-      columnId: columnId,
-      cell: cell,
-      startRow: newStartRow,
-      endRow: cell.endRow,
-    );
+    return _chartEditor.canMergeUp(columnId, cell);
   }
 
   bool _canMergeDown(String columnId, WorkflowCell cell) {
-    final endRow = cell.startRow + cell.rowSpan - 1;
-    if (endRow >= _currentWorkflowRowCount) {
-      return false;
-    }
-    final belowCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
-    final newEndRow = belowCell?.startRow != null
-        ? belowCell!.startRow + belowCell.rowSpan - 1
-        : endRow + 1;
-    return newEndRow <= _currentWorkflowRowCount &&
-        _canAbsorbVerticalRange(
-          columnId: columnId,
-          cell: cell,
-          startRow: cell.startRow,
-          endRow: newEndRow,
-        );
+    return _chartEditor.canMergeDown(columnId, cell);
   }
 
   bool _canMergeLeft(String columnId, WorkflowCell cell) {
-    final targetColumnId = _columnIdByOffset(columnId, -1);
-    return targetColumnId != null &&
-        _canAbsorbHorizontalTargetColumn(
-          targetColumnId: targetColumnId,
-          cell: cell,
-        );
+    return _chartEditor.canMergeLeft(columnId, cell);
   }
 
   bool _canMergeRight(String columnId, WorkflowCell cell) {
-    final targetColumnId = _columnIdByOffset(columnId, cell.columnSpan);
-    return targetColumnId != null &&
-        _canAbsorbHorizontalTargetColumn(
-          targetColumnId: targetColumnId,
-          cell: cell,
-        );
-  }
-
-  bool _canAbsorbHorizontalTargetColumn({
-    required String targetColumnId,
-    required WorkflowCell cell,
-  }) {
-    final targetColumn = _currentDocument.columns.firstWhere(
-      (column) => column.id == targetColumnId,
-    );
-    for (final targetCell in targetColumn.cells) {
-      if (!_rangesOverlap(cell.startRow, cell.endRow, targetCell.startRow, targetCell.endRow)) {
-        continue;
-      }
-      if (targetCell.text.trim().isNotEmpty) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _canAbsorbVerticalRange({
-    required String columnId,
-    required WorkflowCell cell,
-    required int startRow,
-    required int endRow,
-  }) {
-    for (final column in _columnsInsideSpan(columnId, cell.columnSpan)) {
-      for (final targetCell in column.cells) {
-        if (column.id == columnId && _sameCell(targetCell, cell)) {
-          continue;
-        }
-        if (!_rangesOverlap(startRow, endRow, targetCell.startRow, targetCell.endRow)) {
-          continue;
-        }
-        if (targetCell.text.trim().isNotEmpty) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return _chartEditor.canMergeRight(columnId, cell);
   }
 
   bool _canMoveUp(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
       return cell.startRow > 1;
     }
-    return _rectangleMovePlan(
-          columnId: columnId,
-          cell: cell,
-          rowDelta: -1,
-          columnDelta: 0,
-        ) !=
-        null;
+    return _chartEditor.canMove(
+      columnId: columnId,
+      cell: cell,
+      rowDelta: -1,
+      columnDelta: 0,
+    );
   }
 
   bool _canMoveDown(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
       return cell.startRow < _currentWorkflowRowCount;
     }
-    return _rectangleMovePlan(
-          columnId: columnId,
-          cell: cell,
-          rowDelta: 1,
-          columnDelta: 0,
-        ) !=
-        null;
+    return _chartEditor.canMove(
+      columnId: columnId,
+      cell: cell,
+      rowDelta: 1,
+      columnDelta: 0,
+    );
   }
 
   bool _canMoveLeft(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
-      return _columnIdByOffset(columnId, -1) != null;
+      return _chartEditor.columnIdByOffset(columnId, -1) != null;
     }
-    return _rectangleMovePlan(
-          columnId: columnId,
-          cell: cell,
-          rowDelta: 0,
-          columnDelta: -1,
-        ) !=
-        null;
+    return _chartEditor.canMove(
+      columnId: columnId,
+      cell: cell,
+      rowDelta: 0,
+      columnDelta: -1,
+    );
   }
 
   bool _canMoveRight(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
-      return _columnIdByOffset(columnId, 1) != null;
+      return _chartEditor.columnIdByOffset(columnId, 1) != null;
     }
-    return _rectangleMovePlan(
-          columnId: columnId,
-          cell: cell,
-          rowDelta: 0,
-          columnDelta: 1,
-        ) !=
-        null;
+    return _chartEditor.canMove(
+      columnId: columnId,
+      cell: cell,
+      rowDelta: 0,
+      columnDelta: 1,
+    );
   }
 
   bool _canUnmergeUp(WorkflowCell cell) {
-    return _selectedCellIsStored && cell.rowSpan > 1;
+    return _selectedCellIsStored && _chartEditor.canUnmergeUp(cell);
   }
 
   bool _canUnmergeDown(WorkflowCell cell) {
-    return _selectedCellIsStored && cell.rowSpan > 1;
+    return _selectedCellIsStored && _chartEditor.canUnmergeDown(cell);
   }
 
-  bool _canUnmergeLeft(String columnId, WorkflowCell cell) {
-    return _selectedCellIsStored && cell.columnSpan > 1;
+  bool _canUnmergeLeft(WorkflowCell cell) {
+    return _selectedCellIsStored && _chartEditor.canUnmergeLeft(cell);
   }
 
   bool _canUnmergeRight(String columnId, WorkflowCell cell) {
-    return _selectedCellIsStored &&
-        cell.columnSpan > 1 &&
-        _columnIdByOffset(columnId, 1) != null;
-  }
-
-  String? _columnIdByOffset(String columnId, int offset) {
-    final columnIds = _currentDocument.columns.map((column) => column.id).toList();
-    final index = columnIds.indexOf(columnId);
-    if (index < 0) {
-      return null;
-    }
-    final nextIndex = index + offset;
-    if (nextIndex < 0 || nextIndex >= columnIds.length) {
-      return null;
-    }
-    return columnIds[nextIndex];
+    return _selectedCellIsStored && _chartEditor.canUnmergeRight(columnId, cell);
   }
 
   WorkflowCell? get _currentCell {
@@ -2486,7 +1633,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             tooltip: localizations.unmergeUp,
           ),
           left: ActionIconButton(
-            onPressed: _canUnmergeLeft(_selectedCell!.columnId, _selectedCellForActions!)
+            onPressed: _canUnmergeLeft(_selectedCellForActions!)
                 ? () => _unmergeCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.align_horizontal_left,
@@ -2517,55 +1664,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 }
 
-class _CellDraft {
-  const _CellDraft({
-    required this.startRow,
-    required this.endRow,
-    required this.text,
-  });
-
-  final int startRow;
-  final int endRow;
-  final String text;
-}
-
-class _AbsorbedWorkflowCell {
-  const _AbsorbedWorkflowCell({
-    required this.columnId,
-    required this.cell,
-  });
-
-  final String columnId;
-  final WorkflowCell cell;
-}
-
-class _RectangleMovePlan {
-  const _RectangleMovePlan({
-    required this.targetColumnId,
-    required this.targetStartRow,
-    required this.absorbedCells,
-    this.displacedCell,
-    this.displacedTargetColumnId,
-    this.displacedTargetStartRow,
-  });
-
-  final String targetColumnId;
-  final int targetStartRow;
-  final List<_AbsorbedWorkflowCell> absorbedCells;
-  final _AbsorbedWorkflowCell? displacedCell;
-  final String? displacedTargetColumnId;
-  final int? displacedTargetStartRow;
-}
-
 enum _CellActionPanel {
   main,
   merge,
   unmerge,
-}
-
-enum _HorizontalMergeTextOrder {
-  baseThenTarget,
-  targetThenBase,
 }
 
 enum _CellAction {
@@ -2576,6 +1678,18 @@ enum _CellAction {
   mergeUp,
   mergeDown,
   unmerge,
+}
+
+class _CellDraft {
+  const _CellDraft({
+    required this.startRow,
+    required this.endRow,
+    required this.text,
+  });
+
+  final int startRow;
+  final int endRow;
+  final String text;
 }
 
 class _EditorErrorBanner extends StatelessWidget {
