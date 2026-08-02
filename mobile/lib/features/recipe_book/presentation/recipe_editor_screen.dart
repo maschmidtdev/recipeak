@@ -4,6 +4,7 @@ import '../../../app/dev_flags.dart';
 import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
+import 'widgets/editor_action_grid.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
 import '../../recipe_document/presentation/recipe_chart_view.dart';
@@ -2365,8 +2366,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   Widget _cellActionPanelContent(AppLocalizations localizations) {
     switch (_cellActionPanel) {
       case _CellActionPanel.main:
-        return _MainCellActionGrid(
-          merge: _ActionIconButton(
+        return MainCellActionGrid(
+          merge: ActionIconButton(
             onPressed: _hasAvailableMergeAction
                 ? () => setState(() {
                       _cellActionPanel = _CellActionPanel.merge;
@@ -2375,14 +2376,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             icon: Icons.merge_type,
             tooltip: localizations.merge,
           ),
-          moveUp: _ActionIconButton(
+          moveUp: ActionIconButton(
             onPressed: _canMoveUp(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _moveCellUp(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.arrow_upward,
             tooltip: localizations.moveUp,
           ),
-          unmerge: _ActionIconButton(
+          unmerge: ActionIconButton(
             onPressed: _selectedCellIsStored &&
                     (_selectedCellForActions!.rowSpan > 1 ||
                         _selectedCellForActions!.columnSpan > 1)
@@ -2393,28 +2394,28 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             icon: Icons.call_split,
             tooltip: localizations.unmerge,
           ),
-          moveLeft: _ActionIconButton(
+          moveLeft: ActionIconButton(
             onPressed: _canMoveLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _moveCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.arrow_back,
             tooltip: localizations.moveLeft,
           ),
-          moveDown: _ActionIconButton(
+          moveDown: ActionIconButton(
             onPressed: _canMoveDown(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _moveCellDown(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.arrow_downward,
             tooltip: localizations.moveDown,
           ),
-          moveRight: _ActionIconButton(
+          moveRight: ActionIconButton(
             onPressed: _canMoveRight(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _moveCellRight(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.arrow_forward,
             tooltip: localizations.moveRight,
           ),
-          edit: _ActionIconButton(
+          edit: ActionIconButton(
             onPressed: () => _editCell(
               columnId: _selectedCell!.columnId,
               existingCell: _currentCell,
@@ -2424,13 +2425,13 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
             icon: Icons.edit_outlined,
             tooltip: localizations.editCell,
           ),
-          done: _ActionIconButton(
+          done: ActionIconButton(
             onPressed: _clearSelection,
             icon: Icons.check,
             tooltip: localizations.done,
             isConfirm: true,
           ),
-          delete: _ActionIconButton(
+          delete: ActionIconButton(
             onPressed: _selectedCellIsStored
                 ? () => _deleteCell(_selectedCell!.columnId, _currentCell!)
                 : null,
@@ -2439,36 +2440,36 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           ),
         );
       case _CellActionPanel.merge:
-        return _DirectionalActionGrid(
-          up: _ActionIconButton(
+        return DirectionalActionGrid(
+          up: ActionIconButton(
             onPressed: _canMergeUp(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _mergeCellUp(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.vertical_align_top,
             tooltip: localizations.mergeUp,
           ),
-          left: _ActionIconButton(
+          left: ActionIconButton(
             onPressed: _canMergeLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _mergeCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.align_horizontal_left,
             tooltip: localizations.mergeLeft,
           ),
-          right: _ActionIconButton(
+          right: ActionIconButton(
             onPressed: _canMergeRight(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _mergeCellRight(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.align_horizontal_right,
             tooltip: localizations.mergeRight,
           ),
-          down: _ActionIconButton(
+          down: ActionIconButton(
             onPressed: _canMergeDown(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _mergeCellDown(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.vertical_align_bottom,
             tooltip: localizations.mergeDown,
           ),
-          done: _ActionIconButton(
+          done: ActionIconButton(
             onPressed: _returnToMainCellActions,
             icon: Icons.check,
             tooltip: localizations.done,
@@ -2476,36 +2477,36 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           ),
         );
       case _CellActionPanel.unmerge:
-        return _DirectionalActionGrid(
-          up: _ActionIconButton(
+        return DirectionalActionGrid(
+          up: ActionIconButton(
             onPressed: _canUnmergeUp(_selectedCellForActions!)
                 ? () => _unmergeCellUp(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.vertical_align_top,
             tooltip: localizations.unmergeUp,
           ),
-          left: _ActionIconButton(
+          left: ActionIconButton(
             onPressed: _canUnmergeLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _unmergeCellLeft(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.align_horizontal_left,
             tooltip: localizations.unmergeLeft,
           ),
-          right: _ActionIconButton(
+          right: ActionIconButton(
             onPressed: _canUnmergeRight(_selectedCell!.columnId, _selectedCellForActions!)
                 ? () => _unmergeCellRight(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.align_horizontal_right,
             tooltip: localizations.unmergeRight,
           ),
-          down: _ActionIconButton(
+          down: ActionIconButton(
             onPressed: _canUnmergeDown(_selectedCellForActions!)
                 ? () => _unmergeCellDown(_selectedCell!.columnId, _selectedCellForActions!)
                 : null,
             icon: Icons.vertical_align_bottom,
             tooltip: localizations.unmergeDown,
           ),
-          done: _ActionIconButton(
+          done: ActionIconButton(
             onPressed: _returnToMainCellActions,
             icon: Icons.check,
             tooltip: localizations.done,
@@ -2599,142 +2600,6 @@ class _EditorErrorBanner extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-    );
-  }
-}
-
-class _DirectionalActionGrid extends StatelessWidget {
-  const _DirectionalActionGrid({
-    required this.up,
-    required this.left,
-    required this.right,
-    required this.down,
-    required this.done,
-  });
-
-  final Widget up;
-  final Widget left;
-  final Widget right;
-  final Widget down;
-  final Widget done;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            Expanded(child: up),
-            const SizedBox(width: 8),
-            Expanded(child: left),
-            const SizedBox(width: 8),
-            Expanded(child: right),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: down),
-            const SizedBox(width: 8),
-            Expanded(flex: 2, child: done),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _MainCellActionGrid extends StatelessWidget {
-  const _MainCellActionGrid({
-    required this.merge,
-    required this.moveUp,
-    required this.unmerge,
-    required this.moveLeft,
-    required this.moveDown,
-    required this.moveRight,
-    required this.edit,
-    required this.done,
-    required this.delete,
-  });
-
-  final Widget merge;
-  final Widget moveUp;
-  final Widget unmerge;
-  final Widget moveLeft;
-  final Widget moveDown;
-  final Widget moveRight;
-  final Widget edit;
-  final Widget done;
-  final Widget delete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ActionGridRow(children: [merge, moveUp, unmerge]),
-        const SizedBox(height: 8),
-        _ActionGridRow(children: [moveLeft, moveDown, moveRight]),
-        const SizedBox(height: 8),
-        _ActionGridRow(children: [edit, done, delete]),
-      ],
-    );
-  }
-}
-
-class _ActionGridRow extends StatelessWidget {
-  const _ActionGridRow({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var index = 0; index < children.length; index++) ...[
-          if (index > 0) const SizedBox(width: 8),
-          Expanded(child: children[index]),
-        ],
-      ],
-    );
-  }
-}
-
-class _ActionIconButton extends StatelessWidget {
-  const _ActionIconButton({
-    required this.onPressed,
-    required this.icon,
-    required this.tooltip,
-    this.isConfirm = false,
-  });
-
-  final VoidCallback? onPressed;
-  final IconData icon;
-  final String tooltip;
-  final bool isConfirm;
-
-  @override
-  Widget build(BuildContext context) {
-    final button = isConfirm
-        ? FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: Icon(icon),
-          )
-        : FilledButton.tonal(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: Icon(icon),
-          );
-
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(width: double.infinity, child: button),
     );
   }
 }
