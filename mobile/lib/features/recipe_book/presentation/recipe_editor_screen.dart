@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/dev_flags.dart';
+import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import '../../recipe_document/domain/recipe_document.dart';
@@ -232,7 +233,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         description: _notesController.text.trim(),
         duration: _durationController.text.trim(),
         yieldText: _yieldController.text.trim(),
-        tags: _sortedTags(_selectedTags),
+        tags: sortedTags(_selectedTags),
         isFavorite: _isFavorite,
         document: _currentDocument,
       ),
@@ -2056,7 +2057,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       return;
     }
 
-    final normalizedTag = _normalizeTag(tag);
+    final normalizedTag = normalizeTag(tag);
     if (normalizedTag.isEmpty) {
       return;
     }
@@ -2065,14 +2066,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       _availableTags.add(normalizedTag);
       _selectedTags.add(normalizedTag);
     });
-  }
-
-  String _normalizeTag(String input) {
-    final collapsed = input.replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (collapsed.isEmpty) {
-      return '';
-    }
-    return collapsed;
   }
 
   void _discardChanges() {
@@ -2196,7 +2189,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        for (final tag in _sortedTags(_availableTags))
+                        for (final tag in sortedTags(_availableTags))
                           FilterChip(
                             label: Text(_tagLabel(context, tag)),
                             selected: _selectedTags.contains(tag),
@@ -2902,12 +2895,6 @@ class _FieldLabel extends StatelessWidget {
       ],
     );
   }
-}
-
-List<String> _sortedTags(Iterable<String> tags) {
-  final values = [...tags];
-  values.sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
-  return values;
 }
 
 String _tagLabel(BuildContext context, String tag) {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_storage.dart';
 import '../../../app/dev_flags.dart';
 import '../data/dev_sample_recipes.dart';
+import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
@@ -72,7 +73,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         ..addAll(
           snapshot != null && snapshot.availableTags.isNotEmpty
               ? snapshot.availableTags
-              : _initialAvailableTags(_recipes),
+              : initialAvailableTags(_recipes),
         );
 
       _matchAllTags = snapshot?.matchAllTags ?? false;
@@ -134,7 +135,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     return AppStorage.instance.saveRecipeState(
       AppStorageSnapshot(
         recipes: _recipes,
-        availableTags: _sortedTags(_availableTags),
+        availableTags: sortedTags(_availableTags),
         matchAllTags: _matchAllTags,
       ),
     );
@@ -226,7 +227,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       MaterialPageRoute(
         builder: (context) => RecipeDetailScreen(
           recipe: _recipes[index],
-          availableTags: _availableTags.toList()..sort(),
+          availableTags: sortedTags(_availableTags),
         ),
       ),
     );
@@ -256,7 +257,14 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final recipeEntries = _filteredRecipeEntries;
+    final recipeEntries = filteredRecipeEntries(
+      recipes: _recipes,
+      searchQuery: _searchQuery,
+      showAllFilter: _showAllFilter,
+      showFavoritesFilter: _showFavoritesFilter,
+      matchAllTags: _matchAllTags,
+      selectedTagFilters: _selectedTagFilters,
+    );
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
@@ -327,7 +335,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                         showCheckmark: false,
                         onSelected: (_) => _toggleFavoritesFilter(),
                       ),
-                      for (final tag in _sortedTags(_availableTags))
+                      for (final tag in sortedTags(_availableTags))
                         FilterChip(
                           label: Text(_tagLabel(context, tag)),
                           selected: _selectedTagFilters.contains(tag),
@@ -360,50 +368,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         label: Text(localizations.newRecipe),
       ),
     );
-  }
-
-  List<_RecipeEntry> get _filteredRecipeEntries {
-    final entries = <_RecipeEntry>[
-      for (final entry in _recipes.indexed)
-        _RecipeEntry(index: entry.$1, recipe: entry.$2),
-    ];
-
-    final searchFilteredEntries = _searchQuery.isEmpty
-        ? entries
-        : entries.where((entry) => _matchesSearch(entry.recipe)).toList();
-
-    if (_showAllFilter) {
-      return searchFilteredEntries;
-    }
-
-    return searchFilteredEntries.where((entry) {
-      final matchesFavorites = !_showFavoritesFilter || entry.recipe.isFavorite;
-      final matchesTags = _selectedTagFilters.isEmpty
-          ? true
-          : (_matchAllTags
-                ? _selectedTagFilters.every(entry.recipe.tags.contains)
-                : _selectedTagFilters.any(entry.recipe.tags.contains));
-
-      if (_matchAllTags) {
-        return matchesFavorites && matchesTags;
-      }
-
-      return (_showFavoritesFilter && entry.recipe.isFavorite) ||
-          (_selectedTagFilters.isNotEmpty &&
-              _selectedTagFilters.any(entry.recipe.tags.contains));
-    }).toList();
-  }
-
-  bool _matchesSearch(RecipeSummary recipe) {
-    final haystacks = <String>[
-      recipe.title,
-      recipe.description,
-      recipe.duration,
-      recipe.yieldText,
-      ...recipe.tags,
-    ];
-
-    return haystacks.any((value) => value.toLowerCase().contains(_searchQuery));
   }
 
   void _toggleAllFilter() {
@@ -449,11 +413,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   RecipeSummary _sanitizeRecipeTags(RecipeSummary recipe) {
-    return recipe.copyWith(
-      tags: [
-        for (final tag in recipe.tags)
-          if (_availableTags.contains(tag)) tag,
-      ],
+    return sanitizeRecipeTags(
+      recipe: recipe,
+      availableTags: _availableTags,
     );
   }
 
@@ -465,7 +427,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     _availableTags
       ..clear()
       ..addAll(
-        nextAvailableTags.map(_normalizeTag).where((tag) => tag.isNotEmpty),
+        nextAvailableTags.map(normalizeTag).where((tag) => tag.isNotEmpty),
       );
 
     for (var index = 0; index < _recipes.length; index++) {
@@ -630,7 +592,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final localizations = AppLocalizations.of(context);
-            final tagUsage = _tagUsageCounts();
+            final tagUsage = tagUsageCounts(
+              availableTags: _availableTags,
+              recipes: _recipes,
+            );
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -669,7 +634,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                         child: ListView(
                           shrinkWrap: true,
                           children: [
-                            for (final tag in _sortedTags(_availableTags))
+                            for (final tag in sortedTags(_availableTags))
                               Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
@@ -725,19 +690,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     );
   }
 
-  Map<String, int> _tagUsageCounts() {
-    final counts = <String, int>{};
-    for (final tag in _availableTags) {
-      counts[tag] = 0;
-    }
-    for (final recipe in _recipes) {
-      for (final tag in recipe.tags) {
-        counts[tag] = (counts[tag] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }
-
   Future<bool> _addGlobalTag() async {
     final controller = TextEditingController();
     final tag = await showDialog<String>(
@@ -770,7 +722,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       return false;
     }
 
-    final normalizedTag = _normalizeTag(tag);
+    final normalizedTag = normalizeTag(tag);
     if (normalizedTag.isEmpty) {
       return false;
     }
@@ -864,7 +816,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       return false;
     }
 
-    final normalizedTag = _normalizeTag(nextTag);
+    final normalizedTag = normalizeTag(nextTag);
     if (normalizedTag.isEmpty || normalizedTag == tag) {
       return false;
     }
@@ -1016,33 +968,6 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-class _RecipeEntry {
-  const _RecipeEntry({required this.index, required this.recipe});
-
-  final int index;
-  final RecipeSummary recipe;
-}
-
 String _tagLabel(BuildContext context, String tag) {
   return tag;
-}
-
-Set<String> _initialAvailableTags(List<RecipeSummary> recipes) {
-  final tags = <String>{};
-  for (final recipe in recipes) {
-    tags.addAll(recipe.tags);
-  }
-  return tags;
-}
-
-List<String> _sortedTags(Iterable<String> tags) {
-  final values = [...tags];
-  values.sort(
-    (left, right) => left.toLowerCase().compareTo(right.toLowerCase()),
-  );
-  return values;
-}
-
-String _normalizeTag(String input) {
-  return input.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
