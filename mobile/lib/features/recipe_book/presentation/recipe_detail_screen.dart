@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -77,6 +76,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Future<Uint8List?> _captureChartImage() async {
     final overlay = Overlay.of(context);
     final theme = Theme.of(context);
+    final pixelRatio = MediaQuery.devicePixelRatioOf(
+      context,
+    ).clamp(2.0, 3.0).toDouble();
     late OverlayEntry entry;
 
     entry = OverlayEntry(
@@ -150,9 +152,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         return null;
       }
 
-      final pixelRatio = MediaQuery.devicePixelRatioOf(
-        context,
-      ).clamp(2.0, 3.0).toDouble();
       final image = await boundary.toImage(pixelRatio: pixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();

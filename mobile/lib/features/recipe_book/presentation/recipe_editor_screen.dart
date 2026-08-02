@@ -682,18 +682,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
-    final targetCell = _cellCoveringRow(
-      columnId,
-      cell.startRow - 1,
-      excluding: cell,
-    );
-    _moveCellByOffset(columnId: columnId, cell: cell, offset: -1);
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: columnId,
-        startRow: targetCell?.startRow ?? cell.startRow - 1,
-      );
-    });
+    _moveCellByDelta(columnId: columnId, cell: cell, rowDelta: -1, columnDelta: 0);
   }
 
   void _moveCellDown(String columnId, WorkflowCell cell) {
@@ -709,18 +698,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
-    final endRow = cell.startRow + cell.rowSpan - 1;
-    final targetCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
-    final nextStartRow = targetCell == null
-        ? cell.startRow + 1
-        : targetCell.startRow + targetCell.rowSpan - cell.rowSpan;
-    _moveCellByOffset(columnId: columnId, cell: cell, offset: 1);
-    setState(() {
-      _selectedCell = RecipeChartSelection(
-        columnId: columnId,
-        startRow: nextStartRow,
-      );
-    });
+    _moveCellByDelta(columnId: columnId, cell: cell, rowDelta: 1, columnDelta: 0);
   }
 
   void _moveCellLeft(String columnId, WorkflowCell cell) {
@@ -740,7 +718,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
-    _moveCellHorizontally(columnId: columnId, cell: cell, offset: -1);
+    _moveCellByDelta(columnId: columnId, cell: cell, rowDelta: 0, columnDelta: -1);
   }
 
   void _moveCellRight(String columnId, WorkflowCell cell) {
@@ -760,7 +738,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       });
       return;
     }
-    _moveCellHorizontally(columnId: columnId, cell: cell, offset: 1);
+    _moveCellByDelta(columnId: columnId, cell: cell, rowDelta: 0, columnDelta: 1);
   }
 
   void _mergeCellUp(String columnId, WorkflowCell cell) {
@@ -977,146 +955,44 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _setDocument(_currentDocument.copyWith(columns: columns));
   }
 
-  void _moveCellByOffset({
+  void _moveCellByDelta({
     required String columnId,
     required WorkflowCell cell,
-    required int offset,
+    required int rowDelta,
+    required int columnDelta,
   }) {
-    if (cell.rowSpan > 1) {
-      final boundaryRow = offset < 0
-          ? cell.startRow - 1
-          : cell.startRow + cell.rowSpan;
-      final targetCell = _cellCoveringRow(
-        columnId,
-        boundaryRow,
-        excluding: cell,
-      );
-
-      if (targetCell == null) {
-        _replaceCell(
-          columnId: columnId,
-          oldCell: cell,
-          newCell: WorkflowCell(
-            startRow: cell.startRow + offset,
-            rowSpan: cell.rowSpan,
-            columnSpan: cell.columnSpan,
-            text: cell.text,
-          ),
-        );
-        return;
-      }
-
-      final column = _currentDocument.columns.firstWhere(
-        (item) => item.id == columnId,
-      );
-      final movedCellStartRow = offset < 0
-          ? targetCell.startRow
-          : targetCell.startRow + targetCell.rowSpan - cell.rowSpan;
-      final movedTargetStartRow = offset < 0
-          ? movedCellStartRow + cell.rowSpan
-          : cell.startRow;
-      final nextCells = <WorkflowCell>[
-        for (final existing in column.cells)
-          if (!_sameCell(existing, cell) && !_sameCell(existing, targetCell))
-            existing,
-        WorkflowCell(
-          startRow: movedCellStartRow,
-          rowSpan: cell.rowSpan,
-          columnSpan: cell.columnSpan,
-          text: cell.text,
-        ),
-        WorkflowCell(
-          startRow: movedTargetStartRow,
-          rowSpan: targetCell.rowSpan,
-          columnSpan: targetCell.columnSpan,
-          text: targetCell.text,
-        ),
-      ]..sort((left, right) => left.startRow.compareTo(right.startRow));
-
-      final columns = [
-        for (final existingColumn in _currentDocument.columns)
-          if (existingColumn.id == columnId)
-            WorkflowColumn(
-              id: existingColumn.id,
-              widthSpec: existingColumn.widthSpec,
-              cells: nextCells,
-            )
-          else
-            existingColumn,
-      ];
-      _setDocument(_currentDocument.copyWith(columns: columns));
-      return;
-    }
-
-    final targetRow = cell.startRow + offset;
-    final targetCell = _cellCoveringRow(columnId, targetRow, excluding: cell);
-    final column = _currentDocument.columns.firstWhere((item) => item.id == columnId);
-    final nextCells = <WorkflowCell>[
-      for (final existing in column.cells)
-        if (!_sameCell(existing, cell) &&
-            (targetCell == null || !_sameCell(existing, targetCell)))
-          existing,
-      WorkflowCell(
-        startRow: targetRow,
-        rowSpan: cell.rowSpan,
-        columnSpan: cell.columnSpan,
-        text: cell.text,
-      ),
-      if (targetCell != null)
-        WorkflowCell(
-          startRow: cell.startRow,
-          rowSpan: targetCell.rowSpan,
-          columnSpan: targetCell.columnSpan,
-          text: targetCell.text,
-        ),
-    ]..sort((left, right) => left.startRow.compareTo(right.startRow));
-
-    final columns = [
-      for (final existingColumn in _currentDocument.columns)
-        if (existingColumn.id == columnId)
-          WorkflowColumn(
-            id: existingColumn.id,
-            widthSpec: existingColumn.widthSpec,
-            cells: nextCells,
-          )
-        else
-          existingColumn,
-    ];
-    _setDocument(_currentDocument.copyWith(columns: columns));
-  }
-
-  void _moveCellHorizontally({
-    required String columnId,
-    required WorkflowCell cell,
-    required int offset,
-  }) {
-    final movePlan = _horizontalMovePlan(columnId: columnId, cell: cell, offset: offset);
+    final movePlan = _rectangleMovePlan(
+      columnId: columnId,
+      cell: cell,
+      rowDelta: rowDelta,
+      columnDelta: columnDelta,
+    );
     if (movePlan == null) {
       return;
     }
 
-    final overlappingCells = _cellsIntersectingRect(
-      startColumnId: movePlan.newColumnId,
-      columnSpan: cell.columnSpan,
-      startRow: cell.startRow,
-      endRow: cell.endRow,
-      excludingColumnId: columnId,
-      excludingCell: cell,
-    );
     final movedCell = WorkflowCell(
-      startRow: cell.startRow,
+      startRow: movePlan.targetStartRow,
       rowSpan: cell.rowSpan,
       columnSpan: cell.columnSpan,
       text: cell.text,
     );
-    final swappedReplacement = movePlan.swappedCell == null
-        ? null
-        : WorkflowCell(
-            startRow: movePlan.swappedCell!.cell.startRow,
-            rowSpan: movePlan.swappedCell!.cell.rowSpan,
-            columnSpan: movePlan.swappedCell!.cell.columnSpan,
-            text: movePlan.swappedCell!.cell.text,
-          );
+    WorkflowCell? displacedCell;
+    final planDisplacedCell = movePlan.displacedCell;
+    final displacedTargetStartRow = movePlan.displacedTargetStartRow;
+    if (planDisplacedCell != null && displacedTargetStartRow != null) {
+      displacedCell = WorkflowCell(
+        startRow: displacedTargetStartRow,
+        rowSpan: planDisplacedCell.cell.rowSpan,
+        columnSpan: planDisplacedCell.cell.columnSpan,
+        text: planDisplacedCell.cell.text,
+      );
+    }
+
+    final removedCells = [
+      _AbsorbedWorkflowCell(columnId: columnId, cell: cell),
+      ...movePlan.absorbedCells,
+    ];
 
     final columns = [
       for (final column in _currentDocument.columns)
@@ -1125,19 +1001,19 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           widthSpec: column.widthSpec,
           cells: [
             for (final existing in column.cells)
-              if (!_sameColumnCell(column.id, existing, columnId, cell) &&
-                  !overlappingCells.any(
-                    (entry) => _sameColumnCell(
-                      column.id,
-                      existing,
-                      entry.columnId,
-                      entry.cell,
-                    ),
-                  ))
+              if (!removedCells.any(
+                (entry) => _sameColumnCell(
+                  column.id,
+                  existing,
+                  entry.columnId,
+                  entry.cell,
+                ),
+              ))
                 existing,
-            if (column.id == movePlan.newColumnId) movedCell,
-            if (swappedReplacement != null && column.id == columnId)
-              swappedReplacement,
+            if (column.id == movePlan.targetColumnId) movedCell,
+            if (displacedCell != null &&
+                column.id == movePlan.displacedTargetColumnId)
+              displacedCell,
           ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
         ),
     ];
@@ -1145,8 +1021,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _setDocument(_currentDocument.copyWith(columns: columns));
     setState(() {
       _selectedCell = RecipeChartSelection(
-        columnId: movePlan.newColumnId,
-        startRow: cell.startRow,
+        columnId: movePlan.targetColumnId,
+        startRow: movePlan.targetStartRow,
       );
     });
   }
@@ -1374,62 +1250,175 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         targetIndex <= startIndex + columnSpan - 1;
   }
 
-  String? _horizontalMoveColumnId(
-    String columnId,
-    WorkflowCell cell,
-    int offset,
-  ) {
-    final currentIndex = _columnIndex(columnId);
-    if (currentIndex < 0) {
-      return null;
-    }
-    final nextIndex = currentIndex + offset;
-    final nextEndIndex = nextIndex + cell.columnSpan - 1;
-    if (nextIndex < 0 || nextEndIndex >= _currentDocument.columns.length) {
-      return null;
-    }
-    return _currentDocument.columns[nextIndex].id;
-  }
-
-  _HorizontalMovePlan? _horizontalMovePlan({
+  _RectangleMovePlan? _rectangleMovePlan({
     required String columnId,
     required WorkflowCell cell,
-    required int offset,
+    required int rowDelta,
+    required int columnDelta,
   }) {
-    final shiftedColumnId = _horizontalMoveColumnId(columnId, cell, offset);
-    if (shiftedColumnId == null) {
+    final sourceColumnIndex = _columnIndex(columnId);
+    if (sourceColumnIndex < 0) {
       return null;
     }
-    final shiftedOverlaps = _cellsIntersectingRect(
-      startColumnId: shiftedColumnId,
+    var targetColumnIndex = sourceColumnIndex + columnDelta;
+    var targetStartRow = cell.startRow + rowDelta;
+    if (!_rectIsInBounds(
+      columnIndex: targetColumnIndex,
       columnSpan: cell.columnSpan,
-      startRow: cell.startRow,
-      endRow: cell.endRow,
-      excludingColumnId: columnId,
-      excludingCell: cell,
-    );
-    final nonEmptyOverlaps = [
-      for (final entry in shiftedOverlaps)
-        if (entry.cell.text.trim().isNotEmpty) entry,
-    ];
-    if (nonEmptyOverlaps.isEmpty) {
-      return _HorizontalMovePlan(newColumnId: shiftedColumnId);
-    }
-    if (nonEmptyOverlaps.length != 1) {
-      return null;
-    }
-    final swappedCell = nonEmptyOverlaps.single;
-    if (!_canSwapHorizontally(
-      columnId: columnId,
-      cell: cell,
-      targetColumnId: swappedCell.columnId,
-      targetCell: swappedCell.cell,
+      startRow: targetStartRow,
+      rowSpan: cell.rowSpan,
     )) {
       return null;
     }
-    return _HorizontalMovePlan(
-      newColumnId: swappedCell.columnId,
-      swappedCell: swappedCell,
+    final sourceEntry = _AbsorbedWorkflowCell(columnId: columnId, cell: cell);
+    var targetColumnId = _currentDocument.columns[targetColumnIndex].id;
+    var targetIntersections = _cellsIntersectingRect(
+      startColumnId: targetColumnId,
+      columnSpan: cell.columnSpan,
+      startRow: targetStartRow,
+      endRow: targetStartRow + cell.rowSpan - 1,
+      excludingColumnId: columnId,
+      excludingCell: cell,
+    );
+    var nonEmptyTargetIntersections = [
+      for (final entry in targetIntersections)
+        if (entry.cell.text.trim().isNotEmpty) entry,
+    ];
+    if (nonEmptyTargetIntersections.length > 1) {
+      return null;
+    }
+    final displacedCell = nonEmptyTargetIntersections.isEmpty
+        ? null
+        : nonEmptyTargetIntersections.single;
+
+    if (displacedCell != null) {
+      final displacedColumnIndex = _columnIndex(displacedCell.columnId);
+      if (displacedColumnIndex < 0) {
+        return null;
+      }
+      if (rowDelta < 0) {
+        targetStartRow = displacedCell.cell.startRow;
+      } else if (rowDelta > 0) {
+        targetStartRow = displacedCell.cell.endRow - cell.rowSpan + 1;
+      }
+      if (columnDelta < 0) {
+        targetColumnIndex = displacedColumnIndex;
+      } else if (columnDelta > 0) {
+        targetColumnIndex =
+            displacedColumnIndex + displacedCell.cell.columnSpan - cell.columnSpan;
+      }
+      if (!_rectIsInBounds(
+        columnIndex: targetColumnIndex,
+        columnSpan: cell.columnSpan,
+        startRow: targetStartRow,
+        rowSpan: cell.rowSpan,
+      )) {
+        return null;
+      }
+      targetColumnId = _currentDocument.columns[targetColumnIndex].id;
+      targetIntersections = _cellsIntersectingRect(
+        startColumnId: targetColumnId,
+        columnSpan: cell.columnSpan,
+        startRow: targetStartRow,
+        endRow: targetStartRow + cell.rowSpan - 1,
+        excludingColumnId: columnId,
+        excludingCell: cell,
+      );
+      nonEmptyTargetIntersections = [
+        for (final entry in targetIntersections)
+          if (entry.cell.text.trim().isNotEmpty) entry,
+      ];
+      if (nonEmptyTargetIntersections.length != 1 ||
+          !_sameColumnCell(
+            nonEmptyTargetIntersections.single.columnId,
+            nonEmptyTargetIntersections.single.cell,
+            displacedCell.columnId,
+            displacedCell.cell,
+          )) {
+        return null;
+      }
+    }
+
+    final absorbedCells = <_AbsorbedWorkflowCell>[...targetIntersections];
+    String? displacedTargetColumnId;
+    int? displacedTargetStartRow;
+
+    if (displacedCell != null) {
+      var displacedTargetColumnIndex = sourceColumnIndex;
+      var resolvedDisplacedTargetStartRow = cell.startRow;
+      if (rowDelta < 0) {
+        resolvedDisplacedTargetStartRow = targetStartRow + cell.rowSpan;
+      } else if (rowDelta > 0) {
+        resolvedDisplacedTargetStartRow =
+            targetStartRow - displacedCell.cell.rowSpan;
+      }
+      if (columnDelta < 0) {
+        displacedTargetColumnIndex = targetColumnIndex + cell.columnSpan;
+      } else if (columnDelta > 0) {
+        displacedTargetColumnIndex =
+            targetColumnIndex - displacedCell.cell.columnSpan;
+      }
+      if (!_rectIsInBounds(
+        columnIndex: displacedTargetColumnIndex,
+        columnSpan: displacedCell.cell.columnSpan,
+        startRow: resolvedDisplacedTargetStartRow,
+        rowSpan: displacedCell.cell.rowSpan,
+      )) {
+        return null;
+      }
+      final resolvedDisplacedTargetColumnId =
+          _currentDocument.columns[displacedTargetColumnIndex].id;
+      displacedTargetColumnId = resolvedDisplacedTargetColumnId;
+      displacedTargetStartRow = resolvedDisplacedTargetStartRow;
+      if (_rectanglesOverlap(
+        leftColumnId: targetColumnId,
+        leftCell: WorkflowCell(
+          startRow: targetStartRow,
+          rowSpan: cell.rowSpan,
+          columnSpan: cell.columnSpan,
+          text: cell.text,
+        ),
+        rightColumnId: resolvedDisplacedTargetColumnId,
+        rightCell: WorkflowCell(
+          startRow: resolvedDisplacedTargetStartRow,
+          rowSpan: displacedCell.cell.rowSpan,
+          columnSpan: displacedCell.cell.columnSpan,
+          text: displacedCell.cell.text,
+        ),
+      )) {
+        return null;
+      }
+      final displacedTargetIntersections = _cellsIntersectingRect(
+        startColumnId: resolvedDisplacedTargetColumnId,
+        columnSpan: displacedCell.cell.columnSpan,
+        startRow: resolvedDisplacedTargetStartRow,
+        endRow: resolvedDisplacedTargetStartRow + displacedCell.cell.rowSpan - 1,
+        excludingColumnId: columnId,
+        excludingCell: cell,
+      );
+      for (final entry in displacedTargetIntersections) {
+        if (_sameColumnCell(
+          entry.columnId,
+          entry.cell,
+          displacedCell.columnId,
+          displacedCell.cell,
+        )) {
+          continue;
+        }
+        if (entry.cell.text.trim().isNotEmpty) {
+          return null;
+        }
+        absorbedCells.add(entry);
+      }
+    }
+
+    return _RectangleMovePlan(
+      targetColumnId: targetColumnId,
+      targetStartRow: targetStartRow,
+      absorbedCells: _dedupeAbsorbedCells(absorbedCells, except: sourceEntry),
+      displacedCell: displacedCell,
+      displacedTargetColumnId: displacedTargetColumnId,
+      displacedTargetStartRow: displacedTargetStartRow,
     );
   }
 
@@ -1442,19 +1431,85 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     WorkflowCell? excludingCell,
   }) {
     final entries = <_AbsorbedWorkflowCell>[];
-    for (final column in _columnsInsideSpan(startColumnId, columnSpan)) {
+    final queryCell = WorkflowCell(
+      startRow: startRow,
+      rowSpan: endRow - startRow + 1,
+      columnSpan: columnSpan,
+      text: '',
+    );
+    for (final column in _currentDocument.columns) {
       for (final cell in column.cells) {
         if (excludingColumnId != null &&
             column.id == excludingColumnId &&
             _sameCell(cell, excludingCell)) {
           continue;
         }
-        if (_rangesOverlap(startRow, endRow, cell.startRow, cell.endRow)) {
+        if (_rectanglesOverlap(
+          leftColumnId: startColumnId,
+          leftCell: queryCell,
+          rightColumnId: column.id,
+          rightCell: cell,
+        )) {
           entries.add(_AbsorbedWorkflowCell(columnId: column.id, cell: cell));
         }
       }
     }
     return entries;
+  }
+
+  bool _rectanglesOverlap({
+    required String leftColumnId,
+    required WorkflowCell leftCell,
+    required String rightColumnId,
+    required WorkflowCell rightCell,
+  }) {
+    final leftColumnIndex = _columnIndex(leftColumnId);
+    final rightColumnIndex = _columnIndex(rightColumnId);
+    if (leftColumnIndex < 0 || rightColumnIndex < 0) {
+      return false;
+    }
+    final leftEndColumnIndex = leftColumnIndex + leftCell.columnSpan - 1;
+    final rightEndColumnIndex = rightColumnIndex + rightCell.columnSpan - 1;
+    return _rangesOverlap(
+          leftCell.startRow,
+          leftCell.endRow,
+          rightCell.startRow,
+          rightCell.endRow,
+        ) &&
+        leftColumnIndex <= rightEndColumnIndex &&
+        leftEndColumnIndex >= rightColumnIndex;
+  }
+
+  bool _rectIsInBounds({
+    required int columnIndex,
+    required int columnSpan,
+    required int startRow,
+    required int rowSpan,
+  }) {
+    return columnIndex >= 0 &&
+        columnIndex + columnSpan - 1 < _currentDocument.columns.length &&
+        startRow >= 1 &&
+        startRow + rowSpan - 1 <= _currentWorkflowRowCount;
+  }
+
+  List<_AbsorbedWorkflowCell> _dedupeAbsorbedCells(
+    List<_AbsorbedWorkflowCell> cells, {
+    required _AbsorbedWorkflowCell except,
+  }) {
+    final result = <_AbsorbedWorkflowCell>[];
+    for (final cell in cells) {
+      if (_sameColumnCell(cell.columnId, cell.cell, except.columnId, except.cell)) {
+        continue;
+      }
+      if (result.any(
+        (existing) =>
+            _sameColumnCell(existing.columnId, existing.cell, cell.columnId, cell.cell),
+      )) {
+        continue;
+      }
+      result.add(cell);
+    }
+    return result;
   }
 
   bool _sameColumnCell(
@@ -1795,75 +1850,55 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   bool _canMoveUp(String columnId, WorkflowCell cell) {
-    if (cell.startRow <= 1) {
-      return false;
+    if (!_selectedCellIsStored) {
+      return cell.startRow > 1;
     }
-    if (cell.rowSpan > 1) {
-      final targetCell = _cellCoveringRow(
-        columnId,
-        cell.startRow - 1,
-        excluding: cell,
-      );
-      return targetCell == null || targetCell.columnSpan == cell.columnSpan;
-    }
-    final targetCell = _cellCoveringRow(columnId, cell.startRow - 1, excluding: cell);
-    return targetCell == null ||
-        (targetCell.rowSpan == 1 && targetCell.columnSpan == cell.columnSpan);
+    return _rectangleMovePlan(
+          columnId: columnId,
+          cell: cell,
+          rowDelta: -1,
+          columnDelta: 0,
+        ) !=
+        null;
   }
 
   bool _canMoveDown(String columnId, WorkflowCell cell) {
-    final endRow = cell.startRow + cell.rowSpan - 1;
-    if (endRow >= _currentWorkflowRowCount) {
-      return false;
+    if (!_selectedCellIsStored) {
+      return cell.startRow < _currentWorkflowRowCount;
     }
-    if (cell.rowSpan > 1) {
-      final targetCell = _cellCoveringRow(columnId, endRow + 1, excluding: cell);
-      return targetCell == null || targetCell.columnSpan == cell.columnSpan;
-    }
-    final targetCell = _cellCoveringRow(columnId, cell.startRow + 1, excluding: cell);
-    return targetCell == null ||
-        (targetCell.rowSpan == 1 && targetCell.columnSpan == cell.columnSpan);
+    return _rectangleMovePlan(
+          columnId: columnId,
+          cell: cell,
+          rowDelta: 1,
+          columnDelta: 0,
+        ) !=
+        null;
   }
 
   bool _canMoveLeft(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
       return _columnIdByOffset(columnId, -1) != null;
     }
-    return _canMoveHorizontally(columnId: columnId, cell: cell, offset: -1);
+    return _rectangleMovePlan(
+          columnId: columnId,
+          cell: cell,
+          rowDelta: 0,
+          columnDelta: -1,
+        ) !=
+        null;
   }
 
   bool _canMoveRight(String columnId, WorkflowCell cell) {
     if (!_selectedCellIsStored) {
       return _columnIdByOffset(columnId, 1) != null;
     }
-    return _canMoveHorizontally(columnId: columnId, cell: cell, offset: 1);
-  }
-
-  bool _canMoveHorizontally({
-    required String columnId,
-    required WorkflowCell cell,
-    required int offset,
-  }) {
-    return _horizontalMovePlan(columnId: columnId, cell: cell, offset: offset) !=
+    return _rectangleMovePlan(
+          columnId: columnId,
+          cell: cell,
+          rowDelta: 0,
+          columnDelta: 1,
+        ) !=
         null;
-  }
-
-  bool _canSwapHorizontally({
-    required String columnId,
-    required WorkflowCell cell,
-    required String targetColumnId,
-    required WorkflowCell targetCell,
-  }) {
-    final columnIndex = _columnIndex(columnId);
-    final targetColumnIndex = _columnIndex(targetColumnId);
-    if (columnIndex < 0 || targetColumnIndex < 0) {
-      return false;
-    }
-    final movedTargetEndIndex = columnIndex + targetCell.columnSpan - 1;
-    return cell.startRow == targetCell.startRow &&
-        cell.rowSpan == targetCell.rowSpan &&
-        cell.columnSpan == targetCell.columnSpan &&
-        movedTargetEndIndex < _currentDocument.columns.length;
   }
 
   bool _canUnmergeUp(WorkflowCell cell) {
@@ -2511,14 +2546,22 @@ class _AbsorbedWorkflowCell {
   final WorkflowCell cell;
 }
 
-class _HorizontalMovePlan {
-  const _HorizontalMovePlan({
-    required this.newColumnId,
-    this.swappedCell,
+class _RectangleMovePlan {
+  const _RectangleMovePlan({
+    required this.targetColumnId,
+    required this.targetStartRow,
+    required this.absorbedCells,
+    this.displacedCell,
+    this.displacedTargetColumnId,
+    this.displacedTargetStartRow,
   });
 
-  final String newColumnId;
-  final _AbsorbedWorkflowCell? swappedCell;
+  final String targetColumnId;
+  final int targetStartRow;
+  final List<_AbsorbedWorkflowCell> absorbedCells;
+  final _AbsorbedWorkflowCell? displacedCell;
+  final String? displacedTargetColumnId;
+  final int? displacedTargetStartRow;
 }
 
 enum _CellActionPanel {
