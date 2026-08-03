@@ -8,6 +8,7 @@ import 'widgets/dsl_editor_widgets.dart';
 import 'widgets/editor_action_grid.dart';
 import 'widgets/editor_bottom_actions.dart';
 import 'widgets/editor_form_widgets.dart';
+import 'widgets/editor_manager_sheets.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
@@ -730,66 +731,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
-        final localizations = AppLocalizations.of(context);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        localizations.prepRowsTitle,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _editPrepRow();
-                      },
-                      icon: const Icon(Icons.add),
-                      label: Text(localizations.addLabel),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (_currentDocument.prepRows.isEmpty)
-                  EditorPlaceholder(
-                    text:
-                        '${localizations.noPrepRowsPlaceholder} ${localizations.createTopInstructionsHint}',
-                  )
-                else
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        for (var index = 0;
-                            index < _currentDocument.prepRows.length;
-                            index++)
-                          EditorListRow(
-                            title: _currentDocument.prepRows[index].text,
-                            subtitle: localizations.prepRowNumberLabel(index + 1),
-                            onEdit: () {
-                              Navigator.of(context).pop();
-                              _editPrepRow(index: index);
-                            },
-                            onDelete: () {
-                              Navigator.of(context).pop();
-                              _deletePrepRow(index);
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        return PrepManagerSheet(
+          prepRows: _currentDocument.prepRows,
+          onAddPrepRow: _editPrepRow,
+          onEditPrepRow: (index) => _editPrepRow(index: index),
+          onDeletePrepRow: _deletePrepRow,
         );
       },
     );
@@ -801,149 +747,25 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
-        final localizations = AppLocalizations.of(context);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        localizations.workflowCellsTitle,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _addColumn();
-                      },
-                      icon: const Icon(Icons.view_column),
-                      label: Text(localizations.addColumnLabel),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (_currentDocument.columns.isEmpty)
-                  EditorPlaceholder(
-                    text: localizations.noWorkflowColumnsPlaceholder,
-                  )
-                else
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        for (final column in _currentDocument.columns) ...[
-                          ColumnEditorCard(
-                            columnId: column.id,
-                            onAddCell: () {
-                              Navigator.of(context).pop();
-                              _editCell(columnId: column.id);
-                            },
-                            onDeleteColumn: () {
-                              Navigator.of(context).pop();
-                              _deleteColumn(column.id);
-                            },
-                            child: Column(
-                              children: [
-                                if (column.cells.isEmpty)
-                                  EditorPlaceholder(
-                                    text: localizations.noCellsInColumnPlaceholder,
-                                  )
-                                else
-                                  for (final cell in column.cells)
-                                    EditorListRow(
-                                      title: cell.text,
-                                      subtitle: cell.rowSpan == 1
-                                          ? localizations.singleRowLabel(cell.startRow)
-                                          : localizations.rowRangeLabel(
-                                              cell.startRow,
-                                              cell.startRow + cell.rowSpan - 1,
-                                            ),
-                                      actionMenu: PopupMenuButton<_CellAction>(
-                                        onSelected: (action) {
-                                          Navigator.of(context).pop();
-                                          switch (action) {
-                                            case _CellAction.edit:
-                                              _editCell(
-                                                columnId: column.id,
-                                                existingCell: cell,
-                                              );
-                                              break;
-                                            case _CellAction.delete:
-                                              _deleteCell(column.id, cell);
-                                              break;
-                                            case _CellAction.moveUp:
-                                              _moveCellUp(column.id, cell);
-                                              break;
-                                            case _CellAction.moveDown:
-                                              _moveCellDown(column.id, cell);
-                                              break;
-                                            case _CellAction.mergeUp:
-                                              _mergeCellUp(column.id, cell);
-                                              break;
-                                            case _CellAction.mergeDown:
-                                              _mergeCellDown(column.id, cell);
-                                              break;
-                                            case _CellAction.unmerge:
-                                              _unmergeCell(column.id, cell);
-                                              break;
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          PopupMenuItem(
-                                            value: _CellAction.edit,
-                                            child: Text(localizations.edit),
-                                          ),
-                                          if (_canMoveUp(column.id, cell))
-                                            PopupMenuItem(
-                                              value: _CellAction.moveUp,
-                                              child: Text(localizations.moveUp),
-                                            ),
-                                          if (_canMoveDown(column.id, cell))
-                                            PopupMenuItem(
-                                              value: _CellAction.moveDown,
-                                              child: Text(localizations.moveDown),
-                                            ),
-                                          if (_canMergeUp(column.id, cell))
-                                            PopupMenuItem(
-                                              value: _CellAction.mergeUp,
-                                              child: Text(localizations.mergeWithAbove),
-                                            ),
-                                          if (_canMergeDown(column.id, cell))
-                                            PopupMenuItem(
-                                              value: _CellAction.mergeDown,
-                                              child: Text(localizations.mergeWithBelow),
-                                            ),
-                                          if (cell.rowSpan > 1 || cell.columnSpan > 1)
-                                            PopupMenuItem(
-                                              value: _CellAction.unmerge,
-                                              child: Text(localizations.unmerge),
-                                            ),
-                                          PopupMenuItem(
-                                            value: _CellAction.delete,
-                                            child: Text(localizations.delete),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+        return CellManagerSheet(
+          columns: _currentDocument.columns,
+          onAddColumn: _addColumn,
+          onAddCell: (columnId) => _editCell(columnId: columnId),
+          onDeleteColumn: _deleteColumn,
+          onEditCell: (columnId, cell) => _editCell(
+            columnId: columnId,
+            existingCell: cell,
           ),
+          onDeleteCell: _deleteCell,
+          onMoveCellUp: _moveCellUp,
+          onMoveCellDown: _moveCellDown,
+          onMergeCellUp: _mergeCellUp,
+          onMergeCellDown: _mergeCellDown,
+          onUnmergeCell: _unmergeCell,
+          canMoveCellUp: _canMoveUp,
+          canMoveCellDown: _canMoveDown,
+          canMergeCellUp: _canMergeUp,
+          canMergeCellDown: _canMergeDown,
         );
       },
     );
@@ -1580,16 +1402,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 enum _CellActionPanel {
   main,
   merge,
-  unmerge,
-}
-
-enum _CellAction {
-  edit,
-  delete,
-  moveUp,
-  moveDown,
-  mergeUp,
-  mergeDown,
   unmerge,
 }
 
