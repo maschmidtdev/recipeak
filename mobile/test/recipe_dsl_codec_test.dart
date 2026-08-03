@@ -3,6 +3,67 @@ import 'package:mobile/features/recipe_document/domain/recipe_dsl_codec.dart';
 import 'package:mobile/features/recipe_document/domain/recipe_document.dart';
 
 void main() {
+  test('round-trips complete recipe metadata and chart structure', () {
+    const source = '''
+title: Chickpea Curry
+description: Tomato curry with rice.
+duration: 35 min
+yield: 4 servings
+tags: Vegan, Dinner
+favorite: true
+
+prep:
+- Set out skillet
+- Start rice pot
+
+widths:
+B: 120
+
+A:
+1. rice
+2. onion
+3. chickpeas
+
+B-C:
+1-2: start cooking
+
+D:
+1-3: finish curry
+with rice
+''';
+
+    final parsed = RecipeDslCodec.parseRecipe(source: source);
+    final encoded = RecipeDslCodec.encodeRecipe(parsed);
+    final roundTripped = RecipeDslCodec.parseRecipe(source: encoded);
+
+    expect(roundTripped.title, 'Chickpea Curry');
+    expect(roundTripped.description, 'Tomato curry with rice.');
+    expect(roundTripped.duration, '35 min');
+    expect(roundTripped.yieldText, '4 servings');
+    expect(roundTripped.tags, ['Vegan', 'Dinner']);
+    expect(roundTripped.isFavorite, isTrue);
+    expect(
+      roundTripped.document.prepRows.map((row) => row.text),
+      ['Set out skillet', 'Start rice pot'],
+    );
+
+    final columnB = roundTripped.document.columns.firstWhere(
+      (column) => column.id == 'B',
+    );
+    expect(columnB.widthSpec?.kind, ColumnWidthKind.fixed);
+    expect(columnB.widthSpec?.logicalPixels, 120);
+    expect(columnB.cells.single.startRow, 1);
+    expect(columnB.cells.single.rowSpan, 2);
+    expect(columnB.cells.single.columnSpan, 2);
+    expect(columnB.cells.single.text, 'start cooking');
+
+    final columnD = roundTripped.document.columns.firstWhere(
+      (column) => column.id == 'D',
+    );
+    expect(columnD.cells.single.rowSpan, 3);
+    expect(columnD.cells.single.text, 'finish curry\nwith rice');
+  });
+
   test('parses full recipe metadata and rectangular cells', () {
     final parsed = RecipeDslCodec.parseRecipe(
       source: '''
@@ -89,5 +150,20 @@ second paragraph
 
     final encoded = RecipeDslCodec.encodeRecipe(parsed);
     expect(encoded, contains('1-2: first paragraph\n\nsecond paragraph'));
+  });
+
+  test('rejects overlapping rectangular spans', () {
+    expect(
+      () => RecipeDslCodec.parseRecipe(
+        source: '''
+A-B:
+1-2: first
+
+B:
+2. overlap
+''',
+      ),
+      throwsFormatException,
+    );
   });
 }
