@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_storage.dart';
 import '../../../app/dev_flags.dart';
+import '../../ingredients/data/dev_sample_ingredients.dart';
+import '../../ingredients/domain/ingredient_product.dart';
+import '../../ingredients/domain/ingredient_tags.dart';
+import '../../ingredients/presentation/ingredient_editor_screen.dart';
+import '../../ingredients/presentation/ingredient_tag_labels.dart';
 import '../data/dev_sample_recipes.dart';
 import '../domain/recipe_collection_filters.dart';
 import '../domain/recipe_summary.dart';
@@ -28,14 +33,21 @@ class RecipeCollectionScreen extends StatefulWidget {
 
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   final List<RecipeSummary> _recipes = [];
+  final List<IngredientProduct> _ingredients = [];
   final Set<String> _availableTags = {};
+  final Set<String> _availableIngredientTags = {...defaultIngredientTags};
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _ingredientSearchController =
+      TextEditingController();
   bool _showAllFilter = true;
   bool _showFavoritesFilter = false;
   bool _matchAllTags = false;
   bool _isLoadingState = true;
   final Set<String> _selectedTagFilters = {};
+  final Set<String> _selectedIngredientTagFilters = {};
   String _searchQuery = '';
+  String _ingredientSearchQuery = '';
+  _CollectionTab _selectedTab = _CollectionTab.recipes;
   static const _deleteUndoDuration = Duration(seconds: 4);
   static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
   int _deleteToastToken = 0;
@@ -49,6 +61,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _ingredientSearchController.dispose();
     super.dispose();
   }
 
@@ -60,6 +73,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       ...productionSeedRecipes,
       if (kIsDevelopmentMode) ...devSampleRecipes,
     ];
+    const seedIngredients = [
+      if (kIsDevelopmentMode) ...devSampleIngredients,
+    ];
     if (!mounted) {
       return;
     }
@@ -68,6 +84,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       _recipes
         ..clear()
         ..addAll(snapshot?.recipes ?? seedRecipes);
+      _ingredients
+        ..clear()
+        ..addAll(snapshot?.ingredients ?? seedIngredients);
 
       _availableTags
         ..clear()
@@ -76,9 +95,17 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               ? snapshot.availableTags
               : initialAvailableTags(_recipes),
         );
+      _availableIngredientTags
+        ..clear()
+        ..addAll(defaultIngredientTags)
+        ..addAll(snapshot?.availableIngredientTags ?? const [])
+        ..addAll(_ingredients.expand((ingredient) => ingredient.tags));
 
       _matchAllTags = snapshot?.matchAllTags ?? false;
       _selectedTagFilters.removeWhere((tag) => !_availableTags.contains(tag));
+      _selectedIngredientTagFilters.removeWhere(
+        (tag) => !_availableIngredientTags.contains(tag),
+      );
       _restoreAllIfNoSpecificFilters();
       _isLoadingState = false;
     });
@@ -126,6 +153,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       _showAllFilter = true;
       _showFavoritesFilter = false;
       _selectedTagFilters.clear();
+      _selectedIngredientTagFilters.clear();
+      _ingredientSearchQuery = '';
+      _ingredientSearchController.clear();
       _isLoadingState = true;
     });
 
@@ -138,6 +168,8 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         recipes: _recipes,
         availableTags: sortedTags(_availableTags),
         matchAllTags: _matchAllTags,
+        ingredients: _ingredients,
+        availableIngredientTags: sortedTags(_availableIngredientTags),
       ),
     );
   }
@@ -266,6 +298,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       matchAllTags: _matchAllTags,
       selectedTagFilters: _selectedTagFilters,
     );
+    final ingredientEntries = _filteredIngredientEntries();
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
@@ -290,85 +323,163 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
                 children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
+                  SegmentedButton<_CollectionTab>(
+                    segments: [
+                      ButtonSegment<_CollectionTab>(
+                        value: _CollectionTab.recipes,
+                        label: Text(localizations.recipesTabLabel),
+                      ),
+                      ButtonSegment<_CollectionTab>(
+                        value: _CollectionTab.ingredients,
+                        label: Text(localizations.ingredientsTabLabel),
+                      ),
+                    ],
+                    selected: {_selectedTab},
+                    onSelectionChanged: (selection) {
                       setState(() {
-                        _searchQuery = value.trim().toLowerCase();
+                        _selectedTab = selection.first;
                       });
                     },
-                    decoration: InputDecoration(
-                      hintText: localizations.searchRecipes,
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _searchQuery = '';
-                                });
-                              },
-                              icon: const Icon(Icons.close),
-                            ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FilterChip(
-                        label: Text(localizations.allFilter),
-                        selected: _showAllFilter,
-                        showCheckmark: false,
-                        onSelected: (_) => _toggleAllFilter(),
-                      ),
-                      FilterChip(
-                        label: Text(localizations.favoritesFilter),
-                        selected: _showFavoritesFilter,
-                        showCheckmark: false,
-                        onSelected: (_) => _toggleFavoritesFilter(),
-                      ),
-                      for (final tag in sortedTags(_availableTags))
-                        FilterChip(
-                          label: Text(_tagLabel(context, tag)),
-                          selected: _selectedTagFilters.contains(tag),
-                          showCheckmark: false,
-                          onSelected: (_) => _toggleTagFilter(tag),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    localizations.collectionTitle,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  if (_selectedTab == _CollectionTab.recipes)
+                    _RecipeCollectionBody(
+                      searchController: _searchController,
+                      searchQuery: _searchQuery,
+                      recipeEntries: recipeEntries,
+                      availableTags: _availableTags,
+                      selectedTagFilters: _selectedTagFilters,
+                      showAllFilter: _showAllFilter,
+                      showFavoritesFilter: _showFavoritesFilter,
+                      onSearchChanged: (value) {
+                        setState(() {
+                          _searchQuery = value.trim().toLowerCase();
+                        });
+                      },
+                      onClearSearch: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                      onToggleAll: _toggleAllFilter,
+                      onToggleFavorites: _toggleFavoritesFilter,
+                      onToggleTag: _toggleTagFilter,
+                      onOpenRecipe: _openRecipeForViewing,
+                    )
+                  else
+                    _IngredientCollectionBody(
+                      searchController: _ingredientSearchController,
+                      searchQuery: _ingredientSearchQuery,
+                      ingredients: ingredientEntries,
+                      availableTags: _availableIngredientTags,
+                      selectedTagFilters: _selectedIngredientTagFilters,
+                      onSearchChanged: (value) {
+                        setState(() {
+                          _ingredientSearchQuery = value.trim().toLowerCase();
+                        });
+                      },
+                      onClearSearch: () {
+                        _ingredientSearchController.clear();
+                        setState(() {
+                          _ingredientSearchQuery = '';
+                        });
+                      },
+                      onToggleTag: _toggleIngredientTagFilter,
+                      onEditIngredient: _openIngredientEditor,
+                      onDeleteIngredient: _deleteIngredient,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  for (final entry in recipeEntries) ...[
-                    _RecipeCard(
-                      recipe: entry.recipe,
-                      onTap: () => _openRecipeForViewing(entry.index),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
                 ],
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openNewRecipeFlow,
+        onPressed: _selectedTab == _CollectionTab.recipes
+            ? _openNewRecipeFlow
+            : () => _openIngredientEditor(null),
         icon: const Icon(Icons.add),
-        label: Text(localizations.newRecipe),
+        label: Text(
+          _selectedTab == _CollectionTab.recipes
+              ? localizations.newRecipe
+              : localizations.newIngredient,
+        ),
       ),
     );
+  }
+
+  List<_IngredientEntry> _filteredIngredientEntries() {
+    final query = _ingredientSearchQuery.trim().toLowerCase();
+    final entries = <_IngredientEntry>[
+      for (final entry in _ingredients.indexed)
+        _IngredientEntry(index: entry.$1, ingredient: entry.$2),
+    ];
+
+    return entries.where((entry) {
+      final ingredient = entry.ingredient;
+      final matchesSearch = query.isEmpty ||
+          [
+            ingredient.name,
+            ingredient.amount,
+            ingredient.price,
+            ingredient.store,
+            ...ingredient.tags,
+          ].any((value) => value.toLowerCase().contains(query));
+      final matchesTags = _selectedIngredientTagFilters.isEmpty ||
+          _selectedIngredientTagFilters.any(ingredient.tags.contains);
+      return matchesSearch && matchesTags;
+    }).toList();
+  }
+
+  void _toggleIngredientTagFilter(String tag) {
+    setState(() {
+      if (_selectedIngredientTagFilters.contains(tag)) {
+        _selectedIngredientTagFilters.remove(tag);
+      } else {
+        _selectedIngredientTagFilters.add(tag);
+      }
+    });
+  }
+
+  Future<void> _openIngredientEditor(int? index) async {
+    final result = await Navigator.of(context).push<IngredientProduct>(
+      MaterialPageRoute(
+        builder: (context) => IngredientEditorScreen(
+          initialIngredient: index == null
+              ? const IngredientProduct(
+                  name: '',
+                  amount: '',
+                  price: '',
+                  store: '',
+                  kcal: 0,
+                  protein: 0,
+                  carbs: 0,
+                  fat: 0,
+                )
+              : _ingredients[index],
+          availableTags: orderedIngredientTags(_availableIngredientTags),
+        ),
+      ),
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _availableIngredientTags.addAll(result.tags);
+      if (index == null) {
+        _ingredients.insert(0, result);
+      } else {
+        _ingredients[index] = result;
+      }
+    });
+    _persistState();
+  }
+
+  void _deleteIngredient(int index) {
+    setState(() {
+      _ingredients.removeAt(index);
+    });
+    _persistState();
   }
 
   void _toggleAllFilter() {
@@ -638,6 +749,244 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 }
 
+enum _CollectionTab {
+  recipes,
+  ingredients,
+}
+
+class _IngredientEntry {
+  const _IngredientEntry({required this.index, required this.ingredient});
+
+  final int index;
+  final IngredientProduct ingredient;
+}
+
+class _RecipeCollectionBody extends StatelessWidget {
+  const _RecipeCollectionBody({
+    required this.searchController,
+    required this.searchQuery,
+    required this.recipeEntries,
+    required this.availableTags,
+    required this.selectedTagFilters,
+    required this.showAllFilter,
+    required this.showFavoritesFilter,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.onToggleAll,
+    required this.onToggleFavorites,
+    required this.onToggleTag,
+    required this.onOpenRecipe,
+  });
+
+  final TextEditingController searchController;
+  final String searchQuery;
+  final List<RecipeEntry> recipeEntries;
+  final Set<String> availableTags;
+  final Set<String> selectedTagFilters;
+  final bool showAllFilter;
+  final bool showFavoritesFilter;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final VoidCallback onToggleAll;
+  final VoidCallback onToggleFavorites;
+  final ValueChanged<String> onToggleTag;
+  final ValueChanged<int> onOpenRecipe;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SearchField(
+          controller: searchController,
+          query: searchQuery,
+          hintText: localizations.searchRecipes,
+          onChanged: onSearchChanged,
+          onClear: onClearSearch,
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilterChip(
+              label: Text(localizations.allFilter),
+              selected: showAllFilter,
+              showCheckmark: false,
+              onSelected: (_) => onToggleAll(),
+            ),
+            FilterChip(
+              label: Text(localizations.favoritesFilter),
+              selected: showFavoritesFilter,
+              showCheckmark: false,
+              onSelected: (_) => onToggleFavorites(),
+            ),
+            for (final tag in sortedTags(availableTags))
+              FilterChip(
+                label: Text(_tagLabel(context, tag)),
+                selected: selectedTagFilters.contains(tag),
+                showCheckmark: false,
+                onSelected: (_) => onToggleTag(tag),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Text(
+          localizations.collectionTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final entry in recipeEntries) ...[
+          _RecipeCard(
+            recipe: entry.recipe,
+            onTap: () => onOpenRecipe(entry.index),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _IngredientCollectionBody extends StatelessWidget {
+  const _IngredientCollectionBody({
+    required this.searchController,
+    required this.searchQuery,
+    required this.ingredients,
+    required this.availableTags,
+    required this.selectedTagFilters,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.onToggleTag,
+    required this.onEditIngredient,
+    required this.onDeleteIngredient,
+  });
+
+  final TextEditingController searchController;
+  final String searchQuery;
+  final List<_IngredientEntry> ingredients;
+  final Set<String> availableTags;
+  final Set<String> selectedTagFilters;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final ValueChanged<String> onToggleTag;
+  final ValueChanged<int> onEditIngredient;
+  final ValueChanged<int> onDeleteIngredient;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SearchField(
+          controller: searchController,
+          query: searchQuery,
+          hintText: localizations.searchIngredients,
+          onChanged: onSearchChanged,
+          onClear: onClearSearch,
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final tag in orderedIngredientTags(availableTags))
+              FilterChip(
+                label: Text(ingredientTagLabel(localizations, tag)),
+                selected: selectedTagFilters.contains(tag),
+                showCheckmark: false,
+                onSelected: (_) => onToggleTag(tag),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Text(
+          localizations.ingredientsTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (ingredients.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFD7CCBE)),
+            ),
+            child: Text(
+              localizations.noIngredientsPlaceholder,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF5E675F),
+              ),
+            ),
+          )
+        else
+          for (final entry in ingredients) ...[
+            _IngredientCard(
+              ingredient: entry.ingredient,
+              onTap: () => onEditIngredient(entry.index),
+              onDelete: () => onDeleteIngredient(entry.index),
+            ),
+            const SizedBox(height: 12),
+          ],
+      ],
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.query,
+    required this.hintText,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final String query;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: query.isEmpty
+            ? null
+            : IconButton(
+                onPressed: onClear,
+                icon: const Icon(Icons.close),
+              ),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
 class _UndoToastContent extends StatelessWidget {
   const _UndoToastContent({required this.message, required this.duration});
 
@@ -756,6 +1105,129 @@ class _RecipeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _IngredientCard extends StatelessWidget {
+  const _IngredientCard({
+    required this.ingredient,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final IngredientProduct ingredient;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context);
+    final metadata = [
+      if (ingredient.amount.trim().isNotEmpty) ingredient.amount.trim(),
+      if (ingredient.price.trim().isNotEmpty) ingredient.price.trim(),
+      if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
+    ];
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      ingredient.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: localizations.delete,
+                  ),
+                ],
+              ),
+              if (metadata.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  metadata.join(' · '),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF5E675F),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 6,
+                children: [
+                  _MacroPill(
+                    label: localizations.ingredientKcalLabel,
+                    value: ingredient.kcal,
+                  ),
+                  _MacroPill(
+                    label: localizations.ingredientProteinLabel,
+                    value: ingredient.protein,
+                  ),
+                  _MacroPill(
+                    label: localizations.ingredientCarbsLabel,
+                    value: ingredient.carbs,
+                  ),
+                  _MacroPill(
+                    label: localizations.ingredientFatLabel,
+                    value: ingredient.fat,
+                  ),
+                ],
+              ),
+              if (ingredient.tags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in ingredient.tags)
+                      Chip(
+                        label: Text(ingredientTagLabel(localizations, tag)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MacroPill extends StatelessWidget {
+  const _MacroPill({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('${_formatMacroValue(value)} $label');
+  }
+}
+
+String _formatMacroValue(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(1);
 }
 
 String _tagLabel(BuildContext context, String tag) {

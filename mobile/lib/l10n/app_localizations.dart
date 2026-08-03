@@ -21,7 +21,10 @@ abstract class AppLocalizations {
   String get collectionTitle;
   String get newRecipe;
   String get editRecipe;
+  String get recipesTabLabel;
+  String get ingredientsTabLabel;
   String get searchRecipes;
+  String get searchIngredients;
   String get allFilter;
   String get favoritesFilter;
   String get breakfastFilter;
@@ -129,6 +132,33 @@ abstract class AppLocalizations {
   String get noMoreColumnLetters;
   String get optionalAdvancedEditing;
   String get createTopInstructionsHint;
+  String get ingredientsTitle;
+  String get newIngredient;
+  String get editIngredient;
+  String get ingredientNameLabel;
+  String get ingredientNameHint;
+  String get ingredientNameRequired;
+  String get ingredientAmountLabel;
+  String get ingredientAmountHint;
+  String get ingredientPriceLabel;
+  String get ingredientPriceHint;
+  String get ingredientStoreLabel;
+  String get ingredientStoreHint;
+  String get ingredientKcalLabel;
+  String get ingredientProteinLabel;
+  String get ingredientCarbsLabel;
+  String get ingredientFatLabel;
+  String get nutritionPer100Label;
+  String get noIngredientsPlaceholder;
+  String get ingredientTagVegetables;
+  String get ingredientTagFruits;
+  String get ingredientTagLegumes;
+  String get ingredientTagGrains;
+  String get ingredientTagNutsSeeds;
+  String get ingredientTagSpices;
+  String get ingredientTagSaucesPastes;
+  String get ingredientTagOilsFats;
+  String get ingredientTagCannedJarred;
 
   String deletedMessage(String title);
   String recipesCountLabel(int count);
@@ -174,6 +204,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appTitle => 'Recipeek';
+
+  @override
+  String get recipesTabLabel => 'Recipes';
+
+  @override
+  String get ingredientsTabLabel => 'Ingredients';
 
   @override
   String get bakingFilter => 'Baking';
@@ -448,6 +484,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchRecipes => 'Search recipes';
 
   @override
+  String get searchIngredients => 'Search ingredients';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -520,6 +559,87 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workflowCellsTitle => 'Workflow Cells';
 
   @override
+  String get ingredientsTitle => 'My Ingredients';
+
+  @override
+  String get newIngredient => 'New Ingredient';
+
+  @override
+  String get editIngredient => 'Edit Ingredient';
+
+  @override
+  String get ingredientNameLabel => 'Name';
+
+  @override
+  String get ingredientNameHint => 'Coconut milk';
+
+  @override
+  String get ingredientNameRequired => 'Enter an ingredient name.';
+
+  @override
+  String get ingredientAmountLabel => 'Amount';
+
+  @override
+  String get ingredientAmountHint => '400 g';
+
+  @override
+  String get ingredientPriceLabel => 'Price';
+
+  @override
+  String get ingredientPriceHint => '1.99';
+
+  @override
+  String get ingredientStoreLabel => 'Store';
+
+  @override
+  String get ingredientStoreHint => 'Rewe';
+
+  @override
+  String get ingredientKcalLabel => 'kcal';
+
+  @override
+  String get ingredientProteinLabel => 'Protein';
+
+  @override
+  String get ingredientCarbsLabel => 'Carbs';
+
+  @override
+  String get ingredientFatLabel => 'Fat';
+
+  @override
+  String get nutritionPer100Label => 'Nutrition per 100 g/ml';
+
+  @override
+  String get noIngredientsPlaceholder => 'No ingredients yet.';
+
+  @override
+  String get ingredientTagVegetables => 'Vegetables';
+
+  @override
+  String get ingredientTagFruits => 'Fruits';
+
+  @override
+  String get ingredientTagLegumes => 'Legumes';
+
+  @override
+  String get ingredientTagGrains => 'Grains';
+
+  @override
+  String get ingredientTagNutsSeeds => 'Nuts & Seeds';
+
+  @override
+  String get ingredientTagSpices => 'Spices';
+
+  @override
+  String get ingredientTagSaucesPastes => 'Sauces & Pastes';
+
+  @override
+  String get ingredientTagOilsFats => 'Oils & Fats';
+
+  @override
+  String get ingredientTagCannedJarred => 'Canned & Jarred';
+
+  @override
   String get yieldHint => '10 servings';
 
   @override
@@ -561,6 +681,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get appTitle => 'Recipeek';
+
+  @override
+  String get recipesTabLabel => 'Rezepte';
+
+  @override
+  String get ingredientsTabLabel => 'Zutaten';
 
   @override
   String get bakingFilter => 'Backen';
@@ -840,6 +966,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchRecipes => 'Rezepte suchen';
 
   @override
+  String get searchIngredients => 'Zutaten suchen';
+
+  @override
   String get settingsTitle => 'Einstellungen';
 
   @override
@@ -910,6 +1039,87 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get workflowCellsTitle => 'Workflow-Zellen';
+
+  @override
+  String get ingredientsTitle => 'Meine Zutaten';
+
+  @override
+  String get newIngredient => 'Neue Zutat';
+
+  @override
+  String get editIngredient => 'Zutat bearbeiten';
+
+  @override
+  String get ingredientNameLabel => 'Name';
+
+  @override
+  String get ingredientNameHint => 'Kokosmilch';
+
+  @override
+  String get ingredientNameRequired => 'Gib einen Zutatennamen ein.';
+
+  @override
+  String get ingredientAmountLabel => 'Menge';
+
+  @override
+  String get ingredientAmountHint => '400 g';
+
+  @override
+  String get ingredientPriceLabel => 'Preis';
+
+  @override
+  String get ingredientPriceHint => '1,99';
+
+  @override
+  String get ingredientStoreLabel => 'Laden';
+
+  @override
+  String get ingredientStoreHint => 'Rewe';
+
+  @override
+  String get ingredientKcalLabel => 'kcal';
+
+  @override
+  String get ingredientProteinLabel => 'Protein';
+
+  @override
+  String get ingredientCarbsLabel => 'Kohlenhydrate';
+
+  @override
+  String get ingredientFatLabel => 'Fett';
+
+  @override
+  String get nutritionPer100Label => 'Nährwerte pro 100 g/ml';
+
+  @override
+  String get noIngredientsPlaceholder => 'Noch keine Zutaten.';
+
+  @override
+  String get ingredientTagVegetables => 'Gemüse';
+
+  @override
+  String get ingredientTagFruits => 'Obst';
+
+  @override
+  String get ingredientTagLegumes => 'Hülsenfrüchte';
+
+  @override
+  String get ingredientTagGrains => 'Getreide';
+
+  @override
+  String get ingredientTagNutsSeeds => 'Nüsse & Samen';
+
+  @override
+  String get ingredientTagSpices => 'Gewürze';
+
+  @override
+  String get ingredientTagSaucesPastes => 'Saucen & Pasten';
+
+  @override
+  String get ingredientTagOilsFats => 'Öle & Fette';
+
+  @override
+  String get ingredientTagCannedJarred => 'Konserven & Eingelegtes';
 
   @override
   String get yieldHint => '10 Portionen';

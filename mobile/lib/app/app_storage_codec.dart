@@ -1,4 +1,5 @@
 import '../features/recipe_book/domain/recipe_summary.dart';
+import '../features/ingredients/domain/ingredient_product.dart';
 import '../features/recipe_document/domain/recipe_document.dart';
 import 'app_storage_snapshot.dart';
 
@@ -12,6 +13,11 @@ class AppStorageCodec {
       ],
       'availableTags': snapshot.availableTags,
       'matchAllTags': snapshot.matchAllTags,
+      'ingredients': [
+        for (final ingredient in snapshot.ingredients)
+          ingredientProductToJson(ingredient),
+      ],
+      'availableIngredientTags': snapshot.availableIngredientTags,
     };
   }
 
@@ -24,11 +30,51 @@ class AppStorageCodec {
         .whereType<String>()
         .toList();
     final matchAllTags = json['matchAllTags'] as bool? ?? false;
+    final ingredients = (json['ingredients'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ingredientProductFromJson)
+        .toList();
+    final availableIngredientTags =
+        (json['availableIngredientTags'] as List<dynamic>? ?? const [])
+            .whereType<String>()
+            .toList();
 
     return AppStorageSnapshot(
       recipes: recipes,
       availableTags: availableTags,
       matchAllTags: matchAllTags,
+      ingredients: ingredients,
+      availableIngredientTags: availableIngredientTags,
+    );
+  }
+
+  Map<String, dynamic> ingredientProductToJson(IngredientProduct ingredient) {
+    return {
+      'name': ingredient.name,
+      'amount': ingredient.amount,
+      'price': ingredient.price,
+      'store': ingredient.store,
+      'kcal': ingredient.kcal,
+      'protein': ingredient.protein,
+      'carbs': ingredient.carbs,
+      'fat': ingredient.fat,
+      'tags': ingredient.tags,
+    };
+  }
+
+  IngredientProduct ingredientProductFromJson(Map<String, dynamic> json) {
+    return IngredientProduct(
+      name: json['name'] as String? ?? '',
+      amount: json['amount'] as String? ?? '',
+      price: json['price'] as String? ?? '',
+      store: json['store'] as String? ?? '',
+      kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
+      protein: (json['protein'] as num?)?.toDouble() ?? 0,
+      carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
+      fat: (json['fat'] as num?)?.toDouble() ?? 0,
+      tags: (json['tags'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(),
     );
   }
 

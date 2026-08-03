@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app_storage.dart';
 import 'package:mobile/app/app_storage_codec.dart';
+import 'package:mobile/features/ingredients/domain/ingredient_product.dart';
+import 'package:mobile/features/ingredients/domain/ingredient_tags.dart';
 import 'package:mobile/features/recipe_book/domain/recipe_summary.dart';
 import 'package:mobile/features/recipe_document/domain/recipe_document.dart';
 
@@ -40,6 +42,20 @@ void main() {
       ],
       availableTags: ['Vegan'],
       matchAllTags: true,
+      ingredients: [
+        IngredientProduct(
+          name: 'Coconut milk',
+          amount: '400 ml',
+          price: '1.99',
+          store: 'Rewe',
+          kcal: 180,
+          protein: 1.5,
+          carbs: 2.8,
+          fat: 18,
+          tags: [ingredientTagCannedJarred],
+        ),
+      ],
+      availableIngredientTags: [ingredientTagCannedJarred],
     );
 
     final json = codec.snapshotToJson(snapshot);
@@ -47,8 +63,19 @@ void main() {
 
     expect(roundTripped.availableTags, ['Vegan']);
     expect(roundTripped.matchAllTags, isTrue);
+    expect(roundTripped.availableIngredientTags, [ingredientTagCannedJarred]);
     expect(roundTripped.recipes.single.title, 'Curry');
     expect(roundTripped.recipes.single.isFavorite, isTrue);
+    final ingredient = roundTripped.ingredients.single;
+    expect(ingredient.name, 'Coconut milk');
+    expect(ingredient.amount, '400 ml');
+    expect(ingredient.price, '1.99');
+    expect(ingredient.store, 'Rewe');
+    expect(ingredient.kcal, 180);
+    expect(ingredient.protein, 1.5);
+    expect(ingredient.carbs, 2.8);
+    expect(ingredient.fat, 18);
+    expect(ingredient.tags, [ingredientTagCannedJarred]);
 
     final document = roundTripped.recipes.single.document;
     expect(document.prepRows.single.text, 'Set out skillet');
@@ -83,7 +110,9 @@ void main() {
     });
 
     expect(snapshot.availableTags, isEmpty);
+    expect(snapshot.availableIngredientTags, isEmpty);
     expect(snapshot.matchAllTags, isFalse);
+    expect(snapshot.ingredients, isEmpty);
     final recipe = snapshot.recipes.single;
     expect(recipe.title, 'Untimed recipe');
     expect(recipe.description, '');
