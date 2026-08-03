@@ -113,6 +113,7 @@ abstract class AppLocalizations {
   String get cellsLabel;
   String get addLabel;
   String get addColumnLabel;
+  String get deleteColumnLabel;
   String get prepRowsTitle;
   String get workflowCellsTitle;
   String get noPrepRowsPlaceholder;
@@ -149,6 +150,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addColumnLabel => 'Add Column';
+
+  @override
+  String get deleteColumnLabel => 'Delete Column';
 
   @override
   String get addDialogConfirm => 'Add';
@@ -533,6 +537,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addColumnLabel => 'Spalte hinzuf\u00fcgen';
+
+  @override
+  String get deleteColumnLabel => 'Spalte l\u00f6schen';
 
   @override
   String get addDialogConfirm => 'Hinzuf\u00fcgen';

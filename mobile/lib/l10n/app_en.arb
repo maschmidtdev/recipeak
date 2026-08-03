@@ -37,5 +37,6 @@
   "unmergeUp": "Unmerge Up",
   "unmergeDown": "Unmerge Down",
   "unmergeLeft": "Unmerge Left",
-  "unmergeRight": "Unmerge Right"
+  "unmergeRight": "Unmerge Right",
+  "deleteColumnLabel": "Delete Column"
 }

@@ -30,12 +30,18 @@ class ColumnEditorCard extends StatelessWidget {
   const ColumnEditorCard({
     super.key,
     required this.columnId,
+    required this.columnLabel,
+    required this.addCellLabel,
+    required this.deleteColumnLabel,
     required this.child,
     required this.onAddCell,
     required this.onDeleteColumn,
   });
 
   final String columnId;
+  final String columnLabel;
+  final String addCellLabel;
+  final String deleteColumnLabel;
   final Widget child;
   final VoidCallback onAddCell;
   final VoidCallback onDeleteColumn;
@@ -57,7 +63,7 @@ class ColumnEditorCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Column $columnId',
+                  '$columnLabel $columnId',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -66,12 +72,12 @@ class ColumnEditorCard extends StatelessWidget {
               IconButton(
                 onPressed: onAddCell,
                 icon: const Icon(Icons.add_box_outlined),
-                tooltip: 'Add cell',
+                tooltip: addCellLabel,
               ),
               IconButton(
                 onPressed: onDeleteColumn,
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete column',
+                tooltip: deleteColumnLabel,
               ),
             ],
           ),

@@ -161,6 +161,9 @@ class CellManagerSheet extends StatelessWidget {
                     for (final column in columns) ...[
                       ColumnEditorCard(
                         columnId: column.id,
+                        columnLabel: localizations.columnLabel,
+                        addCellLabel: localizations.addCellTitle,
+                        deleteColumnLabel: localizations.deleteColumnLabel,
                         onAddCell: () {
                           Navigator.of(context).pop();
                           onAddCell(column.id);

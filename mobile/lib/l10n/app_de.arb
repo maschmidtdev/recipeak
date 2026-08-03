@@ -37,5 +37,6 @@
   "unmergeUp": "Oben l\u00f6sen",
   "unmergeDown": "Unten l\u00f6sen",
   "unmergeLeft": "Links l\u00f6sen",
-  "unmergeRight": "Rechts l\u00f6sen"
+  "unmergeRight": "Rechts l\u00f6sen",
+  "deleteColumnLabel": "Spalte l\u00f6schen"
 }
