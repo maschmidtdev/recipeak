@@ -8,6 +8,7 @@ import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
+import 'widgets/collection_settings_sheet.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -443,142 +444,21 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       context: context,
       showDragHandle: true,
       builder: (context) {
-        final localizations = AppLocalizations.of(context);
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (kIsDevelopmentMode) ...[
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.restart_alt),
-                        title: Text(localizations.resetToSeedLabel),
-                        subtitle: Text(localizations.resetToSeedDescription),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await _resetToSeedState();
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    Text(
-                      localizations.settingsTitle,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      localizations.languageLabel,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFD7CCBE)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<Locale>(
-                          value: widget.localeOverride,
-                          isExpanded: true,
-                          borderRadius: BorderRadius.circular(16),
-                          items: [
-                            DropdownMenuItem<Locale>(
-                              value: const Locale('en'),
-                              child: Text(localizations.englishLanguage),
-                            ),
-                            DropdownMenuItem<Locale>(
-                              value: const Locale('de'),
-                              child: Text(localizations.germanLanguage),
-                            ),
-                          ],
-                          onChanged: (locale) {
-                            if (locale != null) {
-                              widget.onLocaleChanged(locale);
-                              setSheetState(() {});
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      localizations.tagsTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations.tagMatchingLabel,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SegmentedButton<bool>(
-                      segments: [
-                        ButtonSegment<bool>(
-                          value: false,
-                          label: Text(localizations.matchAnyLabel),
-                        ),
-                        ButtonSegment<bool>(
-                          value: true,
-                          label: Text(localizations.matchAllLabel),
-                        ),
-                      ],
-                      selected: {_matchAllTags},
-                      onSelectionChanged: (selection) {
-                        setState(() {
-                          _matchAllTags = selection.first;
-                        });
-                        _persistState();
-                        setSheetState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.add),
-                      title: Text(localizations.addTagLabel),
-                      subtitle: Text(
-                        localizations.tagsAvailableCountLabel(
-                          _availableTags.length,
-                        ),
-                      ),
-                      onTap: () async {
-                        final added = await _addGlobalTag();
-                        if (added) {
-                          setSheetState(() {});
-                        }
-                      },
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.delete_outline),
-                      title: Text(localizations.editDeleteTagsLabel),
-                      subtitle: Text(localizations.renameOrRemoveTags),
-                      onTap: () async {
-                        await _openDeleteTagManager();
-                        if (context.mounted) {
-                          setSheetState(() {});
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
+        return CollectionSettingsSheet(
+          locale: widget.localeOverride,
+          matchAllTags: _matchAllTags,
+          availableTagCountBuilder: () => _availableTags.length,
+          showResetToSeed: kIsDevelopmentMode,
+          onLocaleChanged: widget.onLocaleChanged,
+          onMatchAllTagsChanged: (value) {
+            setState(() {
+              _matchAllTags = value;
+            });
+            _persistState();
           },
+          onResetToSeed: _resetToSeedState,
+          onAddTag: _addGlobalTag,
+          onOpenTagManager: _openDeleteTagManager,
         );
       },
     );
@@ -589,102 +469,12 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       context: context,
       showDragHandle: true,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final localizations = AppLocalizations.of(context);
-            final tagUsage = tagUsageCounts(
-              availableTags: _availableTags,
-              recipes: _recipes,
-            );
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            localizations.deleteTagTitle,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (_availableTags.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F3EA),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          localizations.noTagsAvailableToDelete,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: const Color(0xFF5E675F)),
-                        ),
-                      )
-                    else
-                      Flexible(
-                        child: ListView(
-                          shrinkWrap: true,
-                          children: [
-                            for (final tag in sortedTags(_availableTags))
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFFE3DACD),
-                                  ),
-                                ),
-                                child: ListTile(
-                                  title: Text(_tagLabel(context, tag)),
-                                  subtitle: Text(
-                                    localizations.recipesCountLabel(
-                                      tagUsage[tag] ?? 0,
-                                    ),
-                                  ),
-                                  trailing: Wrap(
-                                    spacing: 4,
-                                    children: [
-                                      IconButton(
-                                        onPressed: () async {
-                                          final renamed = await _renameTag(tag);
-                                          if (renamed) {
-                                            setSheetState(() {});
-                                          }
-                                        },
-                                        icon: const Icon(Icons.edit_outlined),
-                                        tooltip: localizations.edit,
-                                      ),
-                                      IconButton(
-                                        onPressed: () async {
-                                          final deleted = await _deleteTag(tag);
-                                          if (deleted) {
-                                            setSheetState(() {});
-                                          }
-                                        },
-                                        icon: const Icon(Icons.delete_outline),
-                                        tooltip: localizations.delete,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
+        return TagManagerSheet(
+          availableTags: _availableTags,
+          recipes: _recipes,
+          tagLabelBuilder: _tagLabel,
+          onRenameTag: _renameTag,
+          onDeleteTag: _deleteTag,
         );
       },
     );
