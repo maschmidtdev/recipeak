@@ -35,8 +35,10 @@
 
 ## Release Readiness
 
-- Configure Android release signing, versioning, and a production build sanity pass.
-- Finalize launcher icon, splash/launch assets, and store-facing app metadata.
+- Create the real Android release keystore and fill `mobile/android/key.properties`.
+- Decide the first production versioning policy after `1.0.0+1`.
+- Run a production build sanity pass.
+- Finalize splash/launch assets and store-facing app metadata.
 - Verify all dev-only controls stay hidden in production mode.
 - Run a focused QA pass for create, edit, delete, persistence, locale switching, and DSL import/export.
 - Add widget and parsing tests around the current MVP flows.
