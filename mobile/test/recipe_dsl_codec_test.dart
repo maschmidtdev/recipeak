@@ -133,6 +133,91 @@ B-C:
     expect(encoded, contains('A:\n1. bread'));
   });
 
+  test('parses optional cell ingredient metadata', () {
+    final parsed = RecipeDslCodec.parseRecipe(
+      source: '''
+A:
+1. 200 g tomatoes
+   @ingredient ingredient-tomatoes-rewe
+   @amount 200 g
+
+B:
+1. chop
+''',
+    );
+
+    final ingredientCell = parsed.document.columns
+        .firstWhere((column) => column.id == 'A')
+        .cells
+        .single;
+    expect(ingredientCell.text, '200 g tomatoes');
+    expect(ingredientCell.ingredientProductId, 'ingredient-tomatoes-rewe');
+    expect(ingredientCell.ingredientAmount, '200 g');
+
+    final stepCell = parsed.document.columns
+        .firstWhere((column) => column.id == 'B')
+        .cells
+        .single;
+    expect(stepCell.text, 'chop');
+    expect(stepCell.ingredientProductId, isNull);
+    expect(stepCell.ingredientAmount, '');
+  });
+
+  test('accepts imported ingredient ids without local ingredient validation', () {
+    final parsed = RecipeDslCodec.parseRecipe(
+      source: '''
+A:
+1. 200 g tomatoes
+   @ingredient user-b-local-tomato-id
+   @amount 200 g
+''',
+    );
+
+    final cell = parsed.document.columns.single.cells.single;
+    expect(cell.text, '200 g tomatoes');
+    expect(cell.ingredientProductId, 'user-b-local-tomato-id');
+    expect(cell.ingredientAmount, '200 g');
+  });
+
+  test('encodes optional cell ingredient metadata after visible text', () {
+    final encoded = RecipeDslCodec.encodeRecipe(
+      RecipeDslData(
+        title: '',
+        description: '',
+        duration: '',
+        yieldText: '',
+        tags: const [],
+        isFavorite: false,
+        document: const RecipeDocument(
+          prepRows: [],
+          columns: [
+            WorkflowColumn(
+              id: 'A',
+              cells: [
+                WorkflowCell(
+                  startRow: 1,
+                  rowSpan: 1,
+                  text: '200 g tomatoes',
+                  ingredientProductId: 'ingredient-tomatoes-rewe',
+                  ingredientAmount: '200 g',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(
+      encoded,
+      '''
+A:
+1. 200 g tomatoes
+   @ingredient ingredient-tomatoes-rewe
+   @amount 200 g''',
+    );
+  });
+
   test('round-trips multiline cell text', () {
     final parsed = RecipeDslCodec.parseRecipe(
       source: '''
@@ -150,6 +235,51 @@ second paragraph
 
     final encoded = RecipeDslCodec.encodeRecipe(parsed);
     expect(encoded, contains('1-2: first paragraph\n\nsecond paragraph'));
+  });
+
+  test('round-trips multiline cell text with ingredient metadata', () {
+    final parsed = RecipeDslCodec.parseRecipe(
+      source: '''
+A:
+1. tomato sauce
+second line
+   @ingredient ingredient-tomato-sauce
+   @amount 400 g
+''',
+    );
+
+    final encoded = RecipeDslCodec.encodeRecipe(parsed);
+    final roundTripped = RecipeDslCodec.parseRecipe(source: encoded);
+    final cell = roundTripped.document.columns.single.cells.single;
+
+    expect(cell.text, 'tomato sauce\nsecond line');
+    expect(cell.ingredientProductId, 'ingredient-tomato-sauce');
+    expect(cell.ingredientAmount, '400 g');
+  });
+
+  test('rejects cell metadata before any cell', () {
+    expect(
+      () => RecipeDslCodec.parseRecipe(
+        source: '''
+A:
+@ingredient ingredient-tomatoes
+''',
+      ),
+      throwsFormatException,
+    );
+  });
+
+  test('rejects unknown cell metadata commands', () {
+    expect(
+      () => RecipeDslCodec.parseRecipe(
+        source: '''
+A:
+1. tomatoes
+@unknown value
+''',
+      ),
+      throwsFormatException,
+    );
   });
 
   test('rejects overlapping rectangular spans', () {

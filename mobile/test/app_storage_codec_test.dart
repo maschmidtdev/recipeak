@@ -33,6 +33,8 @@ void main() {
                     rowSpan: 2,
                     columnSpan: 2,
                     text: 'cook\nserve',
+                    ingredientProductId: 'ingredient-coconut-milk',
+                    ingredientAmount: '200 ml',
                   ),
                 ],
               ),
@@ -90,6 +92,8 @@ void main() {
     expect(cell.rowSpan, 2);
     expect(cell.columnSpan, 2);
     expect(cell.text, 'cook\nserve');
+    expect(cell.ingredientProductId, 'ingredient-coconut-milk');
+    expect(cell.ingredientAmount, '200 ml');
   });
 
   test('uses safe defaults for missing optional persisted fields', () {
@@ -128,5 +132,7 @@ void main() {
     expect(cell.rowSpan, 1);
     expect(cell.columnSpan, 1);
     expect(cell.text, 'cell');
+    expect(cell.ingredientProductId, isNull);
+    expect(cell.ingredientAmount, '');
   });
 }

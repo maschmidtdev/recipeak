@@ -33,6 +33,47 @@ void main() {
     expect(result.document.columns.single.cells.single.startRow, 1);
   });
 
+  test('preserves ingredient metadata when moving a cell', () {
+    const document = RecipeDocument(
+      prepRows: [],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          cells: [
+            WorkflowCell(
+              startRow: 2,
+              rowSpan: 1,
+              text: 'onion',
+              ingredientProductId: 'ingredient-onion',
+              ingredientAmount: '150 g',
+            ),
+          ],
+        ),
+      ],
+    );
+    const cell = WorkflowCell(
+      startRow: 2,
+      rowSpan: 1,
+      text: 'onion',
+      ingredientProductId: 'ingredient-onion',
+      ingredientAmount: '150 g',
+    );
+
+    final result = ChartDocumentEditor(
+      document: document,
+      workflowRowCount: 2,
+    ).moveCellByDelta(
+      columnId: 'A',
+      cell: cell,
+      rowDelta: -1,
+      columnDelta: 0,
+    );
+
+    final movedCell = result!.document.columns.single.cells.single;
+    expect(movedCell.ingredientProductId, 'ingredient-onion');
+    expect(movedCell.ingredientAmount, '150 g');
+  });
+
   test('swaps with one non-empty target cell when moving vertically', () {
     const document = RecipeDocument(
       prepRows: [],

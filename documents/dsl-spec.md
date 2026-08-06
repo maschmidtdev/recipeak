@@ -1,6 +1,6 @@
 # Recipeek DSL Specification
 
-Version: 1.1
+Version: 1.2
 
 ---
 
@@ -13,6 +13,7 @@ The DSL now covers:
 - recipe metadata
 - prep rows
 - chart columns and cells
+- optional portable cell metadata
 - optional explicit column widths
 
 It is intended for:
@@ -40,6 +41,7 @@ A full DSL recipe can describe:
 - `prep` rows
 - chart `widths`
 - chart columns `A` through `Z`
+- optional cell metadata such as ingredient references and recipe amounts
 
 The chart grid still uses a global workflow row index:
 
@@ -177,6 +179,24 @@ Rules:
 
 Cell text may continue on following lines if the continuation line is not a new DSL entry.
 
+Optional app-specific metadata may follow a workflow cell:
+
+```text
+A:
+1. 200 g tomatoes
+   @ingredient ingredient-tomatoes-rewe
+   @amount 200 g
+```
+
+Rules:
+
+- cell text remains the portable display fallback
+- metadata lines must follow a cell entry
+- `@ingredient` stores an optional local ingredient product id
+- `@amount` stores the amount used by this recipe cell
+- imported ingredient ids are best-effort references and may not exist locally
+- unresolved ingredient ids must not prevent displaying or importing the plain recipe chart
+
 ---
 
 # 5. Example
@@ -195,8 +215,14 @@ prep:
 
 A:
 1. 240 g rice
+   @ingredient ingredient-rice
+   @amount 240 g
 2. 150 g onion
+   @ingredient ingredient-onion
+   @amount 150 g
 3. 12 g garlic
+   @ingredient ingredient-garlic
+   @amount 12 g
 4. 35 g curry paste
 5. 400 g tomatoes
 6. 240 g chickpeas
@@ -260,6 +286,8 @@ Invalid DSL must never be partially imported.
 
 - empty prep text is invalid
 - empty cell text is invalid
+- unknown cell metadata commands are invalid
+- known cell metadata commands with empty values are invalid
 
 ---
 
@@ -287,6 +315,7 @@ Recommended behavior:
 - omit `widths` entries for columns using default `fit` behavior
 - sort columns alphabetically
 - sort cells by starting row within each column
+- write optional cell metadata directly after the cell text and any multiline continuations
 
 ---
 
@@ -302,6 +331,8 @@ Import from DSL should map to application data like this:
 - `favorite` -> recipe favorite state
 - `prep` -> `RecipeDocument.prepRows`
 - column sections -> `RecipeDocument.columns`
+- `@ingredient` -> `WorkflowCell.ingredientProductId`
+- `@amount` -> `WorkflowCell.ingredientAmount`
 - highest referenced row -> derived workflow row count
 
 The chart remains a structured `RecipeDocument`, but the DSL now represents the entire recipe payload around it.

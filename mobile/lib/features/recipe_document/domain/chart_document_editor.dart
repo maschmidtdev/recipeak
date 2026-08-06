@@ -151,21 +151,15 @@ class ChartDocumentEditor {
       return null;
     }
 
-    final movedCell = WorkflowCell(
+    final movedCell = cell.copyWith(
       startRow: movePlan.targetStartRow,
-      rowSpan: cell.rowSpan,
-      columnSpan: cell.columnSpan,
-      text: cell.text,
     );
     WorkflowCell? displacedCell;
     final planDisplacedCell = movePlan.displacedCell;
     final displacedTargetStartRow = movePlan.displacedTargetStartRow;
     if (planDisplacedCell != null && displacedTargetStartRow != null) {
-      displacedCell = WorkflowCell(
+      displacedCell = planDisplacedCell.cell.copyWith(
         startRow: displacedTargetStartRow,
-        rowSpan: planDisplacedCell.cell.rowSpan,
-        columnSpan: planDisplacedCell.cell.columnSpan,
-        text: planDisplacedCell.cell.text,
       );
     }
 
@@ -273,11 +267,9 @@ class ChartDocumentEditor {
     return replaceCell(
       columnId: columnId,
       oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
+      newCell: cell.copyWith(
         rowSpan: 1,
         columnSpan: 1,
-        text: cell.text,
       ),
     );
   }
@@ -289,11 +281,8 @@ class ChartDocumentEditor {
     return replaceCell(
       columnId: columnId,
       oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
+      newCell: cell.copyWith(
         rowSpan: cell.rowSpan - 1,
-        columnSpan: cell.columnSpan,
-        text: cell.text,
       ),
     );
   }
@@ -305,11 +294,9 @@ class ChartDocumentEditor {
     return replaceCell(
       columnId: columnId,
       oldCell: cell,
-      newCell: WorkflowCell(
+      newCell: cell.copyWith(
         startRow: cell.startRow + 1,
         rowSpan: cell.rowSpan - 1,
-        columnSpan: cell.columnSpan,
-        text: cell.text,
       ),
     );
   }
@@ -321,11 +308,8 @@ class ChartDocumentEditor {
     return replaceCell(
       columnId: columnId,
       oldCell: cell,
-      newCell: WorkflowCell(
-        startRow: cell.startRow,
-        rowSpan: cell.rowSpan,
+      newCell: cell.copyWith(
         columnSpan: cell.columnSpan - 1,
-        text: cell.text,
       ),
     );
   }
@@ -356,11 +340,8 @@ class ChartDocumentEditor {
             widthSpec: column.widthSpec,
             cells: [
               ...column.cells,
-              WorkflowCell(
-                startRow: cell.startRow,
-                rowSpan: cell.rowSpan,
+              cell.copyWith(
                 columnSpan: cell.columnSpan - 1,
-                text: cell.text,
               ),
             ]..sort((left, right) => left.startRow.compareTo(right.startRow)),
           )
@@ -839,10 +820,9 @@ class ChartDocumentEditor {
         .where((text) => text.isNotEmpty)
         .join('\n');
 
-    final replacement = WorkflowCell(
+    final replacement = baseCell.copyWith(
       startRow: startRow,
       rowSpan: endRow - startRow + 1,
-      columnSpan: baseCell.columnSpan,
       text: mergedText.isEmpty ? baseCell.text : mergedText,
     );
 
@@ -908,9 +888,7 @@ class ChartDocumentEditor {
     final replacementColumnId = textOrder == HorizontalMergeTextOrder.baseThenTarget
         ? baseColumnId
         : targetColumnId;
-    final replacement = WorkflowCell(
-      startRow: startRow,
-      rowSpan: baseCell.rowSpan,
+    final replacement = baseCell.copyWith(
       columnSpan: baseCell.columnSpan + 1,
       text: mergedText.isEmpty ? baseCell.text : mergedText,
     );

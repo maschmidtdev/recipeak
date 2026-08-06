@@ -55,15 +55,40 @@ class WorkflowCell {
     required this.rowSpan,
     required this.text,
     this.columnSpan = 1,
+    this.ingredientProductId,
+    this.ingredientAmount = '',
   });
 
   final int startRow;
   final int rowSpan;
   final int columnSpan;
   final String text;
+  final String? ingredientProductId;
+  final String ingredientAmount;
 
   int get endRow => startRow + rowSpan - 1;
   int endColumnIndex(int startColumnIndex) => startColumnIndex + columnSpan - 1;
+
+  WorkflowCell copyWith({
+    int? startRow,
+    int? rowSpan,
+    int? columnSpan,
+    String? text,
+    String? ingredientProductId,
+    bool clearIngredientProductId = false,
+    String? ingredientAmount,
+  }) {
+    return WorkflowCell(
+      startRow: startRow ?? this.startRow,
+      rowSpan: rowSpan ?? this.rowSpan,
+      columnSpan: columnSpan ?? this.columnSpan,
+      text: text ?? this.text,
+      ingredientProductId: clearIngredientProductId
+          ? null
+          : ingredientProductId ?? this.ingredientProductId,
+      ingredientAmount: ingredientAmount ?? this.ingredientAmount,
+    );
+  }
 }
 
 class ColumnWidthSpec {

@@ -157,6 +157,10 @@ class AppStorageCodec {
                   'rowSpan': cell.rowSpan,
                   'columnSpan': cell.columnSpan,
                   'text': cell.text,
+                  if (cell.ingredientProductId != null)
+                    'ingredientProductId': cell.ingredientProductId,
+                  if (cell.ingredientAmount.isNotEmpty)
+                    'ingredientAmount': cell.ingredientAmount,
                 },
             ],
           },
@@ -186,6 +190,8 @@ class AppStorageCodec {
                       rowSpan: cell['rowSpan'] as int? ?? 1,
                       columnSpan: cell['columnSpan'] as int? ?? 1,
                       text: cell['text'] as String? ?? '',
+                      ingredientProductId: cell['ingredientProductId'] as String?,
+                      ingredientAmount: cell['ingredientAmount'] as String? ?? '',
                     ),
                   )
                   .toList(),

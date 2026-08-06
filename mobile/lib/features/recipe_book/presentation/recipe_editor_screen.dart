@@ -351,11 +351,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           cells: [
             for (final cell in column.cells)
               if (cell.startRow <= newRowCount)
-                WorkflowCell(
-                  startRow: cell.startRow,
+                cell.copyWith(
                   rowSpan: _clampedRowSpan(cell, newRowCount),
-                  columnSpan: cell.columnSpan,
-                  text: cell.text,
                 ),
           ],
         ),
@@ -524,10 +521,13 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       _chartEditor.upsertCell(
         columnId: columnId,
         existingCell: existingCell,
-        newCell: WorkflowCell(
+        newCell: (existingCell ?? WorkflowCell(
           startRow: draft.startRow,
           rowSpan: draft.endRow - draft.startRow + 1,
-          columnSpan: existingCell?.columnSpan ?? 1,
+          text: draft.text,
+        )).copyWith(
+          startRow: draft.startRow,
+          rowSpan: draft.endRow - draft.startRow + 1,
           text: draft.text,
         ),
       ),

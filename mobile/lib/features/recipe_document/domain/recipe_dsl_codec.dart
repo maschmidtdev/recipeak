@@ -53,10 +53,7 @@ class RecipeDslCodec {
           final existingCells = columnsById[currentColumnSection!.startColumnId]!;
           final previousCell = existingCells.removeLast();
           existingCells.add(
-            WorkflowCell(
-              startRow: previousCell.startRow,
-              rowSpan: previousCell.rowSpan,
-              columnSpan: previousCell.columnSpan,
+            previousCell.copyWith(
               text: '${previousCell.text}\n',
             ),
           );
@@ -179,6 +176,37 @@ class RecipeDslCodec {
         continue;
       }
 
+      final cellMetadataMatch = _cellMetadataPattern.firstMatch(trimmed);
+      if (cellMetadataMatch != null) {
+        final section = currentColumnSection;
+        if (section == null ||
+            columnsById[section.startColumnId] == null ||
+            columnsById[section.startColumnId]!.isEmpty) {
+          throw FormatException(
+            'Line $lineNumber: cell metadata must follow a cell entry.',
+          );
+        }
+
+        final key = cellMetadataMatch.group(1)!.toLowerCase();
+        final value = cellMetadataMatch.group(2)!.trim();
+        final cells = columnsById[section.startColumnId]!;
+        final previousCell = cells.removeLast();
+        cells.add(
+          switch (key) {
+            'ingredient' => previousCell.copyWith(ingredientProductId: value),
+            'amount' => previousCell.copyWith(ingredientAmount: value),
+            _ => previousCell,
+          },
+        );
+        continue;
+      }
+
+      if (trimmed.startsWith('@')) {
+        throw FormatException(
+          'Line $lineNumber: expected cell metadata like "@ingredient id" or "@amount 200 g".',
+        );
+      }
+
       final cellMatch = _cellPattern.firstMatch(trimmed);
       if (cellMatch == null) {
         if (currentColumnSection != null) {
@@ -186,10 +214,7 @@ class RecipeDslCodec {
           if (existingCells.isNotEmpty) {
             final previousCell = existingCells.removeLast();
             existingCells.add(
-              WorkflowCell(
-                startRow: previousCell.startRow,
-                rowSpan: previousCell.rowSpan,
-                columnSpan: previousCell.columnSpan,
+              previousCell.copyWith(
                 text: '${previousCell.text}\n$trimmed',
               ),
             );
@@ -397,6 +422,12 @@ void _writeCell(StringBuffer buffer, WorkflowCell cell) {
   for (final continuation in lines.skip(1)) {
     buffer.writeln(continuation);
   }
+  if (cell.ingredientProductId != null) {
+    buffer.writeln('   @ingredient ${cell.ingredientProductId}');
+  }
+  if (cell.ingredientAmount.isNotEmpty) {
+    buffer.writeln('   @amount ${cell.ingredientAmount}');
+  }
 }
 
 void _validateRectangularCells(List<WorkflowColumn> columns) {
@@ -488,6 +519,8 @@ bool _isBlankCellContinuation({
 
     final startsNewDslEntry = _columnHeaderPattern.hasMatch(trimmed) ||
         _metadataPattern.hasMatch(trimmed) ||
+        _cellMetadataPattern.hasMatch(trimmed) ||
+        trimmed.startsWith('@') ||
         _cellPattern.hasMatch(trimmed) ||
         _prepItemPattern.hasMatch(trimmed) ||
         _widthPattern.hasMatch(trimmed);
@@ -519,6 +552,7 @@ final _columnHeaderPattern = RegExp(r'^([A-Z])(?:-([A-Z]))?:$');
 final _prepItemPattern = RegExp(r'^-\s+(.+)$');
 final _widthPattern = RegExp(r'^([A-Z]):\s*(fit|\d+(?:\.\d+)?)$', caseSensitive: false);
 final _cellPattern = RegExp(r'^(\d+)(?:-(\d+))?[.:]\s*(.+)$');
+final _cellMetadataPattern = RegExp(r'^@(ingredient|amount)\s+(.+)$');
 
 class _ColumnSection {
   const _ColumnSection({
