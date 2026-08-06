@@ -1,5 +1,6 @@
 class IngredientProduct {
   const IngredientProduct({
+    required this.id,
     required this.name,
     required this.amount,
     required this.price,
@@ -11,6 +12,7 @@ class IngredientProduct {
     this.tags = const [],
   });
 
+  final String id;
   final String name;
   final String amount;
   final String price;
@@ -22,6 +24,7 @@ class IngredientProduct {
   final List<String> tags;
 
   IngredientProduct copyWith({
+    String? id,
     String? name,
     String? amount,
     String? price,
@@ -33,6 +36,7 @@ class IngredientProduct {
     List<String>? tags,
   }) {
     return IngredientProduct(
+      id: id ?? this.id,
       name: name ?? this.name,
       amount: amount ?? this.amount,
       price: price ?? this.price,

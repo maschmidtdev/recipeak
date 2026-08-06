@@ -44,6 +44,7 @@ void main() {
       matchAllTags: true,
       ingredients: [
         IngredientProduct(
+          id: 'ingredient-coconut-milk',
           name: 'Coconut milk',
           amount: '400 ml',
           price: '1.99',
@@ -67,6 +68,7 @@ void main() {
     expect(roundTripped.recipes.single.title, 'Curry');
     expect(roundTripped.recipes.single.isFavorite, isTrue);
     final ingredient = roundTripped.ingredients.single;
+    expect(ingredient.id, 'ingredient-coconut-milk');
     expect(ingredient.name, 'Coconut milk');
     expect(ingredient.amount, '400 ml');
     expect(ingredient.price, '1.99');

@@ -445,6 +445,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         builder: (context) => IngredientEditorScreen(
           initialIngredient: index == null
               ? const IngredientProduct(
+                  id: '',
                   name: '',
                   amount: '',
                   price: '',

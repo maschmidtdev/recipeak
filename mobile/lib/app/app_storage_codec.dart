@@ -32,7 +32,13 @@ class AppStorageCodec {
     final matchAllTags = json['matchAllTags'] as bool? ?? false;
     final ingredients = (json['ingredients'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
-        .map(ingredientProductFromJson)
+        .indexed
+        .map(
+          (entry) => ingredientProductFromJson(
+            entry.$2,
+            fallbackIndex: entry.$1,
+          ),
+        )
         .toList();
     final availableIngredientTags =
         (json['availableIngredientTags'] as List<dynamic>? ?? const [])
@@ -50,6 +56,7 @@ class AppStorageCodec {
 
   Map<String, dynamic> ingredientProductToJson(IngredientProduct ingredient) {
     return {
+      'id': ingredient.id,
       'name': ingredient.name,
       'amount': ingredient.amount,
       'price': ingredient.price,
@@ -62,12 +69,25 @@ class AppStorageCodec {
     };
   }
 
-  IngredientProduct ingredientProductFromJson(Map<String, dynamic> json) {
+  IngredientProduct ingredientProductFromJson(
+    Map<String, dynamic> json, {
+    int fallbackIndex = 0,
+  }) {
+    final name = json['name'] as String? ?? '';
+    final amount = json['amount'] as String? ?? '';
+    final store = json['store'] as String? ?? '';
     return IngredientProduct(
-      name: json['name'] as String? ?? '',
-      amount: json['amount'] as String? ?? '',
+      id: json['id'] as String? ??
+          _legacyIngredientId(
+            name: name,
+            amount: amount,
+            store: store,
+            index: fallbackIndex,
+          ),
+      name: name,
+      amount: amount,
       price: json['price'] as String? ?? '',
-      store: json['store'] as String? ?? '',
+      store: store,
       kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
       protein: (json['protein'] as num?)?.toDouble() ?? 0,
       carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
@@ -76,6 +96,20 @@ class AppStorageCodec {
           .whereType<String>()
           .toList(),
     );
+  }
+
+  String _legacyIngredientId({
+    required String name,
+    required String amount,
+    required String store,
+    required int index,
+  }) {
+    final raw = [name, amount, store, index.toString()].join('-');
+    final slug = raw
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    return 'legacy-${slug.isEmpty ? index.toString() : slug}';
   }
 
   Map<String, dynamic> recipeSummaryToJson(RecipeSummary recipe) {

@@ -3,6 +3,7 @@ import '../domain/ingredient_tags.dart';
 
 const devSampleIngredients = [
   IngredientProduct(
+    id: 'dev-coconut-milk',
     name: 'Coconut milk',
     amount: '400 ml',
     price: '1.49',
@@ -14,6 +15,7 @@ const devSampleIngredients = [
     tags: [ingredientTagCannedJarred],
   ),
   IngredientProduct(
+    id: 'dev-miso-paste',
     name: 'Miso paste',
     amount: '300 g',
     price: '3.99',
@@ -25,6 +27,7 @@ const devSampleIngredients = [
     tags: [ingredientTagSaucesPastes],
   ),
   IngredientProduct(
+    id: 'dev-chickpeas',
     name: 'Chickpeas',
     amount: '400 g',
     price: '0.89',
@@ -36,6 +39,7 @@ const devSampleIngredients = [
     tags: [ingredientTagLegumes, ingredientTagCannedJarred],
   ),
   IngredientProduct(
+    id: 'dev-rice',
     name: 'Rice',
     amount: '1000 g',
     price: '2.49',
@@ -47,6 +51,7 @@ const devSampleIngredients = [
     tags: [ingredientTagGrains],
   ),
   IngredientProduct(
+    id: 'dev-spinach',
     name: 'Spinach',
     amount: '250 g',
     price: '1.79',
@@ -58,6 +63,7 @@ const devSampleIngredients = [
     tags: [ingredientTagVegetables],
   ),
   IngredientProduct(
+    id: 'dev-olive-oil',
     name: 'Olive oil',
     amount: '750 ml',
     price: '7.99',

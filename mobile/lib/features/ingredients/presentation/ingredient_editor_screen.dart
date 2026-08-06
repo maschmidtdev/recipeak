@@ -248,6 +248,9 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
 
     Navigator.of(context).pop(
       IngredientProduct(
+        id: widget.initialIngredient.id.trim().isEmpty
+            ? _newIngredientId()
+            : widget.initialIngredient.id,
         name: _nameController.text.trim(),
         amount: _amountController.text.trim(),
         price: _priceController.text.trim(),
@@ -259,6 +262,10 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
         tags: [..._selectedTags]..sort(),
       ),
     );
+  }
+
+  String _newIngredientId() {
+    return 'ingredient-${DateTime.now().microsecondsSinceEpoch}';
   }
 
   double _parseMacro(String value) {
