@@ -289,7 +289,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final recipeEntries = filteredRecipeEntries(
       recipes: _recipes,
       searchQuery: _searchQuery,

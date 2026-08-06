@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../recipe_book/presentation/widgets/editor_form_widgets.dart';
 import '../domain/ingredient_product.dart';
-import '../domain/ingredient_tags.dart';
 import 'ingredient_tag_labels.dart';
 
 class IngredientEditorScreen extends StatefulWidget {
