@@ -155,6 +155,18 @@ abstract class AppLocalizations {
   String get ingredientCarbsLabel;
   String get ingredientFatLabel;
   String get nutritionPer100Label;
+  String get nutritionTitle;
+  String get nutritionPartialLabel;
+  String get nutritionTotalColumn;
+  String get nutritionPerServingColumn;
+  String get nutritionCostLabel;
+  String get nutritionMissingTitle;
+  String get nutritionMissingNoLinkedIngredient;
+  String get nutritionMissingIngredientNotFound;
+  String get nutritionMissingAmount;
+  String get nutritionMissingNutrition;
+  String get nutritionMissingPackageAmount;
+  String get nutritionMissingPrice;
   String get noIngredientsPlaceholder;
   String get ingredientTagVegetables;
   String get ingredientTagFruits;
@@ -629,6 +641,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nutritionPer100Label => 'Nutrition per 100 g/ml';
+
+  @override
+  String get nutritionTitle => 'Recipe values';
+
+  @override
+  String get nutritionPartialLabel => 'Partial';
+
+  @override
+  String get nutritionTotalColumn => 'Total';
+
+  @override
+  String get nutritionPerServingColumn => 'Per serving';
+
+  @override
+  String get nutritionCostLabel => 'Cost';
+
+  @override
+  String get nutritionMissingTitle => 'Not included';
+
+  @override
+  String get nutritionMissingNoLinkedIngredient => 'no linked ingredient';
+
+  @override
+  String get nutritionMissingIngredientNotFound => 'ingredient not found';
+
+  @override
+  String get nutritionMissingAmount => 'missing amount';
+
+  @override
+  String get nutritionMissingNutrition => 'missing nutrition values';
+
+  @override
+  String get nutritionMissingPackageAmount => 'package amount missing';
+
+  @override
+  String get nutritionMissingPrice => 'missing price';
 
   @override
   String get noIngredientsPlaceholder => 'No ingredients yet.';
@@ -1129,6 +1177,42 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get nutritionPer100Label => 'Nährwerte pro 100 g/ml';
+
+  @override
+  String get nutritionTitle => 'Rezeptwerte';
+
+  @override
+  String get nutritionPartialLabel => 'Teilweise';
+
+  @override
+  String get nutritionTotalColumn => 'Gesamt';
+
+  @override
+  String get nutritionPerServingColumn => 'Pro Portion';
+
+  @override
+  String get nutritionCostLabel => 'Kosten';
+
+  @override
+  String get nutritionMissingTitle => 'Nicht enthalten';
+
+  @override
+  String get nutritionMissingNoLinkedIngredient => 'keine verknüpfte Zutat';
+
+  @override
+  String get nutritionMissingIngredientNotFound => 'Zutat nicht gefunden';
+
+  @override
+  String get nutritionMissingAmount => 'Menge fehlt';
+
+  @override
+  String get nutritionMissingNutrition => 'Nährwerte fehlen';
+
+  @override
+  String get nutritionMissingPackageAmount => 'Packungsmenge fehlt';
+
+  @override
+  String get nutritionMissingPrice => 'Preis fehlt';
 
   @override
   String get noIngredientsPlaceholder => 'Noch keine Zutaten.';
