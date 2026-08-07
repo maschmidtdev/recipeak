@@ -17,13 +17,55 @@
             "id": "A",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "240 g rice" },
-              { "startRow": 2, "rowSpan": 1, "text": "150 g onion" },
-              { "startRow": 3, "rowSpan": 1, "text": "12 g garlic" },
-              { "startRow": 4, "rowSpan": 1, "text": "35 g curry paste" },
-              { "startRow": 5, "rowSpan": 1, "text": "400 g tomatoes" },
-              { "startRow": 6, "rowSpan": 1, "text": "240 g chickpeas" },
-              { "startRow": 7, "rowSpan": 1, "text": "120 g spinach" }
+              {
+                "startRow": 1,
+                "rowSpan": 1,
+                "text": "240g Rice",
+                "ingredientProductId": "dev-rice",
+                "ingredientAmount": "240"
+              },
+              {
+                "startRow": 2,
+                "rowSpan": 1,
+                "text": "150g Onion",
+                "ingredientProductId": "dev-onion",
+                "ingredientAmount": "150"
+              },
+              {
+                "startRow": 3,
+                "rowSpan": 1,
+                "text": "12g Garlic",
+                "ingredientProductId": "dev-garlic",
+                "ingredientAmount": "12"
+              },
+              {
+                "startRow": 4,
+                "rowSpan": 1,
+                "text": "35g Curry paste",
+                "ingredientProductId": "dev-curry-paste",
+                "ingredientAmount": "35"
+              },
+              {
+                "startRow": 5,
+                "rowSpan": 1,
+                "text": "400g Tomatoes",
+                "ingredientProductId": "dev-tomatoes",
+                "ingredientAmount": "400"
+              },
+              {
+                "startRow": 6,
+                "rowSpan": 1,
+                "text": "240g Chickpeas",
+                "ingredientProductId": "dev-chickpeas",
+                "ingredientAmount": "240"
+              },
+              {
+                "startRow": 7,
+                "rowSpan": 1,
+                "text": "120g Spinach",
+                "ingredientProductId": "dev-spinach",
+                "ingredientAmount": "120"
+              }
             ]
           },
           {
