@@ -11,6 +11,7 @@ import 'widgets/editor_form_widgets.dart';
 import 'widgets/editor_manager_sheets.dart';
 import '../../ingredients/domain/ingredient_cell_text.dart';
 import '../../ingredients/domain/ingredient_product.dart';
+import '../../ingredients/presentation/ingredient_tag_labels.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
@@ -459,40 +460,38 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     ),
                     if (canEditIngredient) ...[
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue:
-                            hasSelectedIngredient ? selectedIngredientId : null,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: localizations.cellIngredientLabel,
-                        ),
-                        items: [
-                          for (final ingredient in sortedIngredients)
-                            DropdownMenuItem(
-                              value: ingredient.id,
-                              child: Text(_ingredientPickerLabel(ingredient)),
-                            ),
-                        ],
-                        onChanged: sortedIngredients.isEmpty
+                      _SelectedIngredientField(
+                        ingredient: hasSelectedIngredient
+                            ? selectedIngredient
+                            : null,
+                        label: localizations.cellIngredientLabel,
+                        placeholder: localizations.selectIngredient,
+                        onTap: sortedIngredients.isEmpty
                             ? null
-                            : (value) {
+                            : () async {
+                                final ingredient =
+                                    await _openIngredientPicker(
+                                  context,
+                                  selectedIngredientId: selectedIngredientId,
+                                );
+                                if (ingredient == null) {
+                                  return;
+                                }
                                 setDialogState(() {
-                                  selectedIngredientId = value;
+                                  selectedIngredientId = ingredient.id;
                                 });
-                                final ingredient = _ingredientById(value);
                                 final amount = normalizedIngredientAmount(
                                   amountController.text,
                                 );
                                 amountController.text = amount;
-                                if (ingredient != null &&
-                                    textController.text.trim().isEmpty) {
+                                if (textController.text.trim().isEmpty) {
                                   textController.text = ingredientCellText(
                                     ingredient: ingredient,
                                     recipeAmount: amount,
                                   );
                                 }
                               },
-                      ),
+                        ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: amountController,
@@ -657,6 +656,22 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     );
   }
 
+  Future<IngredientProduct?> _openIngredientPicker(
+    BuildContext context, {
+    required String? selectedIngredientId,
+  }) {
+    return showModalBottomSheet<IngredientProduct>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return _IngredientPickerSheet(
+          ingredients: widget.ingredients,
+          selectedIngredientId: selectedIngredientId,
+        );
+      },
+    );
+  }
+
   IngredientProduct? _ingredientById(String? ingredientId) {
     if (ingredientId == null) {
       return null;
@@ -667,18 +682,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       }
     }
     return null;
-  }
-
-  String _ingredientPickerLabel(IngredientProduct ingredient) {
-    final amountText = ingredientAmountText(ingredient);
-    final details = [
-      if (amountText.isNotEmpty) amountText,
-      if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
-    ];
-    if (details.isEmpty) {
-      return ingredient.name;
-    }
-    return '${ingredient.name} - ${details.join(' - ')}';
   }
 
   void _moveCellUp(String columnId, WorkflowCell cell) {
@@ -1538,6 +1541,342 @@ enum _CellActionPanel {
   main,
   merge,
   unmerge,
+}
+
+class _SelectedIngredientField extends StatelessWidget {
+  const _SelectedIngredientField({
+    required this.ingredient,
+    required this.label,
+    required this.placeholder,
+    required this.onTap,
+  });
+
+  final IngredientProduct? ingredient;
+  final String label;
+  final String placeholder;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ingredient = this.ingredient;
+    final details = ingredient == null ? '' : _ingredientDetails(ingredient);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: Icon(
+            onTap == null ? Icons.block : Icons.search,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              ingredient?.name ?? placeholder,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: ingredient == null ? const Color(0xFF5E675F) : null,
+                fontWeight: ingredient == null ? null : FontWeight.w700,
+              ),
+            ),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                details,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF5E675F),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IngredientPickerSheet extends StatefulWidget {
+  const _IngredientPickerSheet({
+    required this.ingredients,
+    required this.selectedIngredientId,
+  });
+
+  final List<IngredientProduct> ingredients;
+  final String? selectedIngredientId;
+
+  @override
+  State<_IngredientPickerSheet> createState() => _IngredientPickerSheetState();
+}
+
+class _IngredientPickerSheetState extends State<_IngredientPickerSheet> {
+  final _searchController = TextEditingController();
+  final _selectedTags = <String>{};
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final availableTags = _availableTags;
+    final filteredIngredients = _filteredIngredients(localizations);
+
+    return SafeArea(
+      child: FractionallySizedBox(
+        heightFactor: 0.86,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            20 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9CDB9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                localizations.selectIngredient,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: localizations.searchIngredients,
+                  prefixIcon: const Icon(Icons.search),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              if (availableTags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in availableTags)
+                      FilterChip(
+                        label: Text(ingredientTagLabel(localizations, tag)),
+                        selected: _selectedTags.contains(tag),
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedTags.add(tag);
+                            } else {
+                              _selectedTags.remove(tag);
+                            }
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Expanded(
+                child: filteredIngredients.isEmpty
+                    ? Center(
+                        child: Text(
+                          widget.ingredients.isEmpty
+                              ? localizations.noIngredientsPlaceholder
+                              : localizations.noMatchingIngredients,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF5E675F),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: filteredIngredients.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final ingredient = filteredIngredients[index];
+                          return _IngredientPickerCard(
+                            ingredient: ingredient,
+                            isSelected:
+                                ingredient.id == widget.selectedIngredientId,
+                            onTap: () => Navigator.of(context).pop(ingredient),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<String> get _availableTags {
+    final tags = <String>{};
+    for (final ingredient in widget.ingredients) {
+      tags.addAll(ingredient.tags);
+    }
+    return tags.toList()
+      ..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+  }
+
+  List<IngredientProduct> _filteredIngredients(AppLocalizations localizations) {
+    final query = _searchController.text.trim().toLowerCase();
+    final ingredients = widget.ingredients.where((ingredient) {
+      final matchesQuery = query.isEmpty ||
+          ingredient.name.toLowerCase().contains(query) ||
+          ingredient.store.toLowerCase().contains(query) ||
+          ingredient.tags.any(
+            (tag) =>
+                tag.toLowerCase().contains(query) ||
+                ingredientTagLabel(localizations, tag)
+                    .toLowerCase()
+                    .contains(query),
+          );
+      final matchesTags = _selectedTags.isEmpty ||
+          _selectedTags.any(ingredient.tags.contains);
+      return matchesQuery && matchesTags;
+    }).toList();
+
+    ingredients.sort(
+      (left, right) =>
+          left.name.toLowerCase().compareTo(right.name.toLowerCase()),
+    );
+    return ingredients;
+  }
+}
+
+class _IngredientPickerCard extends StatelessWidget {
+  const _IngredientPickerCard({
+    required this.ingredient,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IngredientProduct ingredient;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final details = _ingredientDetails(ingredient);
+    final nutrition = _ingredientNutritionSummary(localizations, ingredient);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFE8F0E8)
+              : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF286D59) : const Color(0xFFD9CDB9),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    ingredient.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: Color(0xFF286D59)),
+              ],
+            ),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                details,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF5E675F),
+                ),
+              ),
+            ],
+            if (nutrition.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(nutrition, style: theme.textTheme.bodySmall),
+            ],
+            if (ingredient.tags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final tag in ingredient.tags)
+                    Chip(
+                      label: Text(ingredientTagLabel(localizations, tag)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _ingredientDetails(IngredientProduct ingredient) {
+  final amountText = ingredientAmountText(ingredient);
+  final details = [
+    if (amountText.isNotEmpty) amountText,
+    if (ingredient.price.trim().isNotEmpty) '${ingredient.price.trim()} €',
+    if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
+  ];
+  return details.join(' · ');
+}
+
+String _ingredientNutritionSummary(
+  AppLocalizations localizations,
+  IngredientProduct ingredient,
+) {
+  final values = [
+    if (ingredient.kcal > 0)
+      '${_formatPickerNumber(ingredient.kcal)} ${localizations.ingredientKcalLabel}',
+    if (ingredient.protein > 0)
+      '${_formatPickerNumber(ingredient.protein)}g ${localizations.ingredientProteinLabel}',
+    if (ingredient.carbs > 0)
+      '${_formatPickerNumber(ingredient.carbs)}g ${localizations.ingredientCarbsLabel}',
+    if (ingredient.fat > 0)
+      '${_formatPickerNumber(ingredient.fat)}g ${localizations.ingredientFatLabel}',
+  ];
+  return values.join(' · ');
+}
+
+String _formatPickerNumber(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(1);
 }
 
 class _CellDraft {

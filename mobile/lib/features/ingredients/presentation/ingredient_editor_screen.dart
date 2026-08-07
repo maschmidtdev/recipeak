@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../recipe_book/presentation/widgets/editor_form_widgets.dart';
 import '../domain/ingredient_cell_text.dart';
+import '../domain/ingredient_number_input.dart';
 import '../domain/ingredient_product.dart';
 import 'ingredient_tag_labels.dart';
 
@@ -117,6 +118,11 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
                     hintText: localizations.ingredientAmountHint,
                     suffixText: _baseUnit.storageValue,
                   ),
+                  validator: (value) => _validateOptionalNumber(
+                    value,
+                    localizations,
+                    IngredientNumberRule.positive,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -158,6 +164,11 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: localizations.ingredientPriceHint,
+                  ),
+                  validator: (value) => _validateOptionalNumber(
+                    value,
+                    localizations,
+                    IngredientNumberRule.positive,
                   ),
                 ),
               ),
@@ -290,8 +301,8 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
             ? _newIngredientId()
             : widget.initialIngredient.id,
         name: _nameController.text.trim(),
-        amount: normalizedIngredientAmount(_amountController.text),
-        price: _priceController.text.trim(),
+        amount: normalizeIngredientNumberInput(_amountController.text),
+        price: normalizeIngredientNumberInput(_priceController.text),
         store: _storeController.text.trim(),
         kcal: _parseMacro(_kcalController.text),
         protein: _parseMacro(_proteinController.text),
@@ -323,7 +334,7 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
   }
 
   double _parseMacro(String value) {
-    return double.tryParse(value.trim().replaceAll(',', '.')) ?? 0;
+    return parseIngredientNumberInput(value) ?? 0;
   }
 
   String _formatMacro(double value) {
@@ -335,6 +346,21 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
     }
     return value.toString();
   }
+}
+
+String? _validateOptionalNumber(
+  String? value,
+  AppLocalizations localizations,
+  IngredientNumberRule rule,
+) {
+  if (isValidOptionalIngredientNumber(value ?? '', rule: rule)) {
+    return null;
+  }
+  return switch (rule) {
+    IngredientNumberRule.positive => localizations.ingredientPositiveNumberError,
+    IngredientNumberRule.nonNegative =>
+      localizations.ingredientNonNegativeNumberError,
+  };
 }
 
 class _MacroField extends StatelessWidget {
@@ -352,6 +378,11 @@ class _MacroField extends StatelessWidget {
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(labelText: label),
+      validator: (value) => _validateOptionalNumber(
+        value,
+        AppLocalizations.of(context),
+        IngredientNumberRule.nonNegative,
+      ),
     );
   }
 }

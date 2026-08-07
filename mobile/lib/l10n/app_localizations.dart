@@ -130,6 +130,8 @@ abstract class AppLocalizations {
   String get startRowLabel;
   String get endRowLabel;
   String get cellIngredientLabel;
+  String get selectIngredient;
+  String get noMatchingIngredients;
   String get cellIngredientAmountLabel;
   String get unlinkIngredientLabel;
   String get noMoreColumnLetters;
@@ -141,6 +143,8 @@ abstract class AppLocalizations {
   String get ingredientNameLabel;
   String get ingredientNameHint;
   String get ingredientNameRequired;
+  String get ingredientPositiveNumberError;
+  String get ingredientNonNegativeNumberError;
   String get ingredientAmountLabel;
   String get ingredientAmountHint;
   String get ingredientBaseUnitLabel;
@@ -243,6 +247,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cellIngredientLabel => 'Ingredient';
+
+  @override
+  String get selectIngredient => 'Select ingredient';
+
+  @override
+  String get noMatchingIngredients => 'No matching ingredients.';
 
   @override
   String get cellIngredientAmountLabel => 'Recipe amount';
@@ -601,6 +611,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingredientNameRequired => 'Enter an ingredient name.';
 
   @override
+  String get ingredientPositiveNumberError =>
+      'Enter a positive number or leave this empty.';
+
+  @override
+  String get ingredientNonNegativeNumberError =>
+      'Enter zero or a positive number, or leave this empty.';
+
+  @override
   String get ingredientAmountLabel => 'Amount';
 
   @override
@@ -774,6 +792,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cellIngredientLabel => 'Zutat';
+
+  @override
+  String get selectIngredient => 'Zutat auswählen';
+
+  @override
+  String get noMatchingIngredients => 'Keine passenden Zutaten.';
 
   @override
   String get cellIngredientAmountLabel => 'Rezeptmenge';
@@ -1135,6 +1159,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ingredientNameRequired => 'Gib einen Zutatennamen ein.';
+
+  @override
+  String get ingredientPositiveNumberError =>
+      'Gib eine positive Zahl ein oder lass das Feld leer.';
+
+  @override
+  String get ingredientNonNegativeNumberError =>
+      'Gib null oder eine positive Zahl ein oder lass das Feld leer.';
 
   @override
   String get ingredientAmountLabel => 'Menge';
