@@ -1,4 +1,5 @@
 import '../features/recipe_book/domain/recipe_summary.dart';
+import '../features/ingredients/domain/ingredient_cell_text.dart';
 import '../features/ingredients/domain/ingredient_product.dart';
 import '../features/recipe_document/domain/recipe_document.dart';
 import 'app_storage_snapshot.dart';
@@ -58,13 +59,14 @@ class AppStorageCodec {
     return {
       'id': ingredient.id,
       'name': ingredient.name,
-      'amount': ingredient.amount,
+      'amount': normalizedIngredientAmount(ingredient.amount),
       'price': ingredient.price,
       'store': ingredient.store,
       'kcal': ingredient.kcal,
       'protein': ingredient.protein,
       'carbs': ingredient.carbs,
       'fat': ingredient.fat,
+      'baseUnit': ingredient.baseUnit.storageValue,
       'tags': ingredient.tags,
     };
   }
@@ -74,13 +76,14 @@ class AppStorageCodec {
     int fallbackIndex = 0,
   }) {
     final name = json['name'] as String? ?? '';
-    final amount = json['amount'] as String? ?? '';
+    final rawAmount = json['amount'] as String? ?? '';
+    final amount = normalizedIngredientAmount(rawAmount);
     final store = json['store'] as String? ?? '';
     return IngredientProduct(
       id: json['id'] as String? ??
           _legacyIngredientId(
             name: name,
-            amount: amount,
+            amount: rawAmount,
             store: store,
             index: fallbackIndex,
           ),
@@ -92,10 +95,24 @@ class AppStorageCodec {
       protein: (json['protein'] as num?)?.toDouble() ?? 0,
       carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
       fat: (json['fat'] as num?)?.toDouble() ?? 0,
+      baseUnit: _ingredientBaseUnitFromJson(json['baseUnit'], rawAmount),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .whereType<String>()
           .toList(),
     );
+  }
+
+  IngredientBaseUnit _ingredientBaseUnitFromJson(
+    Object? value,
+    String fallbackAmount,
+  ) {
+    return switch (value) {
+      'ml' => IngredientBaseUnit.milliliters,
+      'g' => IngredientBaseUnit.grams,
+      _ => fallbackAmount.trim().toLowerCase().endsWith('ml')
+          ? IngredientBaseUnit.milliliters
+          : IngredientBaseUnit.grams,
+    };
   }
 
   String _legacyIngredientId({
@@ -191,7 +208,9 @@ class AppStorageCodec {
                       columnSpan: cell['columnSpan'] as int? ?? 1,
                       text: cell['text'] as String? ?? '',
                       ingredientProductId: cell['ingredientProductId'] as String?,
-                      ingredientAmount: cell['ingredientAmount'] as String? ?? '',
+                      ingredientAmount: normalizedIngredientAmount(
+                        cell['ingredientAmount'] as String? ?? '',
+                      ),
                     ),
                   )
                   .toList(),

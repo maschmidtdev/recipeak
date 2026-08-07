@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../recipe_book/presentation/widgets/editor_form_widgets.dart';
+import '../domain/ingredient_cell_text.dart';
 import '../domain/ingredient_product.dart';
 import 'ingredient_tag_labels.dart';
 
@@ -32,13 +33,16 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
   late final TextEditingController _carbsController;
   late final TextEditingController _fatController;
   late final Set<String> _selectedTags;
+  late IngredientBaseUnit _baseUnit;
 
   @override
   void initState() {
     super.initState();
     final ingredient = widget.initialIngredient;
     _nameController = TextEditingController(text: ingredient.name);
-    _amountController = TextEditingController(text: ingredient.amount);
+    _amountController = TextEditingController(
+      text: normalizedIngredientAmount(ingredient.amount),
+    );
     _priceController = TextEditingController(text: ingredient.price);
     _storeController = TextEditingController(text: ingredient.store);
     _kcalController = TextEditingController(text: _formatMacro(ingredient.kcal));
@@ -47,6 +51,7 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
     );
     _carbsController = TextEditingController(text: _formatMacro(ingredient.carbs));
     _fatController = TextEditingController(text: _formatMacro(ingredient.fat));
+    _baseUnit = ingredient.baseUnit;
     _selectedTags = {...ingredient.tags};
   }
 
@@ -104,10 +109,42 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
                 label: localizations.ingredientAmountLabel,
                 child: TextFormField(
                   controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: localizations.ingredientAmountHint,
+                    suffixText: _baseUnit.storageValue,
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              FieldLabel(
+                label: localizations.ingredientBaseUnitLabel,
+                child: DropdownButtonFormField<IngredientBaseUnit>(
+                  initialValue: _baseUnit,
+                  decoration: InputDecoration(
+                    hintText: localizations.ingredientBaseUnitLabel,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: IngredientBaseUnit.grams,
+                      child: Text(localizations.ingredientBaseUnitGrams),
+                    ),
+                    DropdownMenuItem(
+                      value: IngredientBaseUnit.milliliters,
+                      child: Text(localizations.ingredientBaseUnitMilliliters),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      _baseUnit = value;
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 16),
@@ -253,13 +290,14 @@ class _IngredientEditorScreenState extends State<IngredientEditorScreen> {
             ? _newIngredientId()
             : widget.initialIngredient.id,
         name: _nameController.text.trim(),
-        amount: _amountController.text.trim(),
+        amount: normalizedIngredientAmount(_amountController.text),
         price: _priceController.text.trim(),
         store: _storeController.text.trim(),
         kcal: _parseMacro(_kcalController.text),
         protein: _parseMacro(_proteinController.text),
         carbs: _parseMacro(_carbsController.text),
         fat: _parseMacro(_fatController.text),
+        baseUnit: _baseUnit,
         tags: [..._selectedTags]..sort(),
       ),
     );

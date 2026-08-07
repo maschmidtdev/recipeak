@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../ingredients/domain/ingredient_product.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_editor_result.dart';
 import 'recipe_editor_screen.dart';
@@ -17,10 +18,12 @@ class RecipeDetailScreen extends StatefulWidget {
     super.key,
     required this.recipe,
     required this.availableTags,
+    required this.ingredients,
   });
 
   final RecipeSummary recipe;
   final List<String> availableTags;
+  final List<IngredientProduct> ingredients;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -45,6 +48,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         builder: (context) => RecipeEditorScreen(
           initialRecipe: _recipe,
           availableTags: _availableTags,
+          ingredients: widget.ingredients,
         ),
       ),
     );

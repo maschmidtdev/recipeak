@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../app/app_storage.dart';
 import '../../../app/dev_flags.dart';
 import '../../ingredients/data/dev_sample_ingredients.dart';
+import '../../ingredients/domain/ingredient_cell_text.dart';
 import '../../ingredients/domain/ingredient_product.dart';
 import '../../ingredients/domain/ingredient_tags.dart';
 import '../../ingredients/presentation/ingredient_editor_screen.dart';
 import '../../ingredients/presentation/ingredient_tag_labels.dart';
 import '../data/dev_sample_recipes.dart';
 import '../domain/recipe_collection_filters.dart';
+import '../domain/recipe_ingredient_links.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
 import 'recipe_editor_result.dart';
@@ -237,6 +239,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             ),
           ),
           availableTags: _availableTags.toList()..sort(),
+          ingredients: _ingredients,
         ),
       ),
     );
@@ -261,6 +264,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         builder: (context) => RecipeDetailScreen(
           recipe: _recipes[index],
           availableTags: sortedTags(_availableTags),
+          ingredients: _ingredients,
         ),
       ),
     );
@@ -418,6 +422,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           [
             ingredient.name,
             ingredient.amount,
+            ingredientAmountText(ingredient),
             ingredient.price,
             ingredient.store,
             ...ingredient.tags,
@@ -470,14 +475,21 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         _ingredients.insert(0, result);
       } else {
         _ingredients[index] = result;
+        for (final entry in _recipes.indexed) {
+          _recipes[entry.$1] = refreshIngredientReferenceText(entry.$2, result);
+        }
       }
     });
     _persistState();
   }
 
   void _deleteIngredient(int index) {
+    final ingredientId = _ingredients[index].id;
     setState(() {
       _ingredients.removeAt(index);
+      for (final entry in _recipes.indexed) {
+        _recipes[entry.$1] = clearIngredientReference(entry.$2, ingredientId);
+      }
     });
     _persistState();
   }
@@ -1122,8 +1134,9 @@ class _IngredientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context);
+    final amountText = ingredientAmountText(ingredient);
     final metadata = [
-      if (ingredient.amount.trim().isNotEmpty) ingredient.amount.trim(),
+      if (amountText.isNotEmpty) amountText,
       if (ingredient.price.trim().isNotEmpty) ingredient.price.trim(),
       if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
     ];

@@ -129,6 +129,9 @@ abstract class AppLocalizations {
   String get cellTextHint;
   String get startRowLabel;
   String get endRowLabel;
+  String get cellIngredientLabel;
+  String get cellIngredientAmountLabel;
+  String get unlinkIngredientLabel;
   String get noMoreColumnLetters;
   String get optionalAdvancedEditing;
   String get createTopInstructionsHint;
@@ -140,6 +143,9 @@ abstract class AppLocalizations {
   String get ingredientNameRequired;
   String get ingredientAmountLabel;
   String get ingredientAmountHint;
+  String get ingredientBaseUnitLabel;
+  String get ingredientBaseUnitGrams;
+  String get ingredientBaseUnitMilliliters;
   String get ingredientPriceLabel;
   String get ingredientPriceHint;
   String get ingredientStoreLabel;
@@ -222,6 +228,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cellTextHint => 'Cell text';
+
+  @override
+  String get cellIngredientLabel => 'Ingredient';
+
+  @override
+  String get cellIngredientAmountLabel => 'Recipe amount';
 
   @override
   String get cellsLabel => 'Cells';
@@ -580,7 +592,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingredientAmountLabel => 'Amount';
 
   @override
-  String get ingredientAmountHint => '400 g';
+  String get ingredientAmountHint => '400';
+
+  @override
+  String get ingredientBaseUnitLabel => 'Base unit';
+
+  @override
+  String get ingredientBaseUnitGrams => 'g (grams)';
+
+  @override
+  String get ingredientBaseUnitMilliliters => 'ml (milliliters)';
 
   @override
   String get ingredientPriceLabel => 'Price';
@@ -611,6 +632,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noIngredientsPlaceholder => 'No ingredients yet.';
+
+  @override
+  String get unlinkIngredientLabel => 'Unlink ingredient';
 
   @override
   String get ingredientTagVegetables => 'Vegetables';
@@ -699,6 +723,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cellTextHint => 'Zellentext';
+
+  @override
+  String get cellIngredientLabel => 'Zutat';
+
+  @override
+  String get cellIngredientAmountLabel => 'Rezeptmenge';
 
   @override
   String get cellsLabel => 'Zellen';
@@ -1062,7 +1092,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ingredientAmountLabel => 'Menge';
 
   @override
-  String get ingredientAmountHint => '400 g';
+  String get ingredientAmountHint => '400';
+
+  @override
+  String get ingredientBaseUnitLabel => 'Basiseinheit';
+
+  @override
+  String get ingredientBaseUnitGrams => 'g (Gramm)';
+
+  @override
+  String get ingredientBaseUnitMilliliters => 'ml (Milliliter)';
 
   @override
   String get ingredientPriceLabel => 'Preis';
@@ -1093,6 +1132,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noIngredientsPlaceholder => 'Noch keine Zutaten.';
+
+  @override
+  String get unlinkIngredientLabel => 'Zutat trennen';
 
   @override
   String get ingredientTagVegetables => 'Gemüse';

@@ -1,3 +1,4 @@
+import '../../ingredients/domain/ingredient_cell_text.dart';
 import 'recipe_document.dart';
 
 class RecipeDslData {
@@ -194,7 +195,9 @@ class RecipeDslCodec {
         cells.add(
           switch (key) {
             'ingredient' => previousCell.copyWith(ingredientProductId: value),
-            'amount' => previousCell.copyWith(ingredientAmount: value),
+            'amount' => previousCell.copyWith(
+                ingredientAmount: normalizedIngredientAmount(value),
+              ),
             _ => previousCell,
           },
         );
@@ -203,7 +206,7 @@ class RecipeDslCodec {
 
       if (trimmed.startsWith('@')) {
         throw FormatException(
-          'Line $lineNumber: expected cell metadata like "@ingredient id" or "@amount 200 g".',
+          'Line $lineNumber: expected cell metadata like "@ingredient id" or "@amount 200".',
         );
       }
 

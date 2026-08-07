@@ -152,7 +152,7 @@ B:
         .single;
     expect(ingredientCell.text, '200 g tomatoes');
     expect(ingredientCell.ingredientProductId, 'ingredient-tomatoes-rewe');
-    expect(ingredientCell.ingredientAmount, '200 g');
+    expect(ingredientCell.ingredientAmount, '200');
 
     final stepCell = parsed.document.columns
         .firstWhere((column) => column.id == 'B')
@@ -176,7 +176,7 @@ A:
     final cell = parsed.document.columns.single.cells.single;
     expect(cell.text, '200 g tomatoes');
     expect(cell.ingredientProductId, 'user-b-local-tomato-id');
-    expect(cell.ingredientAmount, '200 g');
+    expect(cell.ingredientAmount, '200');
   });
 
   test('encodes optional cell ingredient metadata after visible text', () {
@@ -199,7 +199,7 @@ A:
                   rowSpan: 1,
                   text: '200 g tomatoes',
                   ingredientProductId: 'ingredient-tomatoes-rewe',
-                  ingredientAmount: '200 g',
+                  ingredientAmount: '200',
                 ),
               ],
             ),
@@ -214,7 +214,7 @@ A:
 A:
 1. 200 g tomatoes
    @ingredient ingredient-tomatoes-rewe
-   @amount 200 g''',
+   @amount 200''',
     );
   });
 
@@ -254,7 +254,7 @@ second line
 
     expect(cell.text, 'tomato sauce\nsecond line');
     expect(cell.ingredientProductId, 'ingredient-tomato-sauce');
-    expect(cell.ingredientAmount, '400 g');
+    expect(cell.ingredientAmount, '400');
   });
 
   test('rejects cell metadata before any cell', () {

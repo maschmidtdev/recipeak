@@ -34,7 +34,7 @@ void main() {
                     columnSpan: 2,
                     text: 'cook\nserve',
                     ingredientProductId: 'ingredient-coconut-milk',
-                    ingredientAmount: '200 ml',
+                    ingredientAmount: '200',
                   ),
                 ],
               ),
@@ -48,13 +48,14 @@ void main() {
         IngredientProduct(
           id: 'ingredient-coconut-milk',
           name: 'Coconut milk',
-          amount: '400 ml',
+          amount: '400',
           price: '1.99',
           store: 'Rewe',
           kcal: 180,
           protein: 1.5,
           carbs: 2.8,
           fat: 18,
+          baseUnit: IngredientBaseUnit.milliliters,
           tags: [ingredientTagCannedJarred],
         ),
       ],
@@ -72,13 +73,14 @@ void main() {
     final ingredient = roundTripped.ingredients.single;
     expect(ingredient.id, 'ingredient-coconut-milk');
     expect(ingredient.name, 'Coconut milk');
-    expect(ingredient.amount, '400 ml');
+    expect(ingredient.amount, '400');
     expect(ingredient.price, '1.99');
     expect(ingredient.store, 'Rewe');
     expect(ingredient.kcal, 180);
     expect(ingredient.protein, 1.5);
     expect(ingredient.carbs, 2.8);
     expect(ingredient.fat, 18);
+    expect(ingredient.baseUnit, IngredientBaseUnit.milliliters);
     expect(ingredient.tags, [ingredientTagCannedJarred]);
 
     final document = roundTripped.recipes.single.document;
@@ -93,7 +95,7 @@ void main() {
     expect(cell.columnSpan, 2);
     expect(cell.text, 'cook\nserve');
     expect(cell.ingredientProductId, 'ingredient-coconut-milk');
-    expect(cell.ingredientAmount, '200 ml');
+    expect(cell.ingredientAmount, '200');
   });
 
   test('uses safe defaults for missing optional persisted fields', () {
@@ -134,5 +136,30 @@ void main() {
     expect(cell.text, 'cell');
     expect(cell.ingredientProductId, isNull);
     expect(cell.ingredientAmount, '');
+  });
+
+  test('infers base unit for legacy persisted ingredients without baseUnit', () {
+    final snapshot = codec.snapshotFromJson({
+      'ingredients': [
+        {
+          'id': 'legacy-oil',
+          'name': 'Oil',
+          'amount': '750 ml',
+        },
+        {
+          'id': 'legacy-flour',
+          'name': 'Flour',
+          'amount': '1000 g',
+        },
+      ],
+    });
+
+    expect(
+      snapshot.ingredients.first.baseUnit,
+      IngredientBaseUnit.milliliters,
+    );
+    expect(snapshot.ingredients.first.amount, '750');
+    expect(snapshot.ingredients.last.baseUnit, IngredientBaseUnit.grams);
+    expect(snapshot.ingredients.last.amount, '1000');
   });
 }

@@ -9,6 +9,8 @@ import 'widgets/editor_action_grid.dart';
 import 'widgets/editor_bottom_actions.dart';
 import 'widgets/editor_form_widgets.dart';
 import 'widgets/editor_manager_sheets.dart';
+import '../../ingredients/domain/ingredient_cell_text.dart';
+import '../../ingredients/domain/ingredient_product.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
 import '../../recipe_document/domain/recipe_dsl_codec.dart';
@@ -20,10 +22,12 @@ class RecipeEditorScreen extends StatefulWidget {
     super.key,
     required this.initialRecipe,
     required this.availableTags,
+    required this.ingredients,
   });
 
   final RecipeSummary initialRecipe;
   final List<String> availableTags;
+  final List<IngredientProduct> ingredients;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -412,52 +416,140 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               : initialEndRow ?? initialStartRow ?? 1)
           .toString(),
     );
+    final amountController = TextEditingController(
+      text: normalizedIngredientAmount(existingCell?.ingredientAmount ?? ''),
+    );
+    String? selectedIngredientId = existingCell?.ingredientProductId;
+    if (_ingredientById(selectedIngredientId) == null) {
+      selectedIngredientId = null;
+      amountController.clear();
+    }
+    final canEditIngredient = columnId == 'A';
 
     final draft = await showDialog<_CellDraft>(
       context: context,
       builder: (context) {
+        final sortedIngredients = [...widget.ingredients]
+          ..sort(
+            (left, right) =>
+                left.name.toLowerCase().compareTo(right.name.toLowerCase()),
+          );
         return AlertDialog(
           scrollable: true,
           title: Text(localizations.editCell),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 360),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: textController,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: localizations.cellTextHint,
-                  ),
-                  minLines: 1,
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 12),
-                Row(
+            child: StatefulBuilder(
+              builder: (context, setDialogState) {
+                final hasSelectedIngredient = sortedIngredients.any(
+                  (ingredient) => ingredient.id == selectedIngredientId,
+                );
+                final selectedIngredient = _ingredientById(selectedIngredientId);
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: startController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: localizations.startRowLabel,
-                        ),
+                    TextField(
+                      controller: textController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: localizations.cellTextHint,
                       ),
+                      minLines: 1,
+                      maxLines: 4,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: endController,
-                        keyboardType: TextInputType.number,
+                    if (canEditIngredient) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            hasSelectedIngredient ? selectedIngredientId : null,
+                        isExpanded: true,
                         decoration: InputDecoration(
-                          labelText: localizations.endRowLabel,
+                          labelText: localizations.cellIngredientLabel,
                         ),
+                        items: [
+                          for (final ingredient in sortedIngredients)
+                            DropdownMenuItem(
+                              value: ingredient.id,
+                              child: Text(_ingredientPickerLabel(ingredient)),
+                            ),
+                        ],
+                        onChanged: sortedIngredients.isEmpty
+                            ? null
+                            : (value) {
+                                setDialogState(() {
+                                  selectedIngredientId = value;
+                                });
+                                final ingredient = _ingredientById(value);
+                                final amount = normalizedIngredientAmount(
+                                  amountController.text,
+                                );
+                                amountController.text = amount;
+                                if (ingredient != null &&
+                                    textController.text.trim().isEmpty) {
+                                  textController.text = ingredientCellText(
+                                    ingredient: ingredient,
+                                    recipeAmount: amount,
+                                  );
+                                }
+                              },
                       ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: localizations.cellIngredientAmountLabel,
+                          hintText: '200',
+                          suffixText: selectedIngredient?.baseUnit.storageValue,
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      if (selectedIngredientId != null) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setDialogState(() {
+                                selectedIngredientId = null;
+                                amountController.clear();
+                              });
+                            },
+                            icon: const Icon(Icons.link_off),
+                            label: Text(localizations.unlinkIngredientLabel),
+                          ),
+                        ),
+                      ],
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: startController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: localizations.startRowLabel,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: endController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: localizations.endRowLabel,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
+                );
+              },
             ),
           ),
           actions: [
@@ -469,12 +561,28 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               onPressed: () {
                 final startRow = int.tryParse(startController.text.trim());
                 final endRow = int.tryParse(endController.text.trim());
-                final text = textController.text.trim();
+                final selectedIngredient = _ingredientById(selectedIngredientId);
+                final amount = selectedIngredient == null
+                    ? ''
+                    : normalizedIngredientAmount(amountController.text);
+                var text = textController.text.trim();
+                if (selectedIngredient != null) {
+                  text = ingredientCellText(
+                    ingredient: selectedIngredient,
+                    recipeAmount: amount,
+                  );
+                }
                 if (startRow == null || endRow == null || text.isEmpty) {
                   return;
                 }
                 Navigator.of(context).pop(
-                  _CellDraft(startRow: startRow, endRow: endRow, text: text),
+                  _CellDraft(
+                    startRow: startRow,
+                    endRow: endRow,
+                    text: text,
+                    ingredientProductId: selectedIngredient?.id,
+                    ingredientAmount: amount,
+                  ),
                 );
               },
               child: Text(localizations.save),
@@ -529,6 +637,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           startRow: draft.startRow,
           rowSpan: draft.endRow - draft.startRow + 1,
           text: draft.text,
+          ingredientProductId: draft.ingredientProductId,
+          clearIngredientProductId: draft.ingredientProductId == null,
+          ingredientAmount: draft.ingredientAmount,
         ),
       ),
     );
@@ -544,6 +655,30 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _setDocument(
       _chartEditor.deleteCell(columnId: columnId, targetCell: targetCell),
     );
+  }
+
+  IngredientProduct? _ingredientById(String? ingredientId) {
+    if (ingredientId == null) {
+      return null;
+    }
+    for (final ingredient in widget.ingredients) {
+      if (ingredient.id == ingredientId) {
+        return ingredient;
+      }
+    }
+    return null;
+  }
+
+  String _ingredientPickerLabel(IngredientProduct ingredient) {
+    final amountText = ingredientAmountText(ingredient);
+    final details = [
+      if (amountText.isNotEmpty) amountText,
+      if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
+    ];
+    if (details.isEmpty) {
+      return ingredient.name;
+    }
+    return '${ingredient.name} - ${details.join(' - ')}';
   }
 
   void _moveCellUp(String columnId, WorkflowCell cell) {
@@ -1410,11 +1545,15 @@ class _CellDraft {
     required this.startRow,
     required this.endRow,
     required this.text,
+    this.ingredientProductId,
+    this.ingredientAmount = '',
   });
 
   final int startRow;
   final int endRow;
   final String text;
+  final String? ingredientProductId;
+  final String ingredientAmount;
 }
 
 String _tagLabel(BuildContext context, String tag) {

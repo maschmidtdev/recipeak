@@ -185,7 +185,7 @@ Optional app-specific metadata may follow a workflow cell:
 A:
 1. 200 g tomatoes
    @ingredient ingredient-tomatoes-rewe
-   @amount 200 g
+   @amount 200
 ```
 
 Rules:
@@ -193,7 +193,8 @@ Rules:
 - cell text remains the portable display fallback
 - metadata lines must follow a cell entry
 - `@ingredient` stores an optional local ingredient product id
-- `@amount` stores the amount used by this recipe cell
+- `@amount` stores a numeric amount used by this recipe cell
+- `@amount` does not store a unit; the unit is derived from the resolved ingredient product
 - imported ingredient ids are best-effort references and may not exist locally
 - unresolved ingredient ids must not prevent displaying or importing the plain recipe chart
 
@@ -216,13 +217,13 @@ prep:
 A:
 1. 240 g rice
    @ingredient ingredient-rice
-   @amount 240 g
+   @amount 240
 2. 150 g onion
    @ingredient ingredient-onion
-   @amount 150 g
+   @amount 150
 3. 12 g garlic
    @ingredient ingredient-garlic
-   @amount 12 g
+   @amount 12
 4. 35 g curry paste
 5. 400 g tomatoes
 6. 240 g chickpeas

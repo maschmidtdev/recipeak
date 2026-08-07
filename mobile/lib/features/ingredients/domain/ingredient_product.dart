@@ -9,6 +9,7 @@ class IngredientProduct {
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.baseUnit = IngredientBaseUnit.grams,
     this.tags = const [],
   });
 
@@ -21,6 +22,7 @@ class IngredientProduct {
   final double protein;
   final double carbs;
   final double fat;
+  final IngredientBaseUnit baseUnit;
   final List<String> tags;
 
   IngredientProduct copyWith({
@@ -33,6 +35,7 @@ class IngredientProduct {
     double? protein,
     double? carbs,
     double? fat,
+    IngredientBaseUnit? baseUnit,
     List<String>? tags,
   }) {
     return IngredientProduct(
@@ -45,7 +48,17 @@ class IngredientProduct {
       protein: protein ?? this.protein,
       carbs: carbs ?? this.carbs,
       fat: fat ?? this.fat,
+      baseUnit: baseUnit ?? this.baseUnit,
       tags: tags ?? this.tags,
     );
   }
+}
+
+enum IngredientBaseUnit {
+  grams('g'),
+  milliliters('ml');
+
+  const IngredientBaseUnit(this.storageValue);
+
+  final String storageValue;
 }

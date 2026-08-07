@@ -45,7 +45,7 @@ void main() {
               rowSpan: 1,
               text: 'onion',
               ingredientProductId: 'ingredient-onion',
-              ingredientAmount: '150 g',
+              ingredientAmount: '150',
             ),
           ],
         ),
@@ -56,7 +56,7 @@ void main() {
       rowSpan: 1,
       text: 'onion',
       ingredientProductId: 'ingredient-onion',
-      ingredientAmount: '150 g',
+      ingredientAmount: '150',
     );
 
     final result = ChartDocumentEditor(
@@ -71,7 +71,7 @@ void main() {
 
     final movedCell = result!.document.columns.single.cells.single;
     expect(movedCell.ingredientProductId, 'ingredient-onion');
-    expect(movedCell.ingredientAmount, '150 g');
+    expect(movedCell.ingredientAmount, '150');
   });
 
   test('swaps with one non-empty target cell when moving vertically', () {
