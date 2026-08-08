@@ -232,7 +232,7 @@ class RecipeDslCodec {
 
       final startRow = int.parse(cellMatch.group(1)!);
       final endRow = int.parse(cellMatch.group(2) ?? cellMatch.group(1)!);
-      final text = cellMatch.group(3)!.trim();
+      final text = (cellMatch.group(3) ?? '').trim();
 
       if (startRow < 1) {
         throw FormatException(
@@ -244,10 +244,6 @@ class RecipeDslCodec {
           'Line $lineNumber: row ranges must go from low to high.',
         );
       }
-      if (text.isEmpty) {
-        throw FormatException('Line $lineNumber: cell text cannot be empty.');
-      }
-
       final section = currentColumnSection;
       if (section == null) {
         throw FormatException(
@@ -366,19 +362,10 @@ class RecipeDslCodec {
       buffer.writeln();
     }
 
-    final coveredColumnIds = <String>{};
-    for (final column in sortedColumns) {
-      for (final cell in column.cells) {
-        for (var offset = 1; offset < cell.columnSpan; offset++) {
-          coveredColumnIds.add(
-            String.fromCharCode(column.id.codeUnitAt(0) + offset),
-          );
-        }
-      }
-    }
     final exportColumns = [
       for (final column in sortedColumns)
-        if (!coveredColumnIds.contains(column.id)) column,
+        if (column.cells.isNotEmpty || !_isCoveredOnlyColumn(column, sortedColumns))
+          column,
     ];
 
     for (var index = 0; index < exportColumns.length; index++) {
@@ -431,6 +418,32 @@ void _writeCell(StringBuffer buffer, WorkflowCell cell) {
   if (cell.ingredientAmount.isNotEmpty) {
     buffer.writeln('   @amount ${cell.ingredientAmount}');
   }
+}
+
+bool _isCoveredOnlyColumn(
+  WorkflowColumn targetColumn,
+  List<WorkflowColumn> sortedColumns,
+) {
+  if (targetColumn.cells.isNotEmpty) {
+    return false;
+  }
+
+  final targetColumnCode = targetColumn.id.codeUnitAt(0);
+  for (final column in sortedColumns) {
+    final columnCode = column.id.codeUnitAt(0);
+    if (columnCode >= targetColumnCode) {
+      continue;
+    }
+
+    for (final cell in column.cells) {
+      final endColumnCode = columnCode + cell.columnSpan - 1;
+      if (endColumnCode >= targetColumnCode) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void _validateRectangularCells(List<WorkflowColumn> columns) {
@@ -554,7 +567,7 @@ final _metadataPattern = RegExp(
 final _columnHeaderPattern = RegExp(r'^([A-Z])(?:-([A-Z]))?:$');
 final _prepItemPattern = RegExp(r'^-\s+(.+)$');
 final _widthPattern = RegExp(r'^([A-Z]):\s*(fit|\d+(?:\.\d+)?)$', caseSensitive: false);
-final _cellPattern = RegExp(r'^(\d+)(?:-(\d+))?[.:]\s*(.+)$');
+final _cellPattern = RegExp(r'^(\d+)(?:-(\d+))?[.:](?:\s*(.*))?$');
 final _cellMetadataPattern = RegExp(r'^@(ingredient|amount)\s+(.+)$');
 
 class _ColumnSection {

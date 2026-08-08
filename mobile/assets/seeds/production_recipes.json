@@ -79,18 +79,18 @@
             "id": "A",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "1L Tomatensoße" },
+              { "startRow": 1, "rowSpan": 1, "text": "200g Spinat" },
+              { "startRow": 2, "rowSpan": 1, "text": "SojaSahne 800ml" },
+              { "startRow": 3, "rowSpan": 1, "text": "170g Sojahack" },
+              { "startRow": 4, "rowSpan": 1, "text": "200ml Gemüsebrühe" },
+              { "startRow": 5, "rowSpan": 1, "text": "Knoblauch" },
+              { "startRow": 6, "rowSpan": 1, "text": "2 Zwiebeln" },
               {
-                "startRow": 2,
+                "startRow": 7,
                 "rowSpan": 1,
                 "text": "1/2 Packung Tomatenmark"
               },
-              { "startRow": 3, "rowSpan": 1, "text": "2 Zwiebeln" },
-              { "startRow": 4, "rowSpan": 1, "text": "Knoblauch" },
-              { "startRow": 5, "rowSpan": 1, "text": "Gemüsebrühe" },
-              { "startRow": 6, "rowSpan": 1, "text": "170g Sojahack" },
-              { "startRow": 7, "rowSpan": 1, "text": "SojaSahne 800ml" },
-              { "startRow": 8, "rowSpan": 1, "text": "200g Spinat" },
+              { "startRow": 8, "rowSpan": 1, "text": "1L Tomatensoße" },
               { "startRow": 9, "rowSpan": 1, "text": "50g Hefeflocken" },
               { "startRow": 10, "rowSpan": 1, "text": "500g Nudelplatten" },
               { "startRow": 11, "rowSpan": 1, "text": "Käse simply V" }
@@ -100,39 +100,60 @@
             "id": "B",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 3, "rowSpan": 1, "text": "wuerfeln" },
-              { "startRow": 4, "rowSpan": 1, "text": "hacken" },
-              { "startRow": 5, "rowSpan": 2, "text": "5 min einlegen" },
-              { "startRow": 8, "rowSpan": 1, "text": "waschen" }
+              {
+                "startRow": 1,
+                "rowSpan": 1,
+                "columnSpan": 4,
+                "text": "Waschen und in Pfanne 1 einfallen lassen"
+              },
+              { "startRow": 2, "rowSpan": 1, "columnSpan": 3, "text": "" },
+              { "startRow": 3, "rowSpan": 2, "columnSpan": 3, "text": "Einlegen" },
+              { "startRow": 5, "rowSpan": 1, "text": "hacken" },
+              { "startRow": 6, "rowSpan": 1, "text": "wuerfeln" },
+              { "startRow": 7, "rowSpan": 1, "columnSpan": 3, "text": "" },
+              { "startRow": 8, "rowSpan": 1, "columnSpan": 4, "text": "" },
+              { "startRow": 9, "rowSpan": 1, "columnSpan": 5, "text": "" },
+              { "startRow": 10, "rowSpan": 1, "columnSpan": 6, "text": "" },
+              { "startRow": 11, "rowSpan": 1, "columnSpan": 6, "text": "" }
             ]
           },
           {
             "id": "C",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
-            "cells": [{ "startRow": 2, "rowSpan": 3, "text": "anbraten" }]
+            "cells": [
+              { "startRow": 5, "rowSpan": 2, "text": "Anbraten" }
+            ]
           },
           {
             "id": "D",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 2, "rowSpan": 2, "text": "hälfte in pfanne" },
-              { "startRow": 4, "rowSpan": 1, "text": "hälfte in mixer" }
+              { "startRow": 5, "rowSpan": 1, "text": "Hälfte in Mixer" },
+              { "startRow": 6, "rowSpan": 1, "text": "Hälfte in Pfanne" }
             ]
           },
           {
             "id": "E",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 2, "rowSpan": 2, "text": "anbraten" },
-              { "startRow": 4, "rowSpan": 4, "text": "mixen" }
+              { "startRow": 2, "rowSpan": 3, "text": "Mixen" },
+              { "startRow": 5, "rowSpan": 3, "text": "kurz anbraten" }
             ]
           },
           {
             "id": "F",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 3, "text": "In Pfanne 1" },
-              { "startRow": 4, "rowSpan": 5, "text": "In Pfanne 2" }
+              {
+                "startRow": 1,
+                "rowSpan": 5,
+                "text": "In Pfanne 1,\nHerdplatte aus"
+              },
+              {
+                "startRow": 6,
+                "rowSpan": 3,
+                "text": "Pfanne 2,\nherdplatte aus"
+              }
             ]
           },
           {
@@ -142,7 +163,7 @@
               {
                 "startRow": 1,
                 "rowSpan": 9,
-                "text": "Hefeflocken auf Pfannen aufteilen, unterrühren"
+                "text": "Hefeflocken auf beide Pfannen aufteilen und unterrühren"
               }
             ]
           },

@@ -257,6 +257,137 @@ second line
     expect(cell.ingredientAmount, '400');
   });
 
+  test('parses explicit empty cells without appending row labels to prior text', () {
+    final parsed = RecipeDslCodec.parseRecipe(
+      source: '''
+A:
+1. ingredient
+
+B:
+1. prep
+
+B-D:
+2-3:
+
+B:
+4. hacken
+
+B-D:
+6.
+
+B-E:
+7:
+''',
+    );
+
+    final columnB = parsed.document.columns.firstWhere(
+      (column) => column.id == 'B',
+    );
+
+    expect(columnB.cells[0].text, 'prep');
+    expect(columnB.cells[1].startRow, 2);
+    expect(columnB.cells[1].rowSpan, 2);
+    expect(columnB.cells[1].columnSpan, 3);
+    expect(columnB.cells[1].text, '');
+    expect(columnB.cells[2].text, 'hacken');
+    expect(columnB.cells[3].startRow, 6);
+    expect(columnB.cells[3].columnSpan, 3);
+    expect(columnB.cells[3].text, '');
+    expect(columnB.cells[4].startRow, 7);
+    expect(columnB.cells[4].columnSpan, 4);
+    expect(columnB.cells[4].text, '');
+  });
+
+  test('encodes empty rectangular cells as explicit empty row entries', () {
+    final encoded = RecipeDslCodec.encodeRecipe(
+      RecipeDslData(
+        title: '',
+        description: '',
+        duration: '',
+        yieldText: '',
+        tags: const [],
+        isFavorite: false,
+        document: const RecipeDocument(
+          prepRows: [],
+          columns: [
+            WorkflowColumn(
+              id: 'B',
+              cells: [
+                WorkflowCell(
+                  startRow: 2,
+                  rowSpan: 2,
+                  columnSpan: 3,
+                  text: '',
+                ),
+              ],
+            ),
+            WorkflowColumn(id: 'C', cells: []),
+            WorkflowColumn(id: 'D', cells: []),
+          ],
+        ),
+      ),
+    );
+
+    expect(encoded, 'B-D:\n2-3:');
+    final roundTripped = RecipeDslCodec.parseRecipe(source: encoded);
+    final cell = roundTripped.document.columns
+        .firstWhere((column) => column.id == 'B')
+        .cells
+        .single;
+    expect(cell.text, '');
+    expect(cell.rowSpan, 2);
+    expect(cell.columnSpan, 3);
+  });
+
+  test('encodes cells in columns also covered by horizontal spans', () {
+    final parsed = RecipeDslCodec.parseRecipe(
+      source: '''
+A:
+1. ingredient 1
+2. ingredient 2
+3. ingredient 3
+
+B-E:
+1. wide setup
+
+C:
+2-3: Anbraten
+
+D:
+2. Hälfte in Mixer
+3. Hälfte in Pfanne
+
+E:
+2-3: Mixen
+''',
+    );
+
+    final encoded = RecipeDslCodec.encodeRecipe(parsed);
+
+    expect(encoded, contains('B-E:\n1. wide setup'));
+    expect(encoded, contains('C:\n2-3: Anbraten'));
+    expect(encoded, contains('D:\n2. Hälfte in Mixer\n3. Hälfte in Pfanne'));
+    expect(encoded, contains('E:\n2-3: Mixen'));
+
+    final roundTripped = RecipeDslCodec.parseRecipe(source: encoded);
+    final columnC = roundTripped.document.columns.firstWhere(
+      (column) => column.id == 'C',
+    );
+    final columnD = roundTripped.document.columns.firstWhere(
+      (column) => column.id == 'D',
+    );
+    final columnE = roundTripped.document.columns.firstWhere(
+      (column) => column.id == 'E',
+    );
+
+    expect(columnC.cells.single.text, 'Anbraten');
+    expect(columnD.cells.map((cell) => cell.text), [
+      'Hälfte in Mixer',
+      'Hälfte in Pfanne',
+    ]);
+    expect(columnE.cells.single.text, 'Mixen');
+  });
+
   test('rejects cell metadata before any cell', () {
     expect(
       () => RecipeDslCodec.parseRecipe(

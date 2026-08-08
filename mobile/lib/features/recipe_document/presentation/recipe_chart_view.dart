@@ -26,6 +26,7 @@ class RecipeChartView extends StatelessWidget {
   static const _cellMinHeight = 48.0;
   static const _cellHorizontalPadding = 6.0;
   static const _cellVerticalPadding = 6.0;
+  static const _cellLineHeightSafety = 2.0;
   static const _columnGapSafety = 2.0;
   static const _emptyColumnWidth = 96.0;
   static const _fitColumnMinWidth = 64.0;
@@ -68,11 +69,7 @@ class RecipeChartView extends StatelessWidget {
       );
     }
 
-    final workflowTextStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-      height: 1.15,
-    );
+    final workflowTextStyle = _workflowTextStyle(theme);
     final fittedColumnWidths = _buildColumnWidths(
       context: context,
       columns: document.columns,
@@ -421,11 +418,7 @@ class _WorkflowGrid extends StatelessWidget {
       RecipeChartView._cellMinHeight,
     );
 
-    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-      height: 1.15,
-    );
+    final style = _workflowTextStyle(Theme.of(context));
     final textDirection = Directionality.of(context);
 
     for (final cell in layout.cells) {
@@ -468,8 +461,18 @@ class _WorkflowGrid extends StatelessWidget {
       text: TextSpan(text: text, style: textStyle),
       textDirection: textDirection,
     )..layout(maxWidth: maxContentWidth);
-    return painter.height;
+    final lineCount = painter.computeLineMetrics().length;
+    return painter.height +
+        (RecipeChartView._cellLineHeightSafety * lineCount);
   }
+}
+
+TextStyle? _workflowTextStyle(ThemeData theme) {
+  return theme.textTheme.bodyMedium?.copyWith(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.15,
+  );
 }
 
 String _wrapAtWordBoundaries({
@@ -552,6 +555,7 @@ class _WorkflowCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final textStyle = _workflowTextStyle(theme);
 
     return Material(
       color: isSelected
@@ -595,19 +599,11 @@ class _WorkflowCell extends StatelessWidget {
                 maxContentWidth:
                     (columnWidth - (RecipeChartView._cellHorizontalPadding * 2))
                         .clamp(1.0, double.infinity),
-                textStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  height: 1.15,
-                ),
+                textStyle: textStyle,
                 textDirection: Directionality.of(context),
               ),
               softWrap: true,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                height: 1.15,
-              ),
+              style: textStyle,
             ),
           ),
         ),
