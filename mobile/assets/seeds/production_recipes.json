@@ -1,15 +1,15 @@
 {
   "recipes": [
     {
-      "title": "Chickpea Curry",
-      "description": "A weeknight chickpea curry with tomato, spinach, and warm spices.",
+      "title": "Tomato Lentil Soup",
+      "description": "A simple pantry soup with red lentils, tomato, spinach, and warm herbs.",
       "duration": "35 min",
       "yieldText": "4 servings",
       "tags": ["Vegan"],
       "isFavorite": true,
       "document": {
         "prepRows": [
-          { "text": "Set out a large skillet and a medium pot" },
+          { "text": "Set out a large pot" },
           { "text": "Warm oil over medium heat" }
         ],
         "columns": [
@@ -17,75 +17,35 @@
             "id": "A",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              {
-                "startRow": 1,
-                "rowSpan": 1,
-                "text": "240g Rice",
-                "ingredientProductId": "dev-rice",
-                "ingredientAmount": "240"
-              },
-              {
-                "startRow": 2,
-                "rowSpan": 1,
-                "text": "150g Onion",
-                "ingredientProductId": "dev-onion",
-                "ingredientAmount": "150"
-              },
-              {
-                "startRow": 3,
-                "rowSpan": 1,
-                "text": "12g Garlic",
-                "ingredientProductId": "dev-garlic",
-                "ingredientAmount": "12"
-              },
-              {
-                "startRow": 4,
-                "rowSpan": 1,
-                "text": "35g Curry paste",
-                "ingredientProductId": "dev-curry-paste",
-                "ingredientAmount": "35"
-              },
-              {
-                "startRow": 5,
-                "rowSpan": 1,
-                "text": "400g Tomatoes",
-                "ingredientProductId": "dev-tomatoes",
-                "ingredientAmount": "400"
-              },
-              {
-                "startRow": 6,
-                "rowSpan": 1,
-                "text": "240g Chickpeas",
-                "ingredientProductId": "dev-chickpeas",
-                "ingredientAmount": "240"
-              },
-              {
-                "startRow": 7,
-                "rowSpan": 1,
-                "text": "120g Spinach",
-                "ingredientProductId": "dev-spinach",
-                "ingredientAmount": "120"
-              }
+              { "startRow": 1, "rowSpan": 1, "text": "15ml olive oil" },
+              { "startRow": 2, "rowSpan": 1, "text": "150g onion" },
+              { "startRow": 3, "rowSpan": 1, "text": "12g garlic" },
+              { "startRow": 4, "rowSpan": 1, "text": "200g red lentils" },
+              { "startRow": 5, "rowSpan": 1, "text": "400g tomatoes" },
+              { "startRow": 6, "rowSpan": 1, "text": "700ml vegetable broth" },
+              { "startRow": 7, "rowSpan": 1, "text": "100g spinach" }
             ]
           },
           {
             "id": "B",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 1, "rowSpan": 1, "text": "rinse + boil" },
+              { "startRow": 1, "rowSpan": 1, "text": "warm" },
               { "startRow": 2, "rowSpan": 1, "text": "dice" },
               { "startRow": 3, "rowSpan": 1, "text": "mince" },
-              { "startRow": 4, "rowSpan": 1, "text": "stir in" }
+              { "startRow": 4, "rowSpan": 1, "text": "rinse" },
+              { "startRow": 5, "rowSpan": 1, "text": "pour in" },
+              { "startRow": 6, "rowSpan": 1, "text": "add" },
+              { "startRow": 7, "rowSpan": 1, "text": "stir in" }
             ]
           },
           {
             "id": "C",
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
-              { "startRow": 2, "rowSpan": 3, "text": "cook until fragrant" },
-              { "startRow": 5, "rowSpan": 1, "text": "pour in" },
-              { "startRow": 6, "rowSpan": 1, "text": "add in" },
-              { "startRow": 7, "rowSpan": 1, "text": "stir in" }
+              { "startRow": 1, "rowSpan": 3, "text": "cook until fragrant" },
+              { "startRow": 4, "rowSpan": 3, "text": "simmer until lentils soften" },
+              { "startRow": 7, "rowSpan": 1, "text": "wilt into soup" }
             ]
           },
           {
@@ -93,17 +53,10 @@
             "widthSpec": { "kind": "fit", "logicalPixels": null },
             "cells": [
               {
-                "startRow": 2,
-                "rowSpan": 6,
-                "text": "simmer until chickpeas are hot and spinach wilts"
+                "startRow": 1,
+                "rowSpan": 7,
+                "text": "season and serve"
               }
-            ]
-          },
-          {
-            "id": "E",
-            "widthSpec": { "kind": "fit", "logicalPixels": null },
-            "cells": [
-              { "startRow": 1, "rowSpan": 7, "text": "serve over rice" }
             ]
           }
         ]

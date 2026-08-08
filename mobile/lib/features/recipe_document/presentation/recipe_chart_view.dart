@@ -320,9 +320,9 @@ class _WorkflowGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rowHeight = RecipeChartView._cellMinHeight;
     final totalWidth = columnWidths.fold<double>(0, (sum, width) => sum + width);
-    final totalHeight = rowHeight * layout.rowCount;
+    final rowHeights = _buildRowHeights(context);
+    final totalHeight = rowHeights.fold<double>(0, (sum, height) => sum + height);
     final positionedCells = layout.cells;
 
     return SizedBox(
@@ -334,9 +334,9 @@ class _WorkflowGrid extends StatelessWidget {
             for (var row = 1; row <= layout.rowCount; row++)
               Positioned(
                 left: _columnLeft(columnIndex),
-                top: (row - 1) * rowHeight,
+                top: _rowTop(row, rowHeights),
                 width: columnWidths[columnIndex],
-                height: rowHeight,
+                height: rowHeights[row - 1],
                 child: _EmptyWorkflowCell(
                   isSelected:
                       selectedCell?.columnId == layout.columnIds[columnIndex] &&
@@ -356,9 +356,9 @@ class _WorkflowGrid extends StatelessWidget {
           for (final cell in positionedCells)
             Positioned(
               left: _columnLeft(cell.columnIndex),
-              top: (cell.startRow - 1) * rowHeight,
+              top: _rowTop(cell.startRow, rowHeights),
               width: _spannedWidth(cell.columnIndex, cell.columnSpan),
-              height: rowHeight * cell.rowSpan,
+              height: _spannedHeight(cell.startRow, cell.rowSpan, rowHeights),
               child: _WorkflowCell(
                 text: cell.text,
                 columnWidth: _spannedWidth(cell.columnIndex, cell.columnSpan),
@@ -398,6 +398,136 @@ class _WorkflowGrid extends StatelessWidget {
     }
     return width;
   }
+
+  double _rowTop(int row, List<double> rowHeights) {
+    var top = 0.0;
+    for (var index = 0; index < row - 1; index++) {
+      top += rowHeights[index];
+    }
+    return top;
+  }
+
+  double _spannedHeight(int startRow, int rowSpan, List<double> rowHeights) {
+    var height = 0.0;
+    for (var index = startRow - 1; index < startRow - 1 + rowSpan; index++) {
+      height += rowHeights[index];
+    }
+    return height;
+  }
+
+  List<double> _buildRowHeights(BuildContext context) {
+    final rowHeights = List<double>.filled(
+      layout.rowCount,
+      RecipeChartView._cellMinHeight,
+    );
+
+    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w400,
+      height: 1.15,
+    );
+    final textDirection = Directionality.of(context);
+
+    for (final cell in layout.cells) {
+      final width = _spannedWidth(cell.columnIndex, cell.columnSpan);
+      final contentWidth = (width - (RecipeChartView._cellHorizontalPadding * 2))
+          .clamp(1.0, double.infinity);
+      final wrappedText = _wrapAtWordBoundaries(
+        text: cell.text,
+        maxContentWidth: contentWidth,
+        textStyle: style,
+        textDirection: textDirection,
+      );
+      final requiredHeight = _measureWrappedTextHeight(
+        text: wrappedText,
+        maxContentWidth: contentWidth,
+        textStyle: style,
+        textDirection: textDirection,
+      ) +
+          (RecipeChartView._cellVerticalPadding * 2);
+      final heightPerRow = requiredHeight / cell.rowSpan;
+
+      for (var row = cell.startRow; row <= cell.endRow; row++) {
+        final index = row - 1;
+        if (heightPerRow > rowHeights[index]) {
+          rowHeights[index] = heightPerRow;
+        }
+      }
+    }
+
+    return rowHeights;
+  }
+
+  double _measureWrappedTextHeight({
+    required String text,
+    required double maxContentWidth,
+    required TextStyle? textStyle,
+    required TextDirection textDirection,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: textStyle),
+      textDirection: textDirection,
+    )..layout(maxWidth: maxContentWidth);
+    return painter.height;
+  }
+}
+
+String _wrapAtWordBoundaries({
+  required String text,
+  required double maxContentWidth,
+  required TextStyle? textStyle,
+  required TextDirection textDirection,
+}) {
+  final wrappedParagraphs = <String>[];
+
+  for (final paragraph in text.split('\n')) {
+    final words = paragraph.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+    if (words.isEmpty) {
+      wrappedParagraphs.add('');
+      continue;
+    }
+
+    var currentLine = '';
+    final lines = <String>[];
+
+    for (final word in words) {
+      final candidate = currentLine.isEmpty ? word : '$currentLine $word';
+      final candidateWidth = _measureTextWidth(
+        text: candidate,
+        textStyle: textStyle,
+        textDirection: textDirection,
+      );
+
+      if (currentLine.isNotEmpty && candidateWidth > maxContentWidth) {
+        lines.add(currentLine);
+        currentLine = word;
+        continue;
+      }
+
+      currentLine = candidate;
+    }
+
+    if (currentLine.isNotEmpty) {
+      lines.add(currentLine);
+    }
+
+    wrappedParagraphs.add(lines.join('\n'));
+  }
+
+  return wrappedParagraphs.join('\n');
+}
+
+double _measureTextWidth({
+  required String text,
+  required TextStyle? textStyle,
+  required TextDirection textDirection,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: textStyle),
+    textDirection: textDirection,
+    maxLines: 1,
+  )..layout();
+  return painter.width;
 }
 
 class _WorkflowCell extends StatelessWidget {
@@ -461,10 +591,16 @@ class _WorkflowCell extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               _wrapAtWordBoundaries(
-                context: context,
                 text: text,
                 maxContentWidth:
-                    columnWidth - (RecipeChartView._cellHorizontalPadding * 2),
+                    (columnWidth - (RecipeChartView._cellHorizontalPadding * 2))
+                        .clamp(1.0, double.infinity),
+                textStyle: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.15,
+                ),
+                textDirection: Directionality.of(context),
               ),
               softWrap: true,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -477,69 +613,6 @@ class _WorkflowCell extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _wrapAtWordBoundaries({
-    required BuildContext context,
-    required String text,
-    required double maxContentWidth,
-  }) {
-    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: 13,
-      fontWeight: FontWeight.w400,
-      height: 1.15,
-    );
-    final textDirection = Directionality.of(context);
-    final wrappedParagraphs = <String>[];
-
-    for (final paragraph in text.split('\n')) {
-      final words = paragraph.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
-      if (words.isEmpty) {
-        wrappedParagraphs.add('');
-        continue;
-      }
-
-      var currentLine = '';
-      final lines = <String>[];
-
-      for (final word in words) {
-        final candidate = currentLine.isEmpty ? word : '$currentLine $word';
-        final candidateWidth = _measureTextWidth(
-          text: candidate,
-          textStyle: style,
-          textDirection: textDirection,
-        );
-
-        if (currentLine.isNotEmpty && candidateWidth > maxContentWidth) {
-          lines.add(currentLine);
-          currentLine = word;
-          continue;
-        }
-
-        currentLine = candidate;
-      }
-
-      if (currentLine.isNotEmpty) {
-        lines.add(currentLine);
-      }
-
-      wrappedParagraphs.add(lines.join('\n'));
-    }
-
-    return wrappedParagraphs.join('\n');
-  }
-
-  double _measureTextWidth({
-    required String text,
-    required TextStyle? textStyle,
-    required TextDirection textDirection,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: textStyle),
-      textDirection: textDirection,
-      maxLines: 1,
-    )..layout();
-    return painter.width;
   }
 }
 

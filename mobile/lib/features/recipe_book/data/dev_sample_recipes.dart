@@ -3,6 +3,116 @@ import '../../recipe_document/domain/recipe_document.dart';
 
 const devSampleRecipes = [
   RecipeSummary(
+    title: 'Chickpea Curry',
+    description:
+        'A weeknight chickpea curry with tomato, spinach, and warm spices.',
+    duration: '35 min',
+    yieldText: '4 servings',
+    document: RecipeDocument(
+      prepRows: [
+        PrepRow(text: 'Set out a large skillet and a medium pot'),
+        PrepRow(text: 'Warm oil over medium heat'),
+      ],
+      columns: [
+        WorkflowColumn(
+          id: 'A',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(
+              startRow: 1,
+              rowSpan: 1,
+              text: '240g Rice',
+              ingredientProductId: 'dev-rice',
+              ingredientAmount: '240',
+            ),
+            WorkflowCell(
+              startRow: 2,
+              rowSpan: 1,
+              text: '150g Onion',
+              ingredientProductId: 'dev-onion',
+              ingredientAmount: '150',
+            ),
+            WorkflowCell(
+              startRow: 3,
+              rowSpan: 1,
+              text: '12g Garlic',
+              ingredientProductId: 'dev-garlic',
+              ingredientAmount: '12',
+            ),
+            WorkflowCell(
+              startRow: 4,
+              rowSpan: 1,
+              text: '35g Curry paste',
+              ingredientProductId: 'dev-curry-paste',
+              ingredientAmount: '35',
+            ),
+            WorkflowCell(
+              startRow: 5,
+              rowSpan: 1,
+              text: '400g Tomatoes',
+              ingredientProductId: 'dev-tomatoes',
+              ingredientAmount: '400',
+            ),
+            WorkflowCell(
+              startRow: 6,
+              rowSpan: 1,
+              text: '240g Chickpeas',
+              ingredientProductId: 'dev-chickpeas',
+              ingredientAmount: '240',
+            ),
+            WorkflowCell(
+              startRow: 7,
+              rowSpan: 1,
+              text: '120g Spinach',
+              ingredientProductId: 'dev-spinach',
+              ingredientAmount: '120',
+            ),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'B',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 1, text: 'rinse + boil'),
+            WorkflowCell(startRow: 2, rowSpan: 1, text: 'dice'),
+            WorkflowCell(startRow: 3, rowSpan: 1, text: 'mince'),
+            WorkflowCell(startRow: 4, rowSpan: 1, text: 'stir in'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'C',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 2, rowSpan: 3, text: 'cook until fragrant'),
+            WorkflowCell(startRow: 5, rowSpan: 1, text: 'pour in'),
+            WorkflowCell(startRow: 6, rowSpan: 1, text: 'add in'),
+            WorkflowCell(startRow: 7, rowSpan: 1, text: 'stir in'),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'D',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(
+              startRow: 2,
+              rowSpan: 6,
+              text: 'simmer until chickpeas are hot and spinach wilts',
+            ),
+          ],
+        ),
+        WorkflowColumn(
+          id: 'E',
+          widthSpec: ColumnWidthSpec.fit(),
+          cells: [
+            WorkflowCell(startRow: 1, rowSpan: 7, text: 'serve over rice'),
+          ],
+        ),
+      ],
+    ),
+    tags: ['Vegan'],
+    isFavorite: true,
+  ),
+  RecipeSummary(
     title: 'Overnight Oats',
     description:
         'Creamy oats layered with milk and fruit for an easy make-ahead breakfast.',
