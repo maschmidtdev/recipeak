@@ -1234,17 +1234,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(localizations.favoriteLabel),
-                      value: _isFavorite,
-                      onChanged: (value) {
-                        setState(() {
-                          _isFavorite = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

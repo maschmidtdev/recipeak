@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../app/app_storage_codec.dart';
 import '../../../app/app_storage.dart';
 import '../../../app/dev_flags.dart';
 import '../../ingredients/data/dev_sample_ingredients.dart';
@@ -34,6 +38,8 @@ class RecipeCollectionScreen extends StatefulWidget {
 }
 
 class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
+  static const _storageCodec = AppStorageCodec();
+
   final List<RecipeSummary> _recipes = [];
   final List<IngredientProduct> _ingredients = [];
   final Set<String> _availableTags = {};
@@ -291,6 +297,14 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     }
   }
 
+  void _toggleRecipeFavorite(int index) {
+    setState(() {
+      final recipe = _recipes[index];
+      _recipes[index] = recipe.copyWith(isFavorite: !recipe.isFavorite);
+    });
+    _persistState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final recipeEntries = filteredRecipeEntries(
@@ -369,6 +383,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                       onToggleFavorites: _toggleFavoritesFilter,
                       onToggleTag: _toggleTagFilter,
                       onOpenRecipe: _openRecipeForViewing,
+                      onToggleFavorite: _toggleRecipeFavorite,
                     )
                   else
                     _IngredientCollectionBody(
@@ -580,11 +595,166 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             _persistState();
           },
           onResetToSeed: _resetToSeedState,
+          onExportIngredients: _exportIngredientsToClipboard,
+          onImportIngredients: _importIngredientsFromClipboard,
           onAddTag: _addGlobalTag,
           onOpenTagManager: _openDeleteTagManager,
         );
       },
     );
+  }
+
+  Future<void> _exportIngredientsToClipboard() async {
+    final localizations = AppLocalizations.of(context);
+    final payload = const JsonEncoder.withIndent('  ').convert({
+      'format': 'recipeek.ingredients.v1',
+      'ingredients': [
+        for (final ingredient in _ingredients)
+          _storageCodec.ingredientProductToJson(ingredient),
+      ],
+      'availableIngredientTags': sortedTags(_availableIngredientTags),
+    });
+
+    await Clipboard.setData(ClipboardData(text: payload));
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(localizations.ingredientsExportedMessage)),
+    );
+  }
+
+  Future<void> _importIngredientsFromClipboard() async {
+    final localizations = AppLocalizations.of(context);
+    final controller = TextEditingController();
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    controller.text = clipboardData?.text ?? '';
+
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
+
+    final rawJson = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(localizations.importIngredientsTitle),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              minLines: 8,
+              maxLines: 12,
+              decoration: InputDecoration(
+                hintText: localizations.importIngredientsHint,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: Text(localizations.importIngredientsLabel),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || rawJson == null || rawJson.trim().isEmpty) {
+      return;
+    }
+
+    final imported = _parseIngredientImport(rawJson);
+    if (imported == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.ingredientsImportFailedMessage)),
+      );
+      return;
+    }
+
+    var addedCount = 0;
+    var updatedCount = 0;
+    final importedById = {
+      for (final ingredient in imported.ingredients) ingredient.id: ingredient,
+    };
+
+    setState(() {
+      for (var index = 0; index < _ingredients.length; index++) {
+        final importedIngredient = importedById.remove(_ingredients[index].id);
+        if (importedIngredient != null) {
+          _ingredients[index] = importedIngredient;
+          updatedCount += 1;
+        }
+      }
+
+      _ingredients.addAll(importedById.values);
+      addedCount = importedById.length;
+
+      _availableIngredientTags
+        ..addAll(imported.availableIngredientTags)
+        ..addAll(imported.ingredients.expand((ingredient) => ingredient.tags));
+    });
+    await _persistState();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          localizations.ingredientsImportedMessage(addedCount, updatedCount),
+        ),
+      ),
+    );
+  }
+
+  _IngredientImportPayload? _parseIngredientImport(String rawJson) {
+    try {
+      final decoded = jsonDecode(rawJson);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+
+      final rawIngredients = decoded['ingredients'];
+      if (rawIngredients is! List<dynamic>) {
+        return null;
+      }
+
+      final ingredients = <IngredientProduct>[];
+      for (final entry in rawIngredients) {
+        if (entry is! Map<String, dynamic>) {
+          return null;
+        }
+
+        final ingredient = _storageCodec.ingredientProductFromJson(entry);
+        if (ingredient.id.trim().isEmpty || ingredient.name.trim().isEmpty) {
+          return null;
+        }
+        ingredients.add(ingredient);
+      }
+
+      final availableIngredientTags =
+          (decoded['availableIngredientTags'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .map(normalizeTag)
+              .where((tag) => tag.isNotEmpty)
+              .toList();
+
+      return _IngredientImportPayload(
+        ingredients: ingredients,
+        availableIngredientTags: availableIngredientTags,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _openDeleteTagManager() async {
@@ -766,6 +936,16 @@ enum _CollectionTab {
   ingredients,
 }
 
+class _IngredientImportPayload {
+  const _IngredientImportPayload({
+    required this.ingredients,
+    required this.availableIngredientTags,
+  });
+
+  final List<IngredientProduct> ingredients;
+  final List<String> availableIngredientTags;
+}
+
 class _IngredientEntry {
   const _IngredientEntry({required this.index, required this.ingredient});
 
@@ -788,6 +968,7 @@ class _RecipeCollectionBody extends StatelessWidget {
     required this.onToggleFavorites,
     required this.onToggleTag,
     required this.onOpenRecipe,
+    required this.onToggleFavorite,
   });
 
   final TextEditingController searchController;
@@ -803,6 +984,7 @@ class _RecipeCollectionBody extends StatelessWidget {
   final VoidCallback onToggleFavorites;
   final ValueChanged<String> onToggleTag;
   final ValueChanged<int> onOpenRecipe;
+  final ValueChanged<int> onToggleFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -857,6 +1039,7 @@ class _RecipeCollectionBody extends StatelessWidget {
           _RecipeCard(
             recipe: entry.recipe,
             onTap: () => onOpenRecipe(entry.index),
+            onToggleFavorite: () => onToggleFavorite(entry.index),
           ),
           const SizedBox(height: 12),
         ],
@@ -1036,10 +1219,15 @@ class _UndoToastContent extends StatelessWidget {
 }
 
 class _RecipeCard extends StatelessWidget {
-  const _RecipeCard({required this.recipe, required this.onTap});
+  const _RecipeCard({
+    required this.recipe,
+    required this.onTap,
+    required this.onToggleFavorite,
+  });
 
   final RecipeSummary recipe;
   final VoidCallback onTap;
+  final VoidCallback onToggleFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -1068,8 +1256,16 @@ class _RecipeCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (recipe.isFavorite)
-                    const Icon(Icons.favorite, color: Color(0xFFC96A3D)),
+                  IconButton(
+                    onPressed: onToggleFavorite,
+                    icon: Icon(
+                      recipe.isFavorite
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: const Color(0xFFC96A3D),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),

@@ -14,6 +14,8 @@ class CollectionSettingsSheet extends StatefulWidget {
     required this.onLocaleChanged,
     required this.onMatchAllTagsChanged,
     required this.onResetToSeed,
+    required this.onExportIngredients,
+    required this.onImportIngredients,
     required this.onAddTag,
     required this.onOpenTagManager,
   });
@@ -25,6 +27,8 @@ class CollectionSettingsSheet extends StatefulWidget {
   final ValueChanged<Locale> onLocaleChanged;
   final ValueChanged<bool> onMatchAllTagsChanged;
   final Future<void> Function() onResetToSeed;
+  final Future<void> Function() onExportIngredients;
+  final Future<void> Function() onImportIngredients;
   final Future<bool> Function() onAddTag;
   final Future<void> Function() onOpenTagManager;
 
@@ -109,6 +113,34 @@ class _CollectionSettingsSheetState extends State<CollectionSettingsSheet> {
                   },
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              localizations.ingredientsTitle,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.upload_outlined),
+              title: Text(localizations.exportIngredientsLabel),
+              subtitle: Text(localizations.exportIngredientsDescription),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await widget.onExportIngredients();
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.download_outlined),
+              title: Text(localizations.importIngredientsLabel),
+              subtitle: Text(localizations.importIngredientsDescription),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await widget.onImportIngredients();
+              },
             ),
             const SizedBox(height: 16),
             Text(

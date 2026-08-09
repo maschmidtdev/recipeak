@@ -43,6 +43,21 @@
   "unmergeRight": "Rechts l\u00f6sen",
   "deleteColumnLabel": "Spalte l\u00f6schen",
   "ingredientsTitle": "Meine Zutaten",
+  "exportIngredientsLabel": "Zutaten exportieren",
+  "exportIngredientsDescription": "Kopiert deine Zutatenbibliothek als Backup-JSON.",
+  "importIngredientsLabel": "Zutaten importieren",
+  "importIngredientsDescription": "Füge ein Zutaten-Backup als JSON ein und ergänze oder aktualisiere Zutaten.",
+  "importIngredientsTitle": "Zutaten importieren",
+  "importIngredientsHint": "Exportiertes Zutaten-JSON hier einfügen",
+  "ingredientsExportedMessage": "Zutaten-Backup kopiert.",
+  "ingredientsImportFailedMessage": "Zutaten konnten nicht importiert werden. Prüfe das JSON und versuche es erneut.",
+  "ingredientsImportedMessage": "{addedCount} neue Zutaten importiert und {updatedCount} Zutaten aktualisiert.",
+  "@ingredientsImportedMessage": {
+    "placeholders": {
+      "addedCount": {},
+      "updatedCount": {}
+    }
+  },
   "newIngredient": "Neue Zutat",
   "editIngredient": "Zutat bearbeiten",
   "ingredientNameLabel": "Name",

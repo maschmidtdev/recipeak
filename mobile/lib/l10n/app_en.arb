@@ -43,6 +43,21 @@
   "unmergeRight": "Unmerge Right",
   "deleteColumnLabel": "Delete Column",
   "ingredientsTitle": "My Ingredients",
+  "exportIngredientsLabel": "Export ingredients",
+  "exportIngredientsDescription": "Copy your ingredient library as backup JSON.",
+  "importIngredientsLabel": "Import ingredients",
+  "importIngredientsDescription": "Paste ingredient backup JSON and add or update ingredients.",
+  "importIngredientsTitle": "Import ingredients",
+  "importIngredientsHint": "Paste exported ingredient JSON here",
+  "ingredientsExportedMessage": "Ingredient backup copied.",
+  "ingredientsImportFailedMessage": "Could not import ingredients. Check the JSON and try again.",
+  "ingredientsImportedMessage": "Imported {addedCount} new and updated {updatedCount} ingredients.",
+  "@ingredientsImportedMessage": {
+    "placeholders": {
+      "addedCount": {},
+      "updatedCount": {}
+    }
+  },
   "newIngredient": "New Ingredient",
   "editIngredient": "Edit Ingredient",
   "ingredientNameLabel": "Name",

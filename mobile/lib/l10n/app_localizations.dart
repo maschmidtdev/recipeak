@@ -81,7 +81,6 @@ abstract class AppLocalizations {
   String get durationHint;
   String get notesLabel;
   String get notesHint;
-  String get favoriteLabel;
   String get chartDslLabel;
   String get chartDslDescription;
   String get chartDslInfoBody;
@@ -139,6 +138,14 @@ abstract class AppLocalizations {
   String get optionalAdvancedEditing;
   String get createTopInstructionsHint;
   String get ingredientsTitle;
+  String get exportIngredientsLabel;
+  String get exportIngredientsDescription;
+  String get importIngredientsLabel;
+  String get importIngredientsDescription;
+  String get importIngredientsTitle;
+  String get importIngredientsHint;
+  String get ingredientsExportedMessage;
+  String get ingredientsImportFailedMessage;
   String get newIngredient;
   String get editIngredient;
   String get ingredientNameLabel;
@@ -186,6 +193,7 @@ abstract class AppLocalizations {
   String deletedMessage(String title);
   String recipesCountLabel(int count);
   String tagsAvailableCountLabel(int count);
+  String ingredientsImportedMessage(int addedCount, int updatedCount);
   String tagDeleteConfirmation(int count);
   String invalidRowRangeMessage(int maxRow);
   String overlappingRowRangeMessage(String columnId);
@@ -378,9 +386,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use buttons to build prep rows, workflow rows, columns, and merged chart cells. The DSL stays available as a fallback.';
 
   @override
-  String get favoriteLabel => 'Favorite';
-
-  @override
   String get favoritesFilter => 'Favorites';
 
   @override
@@ -567,6 +572,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String tagsAvailableCountLabel(int count) => '$count tags available';
 
   @override
+  String ingredientsImportedMessage(int addedCount, int updatedCount) =>
+      'Imported $addedCount new and updated $updatedCount ingredients.';
+
+  @override
   String get tagsTitle => 'Tags';
 
   @override
@@ -598,6 +607,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ingredientsTitle => 'My Ingredients';
+
+  @override
+  String get exportIngredientsLabel => 'Export ingredients';
+
+  @override
+  String get exportIngredientsDescription =>
+      'Copy your ingredient library as backup JSON.';
+
+  @override
+  String get importIngredientsLabel => 'Import ingredients';
+
+  @override
+  String get importIngredientsDescription =>
+      'Paste ingredient backup JSON and add or update ingredients.';
+
+  @override
+  String get importIngredientsTitle => 'Import ingredients';
+
+  @override
+  String get importIngredientsHint => 'Paste exported ingredient JSON here';
+
+  @override
+  String get ingredientsExportedMessage => 'Ingredient backup copied.';
+
+  @override
+  String get ingredientsImportFailedMessage =>
+      'Could not import ingredients. Check the JSON and try again.';
 
   @override
   String get newIngredient => 'New Ingredient';
@@ -927,9 +963,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nutze die Buttons, um Vorbereitungszeilen, Workflow-Zeilen, Spalten und verbundene Chart-Zellen zu bauen. Die DSL bleibt als Fallback verf\u00fcgbar.';
 
   @override
-  String get favoriteLabel => 'Favorit';
-
-  @override
   String get favoritesFilter => 'Favoriten';
 
   @override
@@ -1120,6 +1153,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String tagsAvailableCountLabel(int count) => '$count Tags verf\u00fcgbar';
 
   @override
+  String ingredientsImportedMessage(int addedCount, int updatedCount) =>
+      '$addedCount neue Zutaten importiert und $updatedCount Zutaten aktualisiert.';
+
+  @override
   String get tagsTitle => 'Tags';
 
   @override
@@ -1151,6 +1188,34 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ingredientsTitle => 'Meine Zutaten';
+
+  @override
+  String get exportIngredientsLabel => 'Zutaten exportieren';
+
+  @override
+  String get exportIngredientsDescription =>
+      'Kopiert deine Zutatenbibliothek als Backup-JSON.';
+
+  @override
+  String get importIngredientsLabel => 'Zutaten importieren';
+
+  @override
+  String get importIngredientsDescription =>
+      'F\u00fcge ein Zutaten-Backup als JSON ein und erg\u00e4nze oder aktualisiere Zutaten.';
+
+  @override
+  String get importIngredientsTitle => 'Zutaten importieren';
+
+  @override
+  String get importIngredientsHint =>
+      'Exportiertes Zutaten-JSON hier einf\u00fcgen';
+
+  @override
+  String get ingredientsExportedMessage => 'Zutaten-Backup kopiert.';
+
+  @override
+  String get ingredientsImportFailedMessage =>
+      'Zutaten konnten nicht importiert werden. Pr\u00fcfe das JSON und versuche es erneut.';
 
   @override
   String get newIngredient => 'Neue Zutat';
