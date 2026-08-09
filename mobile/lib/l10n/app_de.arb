@@ -57,6 +57,7 @@
   "ingredientBaseUnitMilliliters": "ml (Milliliter)",
   "cellIngredientLabel": "Zutat",
   "selectIngredient": "Zutat auswählen",
+  "suggestedIngredient": "Vorschlag",
   "noMatchingIngredients": "Keine passenden Zutaten.",
   "cellIngredientAmountLabel": "Rezeptmenge",
   "unlinkIngredientLabel": "Zutat trennen",

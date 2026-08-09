@@ -131,6 +131,7 @@ abstract class AppLocalizations {
   String get endRowLabel;
   String get cellIngredientLabel;
   String get selectIngredient;
+  String get suggestedIngredient;
   String get noMatchingIngredients;
   String get cellIngredientAmountLabel;
   String get unlinkIngredientLabel;
@@ -250,6 +251,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectIngredient => 'Select ingredient';
+
+  @override
+  String get suggestedIngredient => 'Suggested';
 
   @override
   String get noMatchingIngredients => 'No matching ingredients.';
@@ -795,6 +799,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get selectIngredient => 'Zutat auswählen';
+
+  @override
+  String get suggestedIngredient => 'Vorschlag';
 
   @override
   String get noMatchingIngredients => 'Keine passenden Zutaten.';

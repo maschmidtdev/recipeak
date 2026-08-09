@@ -57,6 +57,7 @@
   "ingredientBaseUnitMilliliters": "ml (milliliters)",
   "cellIngredientLabel": "Ingredient",
   "selectIngredient": "Select ingredient",
+  "suggestedIngredient": "Suggested",
   "noMatchingIngredients": "No matching ingredients.",
   "cellIngredientAmountLabel": "Recipe amount",
   "unlinkIngredientLabel": "Unlink ingredient",

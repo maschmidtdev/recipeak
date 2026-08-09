@@ -11,6 +11,7 @@ import 'widgets/editor_form_widgets.dart';
 import 'widgets/editor_manager_sheets.dart';
 import '../../ingredients/domain/ingredient_cell_text.dart';
 import '../../ingredients/domain/ingredient_product.dart';
+import '../../ingredients/domain/ingredient_suggestions.dart';
 import '../../ingredients/presentation/ingredient_tag_labels.dart';
 import '../../recipe_document/domain/chart_document_editor.dart';
 import '../../recipe_document/domain/recipe_document.dart';
@@ -473,6 +474,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                                     await _openIngredientPicker(
                                   context,
                                   selectedIngredientId: selectedIngredientId,
+                                  sourceCellText: textController.text,
                                 );
                                 if (ingredient == null) {
                                   return;
@@ -659,6 +661,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   Future<IngredientProduct?> _openIngredientPicker(
     BuildContext context, {
     required String? selectedIngredientId,
+    required String sourceCellText,
   }) {
     return showModalBottomSheet<IngredientProduct>(
       context: context,
@@ -667,6 +670,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         return _IngredientPickerSheet(
           ingredients: widget.ingredients,
           selectedIngredientId: selectedIngredientId,
+          sourceCellText: sourceCellText,
         );
       },
     );
@@ -1602,10 +1606,12 @@ class _IngredientPickerSheet extends StatefulWidget {
   const _IngredientPickerSheet({
     required this.ingredients,
     required this.selectedIngredientId,
+    required this.sourceCellText,
   });
 
   final List<IngredientProduct> ingredients;
   final String? selectedIngredientId;
+  final String sourceCellText;
 
   @override
   State<_IngredientPickerSheet> createState() => _IngredientPickerSheetState();
@@ -1627,6 +1633,12 @@ class _IngredientPickerSheetState extends State<_IngredientPickerSheet> {
     final theme = Theme.of(context);
     final availableTags = _availableTags;
     final filteredIngredients = _filteredIngredients(localizations);
+    final suggestedIngredient = _suggestedIngredient(filteredIngredients);
+    final listIngredients = suggestedIngredient == null
+        ? filteredIngredients
+        : filteredIngredients
+            .where((ingredient) => ingredient.id != suggestedIngredient.id)
+            .toList();
 
     return SafeArea(
       child: FractionallySizedBox(
@@ -1706,10 +1718,24 @@ class _IngredientPickerSheetState extends State<_IngredientPickerSheet> {
                         ),
                       )
                     : ListView.separated(
-                        itemCount: filteredIngredients.length,
+                        itemCount: listIngredients.length +
+                            (suggestedIngredient == null ? 0 : 1),
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
-                          final ingredient = filteredIngredients[index];
+                          if (suggestedIngredient != null && index == 0) {
+                            return _IngredientPickerCard(
+                              ingredient: suggestedIngredient,
+                              isSelected: suggestedIngredient.id ==
+                                  widget.selectedIngredientId,
+                              badgeLabel: localizations.suggestedIngredient,
+                              onTap: () =>
+                                  Navigator.of(context).pop(suggestedIngredient),
+                            );
+                          }
+
+                          final ingredient = listIngredients[
+                            index - (suggestedIngredient == null ? 0 : 1)
+                          ];
                           return _IngredientPickerCard(
                             ingredient: ingredient,
                             isSelected:
@@ -1759,6 +1785,23 @@ class _IngredientPickerSheetState extends State<_IngredientPickerSheet> {
     );
     return ingredients;
   }
+
+  IngredientProduct? _suggestedIngredient(
+    List<IngredientProduct> filteredIngredients,
+  ) {
+    final suggestion = suggestIngredientForCellText(
+      cellText: widget.sourceCellText,
+      ingredients: widget.ingredients,
+    );
+    if (suggestion == null) {
+      return null;
+    }
+
+    final isVisible = filteredIngredients.any(
+      (ingredient) => ingredient.id == suggestion.id,
+    );
+    return isVisible ? suggestion : null;
+  }
 }
 
 class _IngredientPickerCard extends StatelessWidget {
@@ -1766,11 +1809,13 @@ class _IngredientPickerCard extends StatelessWidget {
     required this.ingredient,
     required this.isSelected,
     required this.onTap,
+    this.badgeLabel,
   });
 
   final IngredientProduct ingredient;
   final bool isSelected;
   final VoidCallback onTap;
+  final String? badgeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1797,6 +1842,10 @@ class _IngredientPickerCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (badgeLabel != null) ...[
+              _IngredientPickerBadge(label: badgeLabel!),
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
                 Expanded(
@@ -1839,6 +1888,32 @@ class _IngredientPickerCard extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IngredientPickerBadge extends StatelessWidget {
+  const _IngredientPickerBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFCBE9DE),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: const Color(0xFF295F4E),
+                fontWeight: FontWeight.w800,
+              ),
         ),
       ),
     );
