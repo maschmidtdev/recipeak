@@ -63,6 +63,8 @@ abstract class AppLocalizations {
   String get chartPreview;
   String get exportChartImage;
   String get shareChartImage;
+  String get showChartImage;
+  String get showChartCells;
   String get chartImageSaved;
   String get chartImageSaveFailed;
   String get chartPreviewLimitedTitle;
@@ -295,6 +297,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareChartImage => 'Share chart image';
+
+  @override
+  String get showChartImage => 'Show chart image';
+
+  @override
+  String get showChartCells => 'Show chart cells';
 
   @override
   String get chartImageSaved => 'Chart image saved';
@@ -871,6 +879,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareChartImage => 'Diagramm als Bild teilen';
+
+  @override
+  String get showChartImage => 'Diagramm als Bild anzeigen';
+
+  @override
+  String get showChartCells => 'Diagramm als Zellen anzeigen';
 
   @override
   String get chartImageSaved => 'Diagramm als Bild gespeichert';

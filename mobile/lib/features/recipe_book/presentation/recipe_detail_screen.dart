@@ -36,7 +36,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late RecipeSummary _recipe;
   late List<String> _availableTags;
   bool _hasUnsyncedChanges = false;
-  final _exportChartKey = GlobalKey();
+  bool _showChartImagePreview = false;
+  Uint8List? _chartPreviewImage;
+  bool _isRenderingChartPreview = false;
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             _recipe = result.recipe!;
             _availableTags = List.of(result.availableTags ?? _availableTags);
             _hasUnsyncedChanges = true;
+            _chartPreviewImage = null;
           });
           await widget.onRecipeSaved?.call(result);
           if (!mounted) {
@@ -75,6 +78,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           setState(() {
             _hasUnsyncedChanges = false;
           });
+          if (_showChartImagePreview) {
+            _scheduleChartPreviewRender();
+          }
         }
         break;
       case RecipeEditorAction.delete:
@@ -90,6 +96,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Future<Uint8List?> _captureChartImage() async {
     final overlay = Overlay.of(context);
     final theme = Theme.of(context);
+    final exportChartKey = GlobalKey();
     final pixelRatio = MediaQuery.devicePixelRatioOf(
       context,
     ).clamp(2.0, 3.0).toDouble();
@@ -118,7 +125,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: RepaintBoundary(
-                    key: _exportChartKey,
+                    key: exportChartKey,
                     child: ColoredBox(
                       color: const Color(0xFFF3EFE6),
                       child: Padding(
@@ -160,7 +167,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       await WidgetsBinding.instance.endOfFrame;
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      final boundary = _exportChartKey.currentContext?.findRenderObject()
+      final boundary = exportChartKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
       if (boundary == null) {
         return null;
@@ -172,6 +179,51 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       return byteData?.buffer.asUint8List();
     } finally {
       entry.remove();
+    }
+  }
+
+  void _scheduleChartPreviewRender() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _renderChartPreviewImage();
+    });
+  }
+
+  void _toggleChartDisplayMode() {
+    setState(() {
+      _showChartImagePreview = !_showChartImagePreview;
+    });
+
+    if (_showChartImagePreview && _chartPreviewImage == null) {
+      _scheduleChartPreviewRender();
+    }
+  }
+
+  Future<void> _renderChartPreviewImage() async {
+    if (!mounted || _isRenderingChartPreview) {
+      return;
+    }
+
+    setState(() {
+      _isRenderingChartPreview = true;
+    });
+
+    try {
+      final imageBytes = await _captureChartImage();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _chartPreviewImage = imageBytes;
+        _isRenderingChartPreview = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isRenderingChartPreview = false;
+      });
     }
   }
 
@@ -353,6 +405,19 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                   ),
                   IconButton.filledTonal(
+                    onPressed: _toggleChartDisplayMode,
+                    icon: Icon(
+                      _showChartImagePreview
+                          ? Icons.table_chart_outlined
+                          : Icons.image_outlined,
+                    ),
+                    tooltip: _showChartImagePreview
+                        ? localizations.showChartCells
+                        : localizations.showChartImage,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton.filledTonal(
                     onPressed: _shareChartImage,
                     icon: const Icon(Icons.ios_share_outlined),
                     tooltip: localizations.shareChartImage,
@@ -368,7 +433,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              RecipeChartView(document: recipe.document),
+              if (_showChartImagePreview)
+                _ChartImagePreview(
+                  imageBytes: _chartPreviewImage,
+                  isLoading: _isRenderingChartPreview,
+                )
+              else
+                RecipeChartView(document: recipe.document),
               const SizedBox(height: 24),
               _NutritionSection(nutrition: nutrition),
             ],
@@ -417,6 +488,47 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
 String _tagLabel(BuildContext context, String tag) {
   return tag;
+}
+
+class _ChartImagePreview extends StatelessWidget {
+  const _ChartImagePreview({
+    required this.imageBytes,
+    required this.isLoading,
+  });
+
+  final Uint8List? imageBytes;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final image = imageBytes;
+
+    if (image == null) {
+      return Container(
+        height: 220,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outline),
+        ),
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : const Icon(Icons.image_not_supported_outlined),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.memory(
+        image,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+      ),
+    );
+  }
 }
 
 class _NutritionSection extends StatelessWidget {

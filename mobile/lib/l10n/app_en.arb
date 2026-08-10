@@ -24,6 +24,8 @@
   "chartPreview": "Chart Preview",
   "exportChartImage": "Export chart image",
   "shareChartImage": "Share chart image",
+  "showChartImage": "Show chart image",
+  "showChartCells": "Show chart cells",
   "chartImageSaved": "Chart image saved",
   "chartImageSaveFailed": "Could not save chart image",
   "timeTbd": "Time TBD",
