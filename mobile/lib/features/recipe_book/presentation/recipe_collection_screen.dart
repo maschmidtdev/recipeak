@@ -1039,7 +1039,16 @@ class _RecipeCollectionBody extends StatelessWidget {
               onSelected: (_) => onToggleAll(),
             ),
             FilterChip(
-              label: Text(localizations.favoritesFilter),
+              label: Semantics(
+                label: localizations.favoritesFilter,
+                child: Icon(
+                  Icons.favorite,
+                  size: 18,
+                  color: showFavoritesFilter
+                      ? theme.colorScheme.onPrimary
+                      : const Color(0xFFC96A3D),
+                ),
+              ),
               selected: showFavoritesFilter,
               showCheckmark: false,
               onSelected: (_) => onToggleFavorites(),
