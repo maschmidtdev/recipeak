@@ -14,6 +14,7 @@ import '../../ingredients/presentation/ingredient_editor_screen.dart';
 import '../../ingredients/presentation/ingredient_tag_labels.dart';
 import '../data/dev_sample_recipes.dart';
 import '../domain/recipe_collection_filters.dart';
+import '../domain/recipe_collection_mutations.dart';
 import '../domain/recipe_ingredient_links.dart';
 import '../domain/recipe_summary.dart';
 import 'recipe_detail_screen.dart';
@@ -271,6 +272,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           recipe: _recipes[index],
           availableTags: sortedTags(_availableTags),
           ingredients: _ingredients,
+          onRecipeSaved: (result) => _saveExistingRecipe(
+            index: index,
+            result: result,
+          ),
         ),
       ),
     );
@@ -281,20 +286,41 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     switch (result.action) {
       case RecipeEditorAction.save:
-        final recipe = result.recipe;
-        if (recipe != null) {
-          setState(() {
-            _applyAvailableTags(result.availableTags);
-            _recipes[index] = _sanitizeRecipeTags(recipe);
-          });
-          _persistState();
-        }
+        await _saveExistingRecipe(index: index, result: result);
         break;
       case RecipeEditorAction.delete:
         final recipe = _recipes[index];
         _deleteRecipeWithUndo(index: index, recipe: recipe);
         break;
     }
+  }
+
+  Future<void> _saveExistingRecipe({
+    required int index,
+    required RecipeEditorResult result,
+  }) async {
+    final recipe = result.recipe;
+    if (recipe == null || index < 0 || index >= _recipes.length) {
+      return;
+    }
+
+    final nextCollection = saveExistingRecipeInCollection(
+      recipes: _recipes,
+      availableTags: _availableTags,
+      index: index,
+      recipe: recipe,
+      nextAvailableTags: result.availableTags,
+    );
+
+    setState(() {
+      _availableTags
+        ..clear()
+        ..addAll(nextCollection.availableTags);
+      _recipes
+        ..clear()
+        ..addAll(nextCollection.recipes);
+    });
+    await _persistState();
   }
 
   void _toggleRecipeFavorite(int index) {

@@ -20,11 +20,13 @@ class RecipeDetailScreen extends StatefulWidget {
     required this.recipe,
     required this.availableTags,
     required this.ingredients,
+    this.onRecipeSaved,
   });
 
   final RecipeSummary recipe;
   final List<String> availableTags;
   final List<IngredientProduct> ingredients;
+  final Future<void> Function(RecipeEditorResult result)? onRecipeSaved;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -65,6 +67,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             _recipe = result.recipe!;
             _availableTags = List.of(result.availableTags ?? _availableTags);
             _hasUnsyncedChanges = true;
+          });
+          await widget.onRecipeSaved?.call(result);
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _hasUnsyncedChanges = false;
           });
         }
         break;

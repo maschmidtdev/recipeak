@@ -34,6 +34,7 @@
 
 - Keep round-tripping between structured edits and full-recipe DSL stable as the editor grows.
 - Add stronger validation feedback for malformed metadata, ranges, overlaps, and unsupported structures.
+- Replace plain DSL error strings with structured validation errors that can show chart context first, e.g. `Column B, rows 5-6`, and line numbers as secondary detail when useful.
 - Decide whether pasted DSL should normalize formatting automatically on save.
 - Decide whether app-specific state like `favorite` should remain part of the portable DSL long-term.
 - Keep ingredient links portable by preserving both cell text and optional local ingredient metadata.
