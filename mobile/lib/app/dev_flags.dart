@@ -1,1 +1,4 @@
-const bool kIsDevelopmentMode = true;
+const bool kIsDevelopmentMode = bool.fromEnvironment(
+  'RECIPEEK_DEV_MODE',
+  defaultValue: true,
+);
