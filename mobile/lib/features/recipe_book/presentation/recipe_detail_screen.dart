@@ -39,6 +39,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   bool _showChartImagePreview = false;
   Uint8List? _chartPreviewImage;
   bool _isRenderingChartPreview = false;
+  final Set<RecipeChartSelection> _shoppingMarkedCells = {};
 
   @override
   void initState() {
@@ -196,6 +197,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (_showChartImagePreview && _chartPreviewImage == null) {
       _scheduleChartPreviewRender();
     }
+  }
+
+  void _toggleShoppingMarkedCell(RecipeChartSelection selection) {
+    if (selection.columnId != 'A') {
+      return;
+    }
+
+    setState(() {
+      if (!_shoppingMarkedCells.add(selection)) {
+        _shoppingMarkedCells.remove(selection);
+      }
+    });
   }
 
   Future<void> _renderChartPreviewImage() async {
@@ -439,7 +452,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   isLoading: _isRenderingChartPreview,
                 )
               else
-                RecipeChartView(document: recipe.document),
+                RecipeChartView(
+                  document: recipe.document,
+                  markedCells: _shoppingMarkedCells,
+                  onCellTap: _toggleShoppingMarkedCell,
+                ),
               const SizedBox(height: 24),
               _NutritionSection(nutrition: nutrition),
             ],

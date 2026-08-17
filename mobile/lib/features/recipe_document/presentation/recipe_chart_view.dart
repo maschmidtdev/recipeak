@@ -9,6 +9,7 @@ class RecipeChartView extends StatelessWidget {
     required this.document,
     this.rowCountOverride,
     this.selectedCell,
+    this.markedCells = const {},
     this.onCellTap,
     this.allowHorizontalScroll = true,
     this.expandToAvailableWidth = true,
@@ -17,6 +18,7 @@ class RecipeChartView extends StatelessWidget {
   final RecipeDocument document;
   final int? rowCountOverride;
   final RecipeChartSelection? selectedCell;
+  final Set<RecipeChartSelection> markedCells;
   final ValueChanged<RecipeChartSelection>? onCellTap;
   final bool allowHorizontalScroll;
   final bool expandToAvailableWidth;
@@ -109,6 +111,7 @@ class RecipeChartView extends StatelessWidget {
                     layout: layout,
                     columnWidths: columnWidths,
                     selectedCell: selectedCell,
+                    markedCells: markedCells,
                     onCellTap: onCellTap,
                   ),
                 ],
@@ -278,6 +281,16 @@ class RecipeChartSelection {
 
   final String columnId;
   final int startRow;
+
+  @override
+  bool operator ==(Object other) {
+    return other is RecipeChartSelection &&
+        other.columnId == columnId &&
+        other.startRow == startRow;
+  }
+
+  @override
+  int get hashCode => Object.hash(columnId, startRow);
 }
 
 class _PrepRow extends StatelessWidget {
@@ -307,12 +320,14 @@ class _WorkflowGrid extends StatelessWidget {
     required this.layout,
     required this.columnWidths,
     this.selectedCell,
+    this.markedCells = const {},
     this.onCellTap,
   });
 
   final _BasicChartLayout layout;
   final List<double> columnWidths;
   final RecipeChartSelection? selectedCell;
+  final Set<RecipeChartSelection> markedCells;
   final ValueChanged<RecipeChartSelection>? onCellTap;
 
   @override
@@ -335,6 +350,12 @@ class _WorkflowGrid extends StatelessWidget {
                 width: columnWidths[columnIndex],
                 height: rowHeights[row - 1],
                 child: _EmptyWorkflowCell(
+                  isMarked: markedCells.contains(
+                    RecipeChartSelection(
+                      columnId: layout.columnIds[columnIndex],
+                      startRow: row,
+                    ),
+                  ),
                   isSelected:
                       selectedCell?.columnId == layout.columnIds[columnIndex] &&
                       selectedCell?.startRow == row,
@@ -360,6 +381,12 @@ class _WorkflowGrid extends StatelessWidget {
                 text: cell.text,
                 columnWidth: _spannedWidth(cell.columnIndex, cell.columnSpan),
                 rowSpan: cell.rowSpan,
+                isMarked: markedCells.contains(
+                  RecipeChartSelection(
+                    columnId: cell.columnId,
+                    startRow: cell.startRow,
+                  ),
+                ),
                 isSelected:
                     selectedCell?.columnId == cell.columnId &&
                     selectedCell?.startRow == cell.startRow,
@@ -538,6 +565,7 @@ class _WorkflowCell extends StatelessWidget {
     required this.text,
     required this.columnWidth,
     required this.rowSpan,
+    required this.isMarked,
     required this.isSelected,
     required this.showLeftBorder,
     required this.showTopBorder,
@@ -547,6 +575,7 @@ class _WorkflowCell extends StatelessWidget {
   final String text;
   final double columnWidth;
   final int rowSpan;
+  final bool isMarked;
   final bool isSelected;
   final bool showLeftBorder;
   final bool showTopBorder;
@@ -560,7 +589,9 @@ class _WorkflowCell extends StatelessWidget {
     return Material(
       color: isSelected
           ? theme.colorScheme.primary.withValues(alpha: 0.10)
-          : theme.colorScheme.surface,
+          : isMarked
+              ? const Color(0xFFFFF2C8)
+              : theme.colorScheme.surface,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -747,12 +778,14 @@ class _BasicChartCell {
 
 class _EmptyWorkflowCell extends StatelessWidget {
   const _EmptyWorkflowCell({
+    required this.isMarked,
     required this.isSelected,
     required this.showLeftBorder,
     required this.showTopBorder,
     this.onTap,
   });
 
+  final bool isMarked;
   final bool isSelected;
   final bool showLeftBorder;
   final bool showTopBorder;
@@ -765,7 +798,9 @@ class _EmptyWorkflowCell extends StatelessWidget {
     return Material(
       color: isSelected
           ? theme.colorScheme.primary.withValues(alpha: 0.08)
-          : Colors.transparent,
+          : isMarked
+              ? const Color(0xFFFFF2C8)
+              : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(

@@ -21,6 +21,7 @@
 - Decide whether ingredient price should support currencies explicitly or stay as a simple numeric field for the MVP.
 - Decide how to handle recipes that mix grams and milliliters in one values table.
 - Consider showing linked ingredient status directly in the chart editor.
+- Add ingredient tag management parallel to recipe tag management: add, rename, delete, usage counts, and removal from all ingredients.
 - Add tests for ingredient persistence and recipe value recalculation after editing an ingredient.
 
 ## Chart Editing
