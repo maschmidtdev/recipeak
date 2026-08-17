@@ -32,7 +32,9 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  file_picker: ^8.1.7
   gal: ^2.3.3
+  path_provider: ^2.1.5
   share_plus: ^10.1.4
   shared_preferences: ^2.3.2
 
@@ -50,6 +52,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.22
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

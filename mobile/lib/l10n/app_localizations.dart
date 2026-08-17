@@ -140,13 +140,19 @@ abstract class AppLocalizations {
   String get optionalAdvancedEditing;
   String get createTopInstructionsHint;
   String get ingredientsTitle;
+  String get backupIngredientsLabel;
+  String get backupIngredientsDescription;
   String get exportIngredientsLabel;
   String get exportIngredientsDescription;
   String get importIngredientsLabel;
   String get importIngredientsDescription;
-  String get importIngredientsTitle;
-  String get importIngredientsHint;
+  String get importIngredientsFromFileLabel;
+  String get importIngredientsFromFileDescription;
+  String get importIngredientsFromBackupLabel;
+  String get importIngredientsFromBackupDescription;
   String get ingredientsExportedMessage;
+  String get ingredientsBackedUpMessage;
+  String get ingredientsBackupMissingMessage;
   String get ingredientsImportFailedMessage;
   String get newIngredient;
   String get editIngredient;
@@ -617,27 +623,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingredientsTitle => 'My Ingredients';
 
   @override
+  String get backupIngredientsLabel => 'Make ingredient backup';
+
+  @override
+  String get backupIngredientsDescription =>
+      'Save one ingredient backup file inside Recipeek.';
+
+  @override
   String get exportIngredientsLabel => 'Export ingredients';
 
   @override
   String get exportIngredientsDescription =>
-      'Copy your ingredient library as backup JSON.';
+      'Share your ingredient library as a JSON backup file.';
 
   @override
   String get importIngredientsLabel => 'Import ingredients';
 
   @override
   String get importIngredientsDescription =>
-      'Paste ingredient backup JSON and add or update ingredients.';
+      'Import from a selected JSON file or the saved Recipeek backup.';
 
   @override
-  String get importIngredientsTitle => 'Import ingredients';
+  String get importIngredientsFromFileLabel => 'Import from file';
 
   @override
-  String get importIngredientsHint => 'Paste exported ingredient JSON here';
+  String get importIngredientsFromFileDescription =>
+      'Select an external ingredient backup JSON file.';
 
   @override
-  String get ingredientsExportedMessage => 'Ingredient backup copied.';
+  String get importIngredientsFromBackupLabel => 'Import from app backup';
+
+  @override
+  String get importIngredientsFromBackupDescription =>
+      'Use the ingredient backup saved inside Recipeek.';
+
+  @override
+  String get ingredientsExportedMessage => 'Ingredient backup file ready.';
+
+  @override
+  String get ingredientsBackedUpMessage => 'Ingredient backup saved.';
+
+  @override
+  String get ingredientsBackupMissingMessage => 'No ingredient backup found.';
 
   @override
   String get ingredientsImportFailedMessage =>
@@ -1204,28 +1231,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ingredientsTitle => 'Meine Zutaten';
 
   @override
+  String get backupIngredientsLabel => 'Zutaten sichern';
+
+  @override
+  String get backupIngredientsDescription =>
+      'Speichert eine Zutaten-Backup-Datei in Recipeek.';
+
+  @override
   String get exportIngredientsLabel => 'Zutaten exportieren';
 
   @override
   String get exportIngredientsDescription =>
-      'Kopiert deine Zutatenbibliothek als Backup-JSON.';
+      'Teilt deine Zutatenbibliothek als JSON-Backup-Datei.';
 
   @override
   String get importIngredientsLabel => 'Zutaten importieren';
 
   @override
   String get importIngredientsDescription =>
-      'F\u00fcge ein Zutaten-Backup als JSON ein und erg\u00e4nze oder aktualisiere Zutaten.';
+      'Importiert aus einer JSON-Datei oder dem gespeicherten Recipeek-Backup.';
 
   @override
-  String get importIngredientsTitle => 'Zutaten importieren';
+  String get importIngredientsFromFileLabel => 'Aus Datei importieren';
 
   @override
-  String get importIngredientsHint =>
-      'Exportiertes Zutaten-JSON hier einf\u00fcgen';
+  String get importIngredientsFromFileDescription =>
+      'W\u00e4hle eine externe Zutaten-Backup-Datei aus.';
 
   @override
-  String get ingredientsExportedMessage => 'Zutaten-Backup kopiert.';
+  String get importIngredientsFromBackupLabel => 'Aus App-Backup importieren';
+
+  @override
+  String get importIngredientsFromBackupDescription =>
+      'Nutzt das in Recipeek gespeicherte Zutaten-Backup.';
+
+  @override
+  String get ingredientsExportedMessage => 'Zutaten-Backup-Datei ist bereit.';
+
+  @override
+  String get ingredientsBackedUpMessage => 'Zutaten-Backup gespeichert.';
+
+  @override
+  String get ingredientsBackupMissingMessage => 'Kein Zutaten-Backup gefunden.';
 
   @override
   String get ingredientsImportFailedMessage =>

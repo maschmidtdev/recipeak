@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/app_storage_codec.dart';
 import '../../../app/app_storage.dart';
@@ -621,8 +624,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             _persistState();
           },
           onResetToSeed: _resetToSeedState,
-          onExportIngredients: _exportIngredientsToClipboard,
-          onImportIngredients: _importIngredientsFromClipboard,
+          onBackupIngredients: _backupIngredientsToAppStorage,
+          onExportIngredients: _exportIngredientsToFile,
+          onImportIngredients: _chooseIngredientImportSource,
           onAddTag: _addGlobalTag,
           onOpenTagManager: _openDeleteTagManager,
         );
@@ -630,18 +634,24 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     );
   }
 
-  Future<void> _exportIngredientsToClipboard() async {
+  Future<void> _exportIngredientsToFile() async {
     final localizations = AppLocalizations.of(context);
-    final payload = const JsonEncoder.withIndent('  ').convert({
-      'format': 'recipeek.ingredients.v1',
-      'ingredients': [
-        for (final ingredient in _ingredients)
-          _storageCodec.ingredientProductToJson(ingredient),
-      ],
-      'availableIngredientTags': sortedTags(_availableIngredientTags),
-    });
+    final fileName = _ingredientBackupFileName();
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}${Platform.pathSeparator}$fileName');
+    await file.writeAsString(_ingredientExportPayload(), flush: true);
 
-    await Clipboard.setData(ClipboardData(text: payload));
+    await Share.shareXFiles(
+      [
+        XFile(
+          file.path,
+          mimeType: 'application/json',
+          name: fileName,
+        ),
+      ],
+      subject: fileName,
+    );
+
     if (!mounted) {
       return;
     }
@@ -651,51 +661,127 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     );
   }
 
-  Future<void> _importIngredientsFromClipboard() async {
+  Future<void> _backupIngredientsToAppStorage() async {
     final localizations = AppLocalizations.of(context);
-    final controller = TextEditingController();
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    controller.text = clipboardData?.text ?? '';
+    final file = await _ingredientAppBackupFile();
+    await file.writeAsString(_ingredientExportPayload(), flush: true);
 
     if (!mounted) {
-      controller.dispose();
       return;
     }
 
-    final rawJson = await showDialog<String>(
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(localizations.ingredientsBackedUpMessage)),
+    );
+  }
+
+  Future<void> _chooseIngredientImportSource() async {
+    final localizations = AppLocalizations.of(context);
+    final source = await showModalBottomSheet<_IngredientImportSource>(
       context: context,
+      showDragHandle: true,
       builder: (context) {
-        return AlertDialog(
-          title: Text(localizations.importIngredientsTitle),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: TextField(
-              controller: controller,
-              autofocus: true,
-              minLines: 8,
-              maxLines: 12,
-              decoration: InputDecoration(
-                hintText: localizations.importIngredientsHint,
-              ),
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: Text(localizations.importIngredientsFromFileLabel),
+                  subtitle: Text(
+                    localizations.importIngredientsFromFileDescription,
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(_IngredientImportSource.file),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.backup_outlined),
+                  title: Text(localizations.importIngredientsFromBackupLabel),
+                  subtitle: Text(
+                    localizations.importIngredientsFromBackupDescription,
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(_IngredientImportSource.backup),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(localizations.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: Text(localizations.importIngredientsLabel),
-            ),
-          ],
         );
       },
     );
 
-    if (!mounted || rawJson == null || rawJson.trim().isEmpty) {
+    if (!mounted || source == null) {
       return;
     }
+
+    switch (source) {
+      case _IngredientImportSource.file:
+        await _importIngredientsFromFile();
+        break;
+      case _IngredientImportSource.backup:
+        await _importIngredientsFromAppBackup();
+        break;
+    }
+  }
+
+  Future<void> _importIngredientsFromFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    final path = result?.files.single.path;
+    if (!mounted || path == null) {
+      return;
+    }
+
+    try {
+      await _importIngredientsFromRawJson(await File(path).readAsString());
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      final localizations = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.ingredientsImportFailedMessage)),
+      );
+    }
+  }
+
+  Future<void> _importIngredientsFromAppBackup() async {
+    final localizations = AppLocalizations.of(context);
+    try {
+      final file = await _ingredientAppBackupFile();
+      if (!await file.exists()) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.ingredientsBackupMissingMessage),
+          ),
+        );
+        return;
+      }
+      await _importIngredientsFromRawJson(await file.readAsString());
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.ingredientsImportFailedMessage)),
+      );
+    }
+  }
+
+  Future<void> _importIngredientsFromRawJson(String rawJson) async {
+    final localizations = AppLocalizations.of(context);
 
     final imported = _parseIngredientImport(rawJson);
     if (imported == null) {
@@ -739,6 +825,34 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
           localizations.ingredientsImportedMessage(addedCount, updatedCount),
         ),
       ),
+    );
+  }
+
+  String _ingredientExportPayload() {
+    return const JsonEncoder.withIndent('  ').convert({
+      'format': 'recipeek.ingredients.v1',
+      'ingredients': [
+        for (final ingredient in _ingredients)
+          _storageCodec.ingredientProductToJson(ingredient),
+      ],
+      'availableIngredientTags': sortedTags(_availableIngredientTags),
+    });
+  }
+
+  String _ingredientBackupFileName() {
+    final now = DateTime.now();
+    final date = [
+      now.year.toString().padLeft(4, '0'),
+      now.month.toString().padLeft(2, '0'),
+      now.day.toString().padLeft(2, '0'),
+    ].join('-');
+    return 'recipeek-ingredients-$date.json';
+  }
+
+  Future<File> _ingredientAppBackupFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File(
+      '${directory.path}${Platform.pathSeparator}recipeek-ingredients-backup.json',
     );
   }
 
@@ -970,6 +1084,11 @@ class _IngredientImportPayload {
 
   final List<IngredientProduct> ingredients;
   final List<String> availableIngredientTags;
+}
+
+enum _IngredientImportSource {
+  file,
+  backup,
 }
 
 class _IngredientEntry {
