@@ -60,6 +60,8 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   String _searchQuery = '';
   String _ingredientSearchQuery = '';
   _CollectionTab _selectedTab = _CollectionTab.recipes;
+  bool _useCompactRecipeCards = false;
+  bool _useCompactIngredientCards = false;
   static const _deleteUndoDuration = Duration(seconds: 4);
   static const _deleteToastDismissBuffer = Duration(milliseconds: 500);
   int _deleteToastToken = 0;
@@ -413,6 +415,12 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                       onToggleTag: _toggleTagFilter,
                       onOpenRecipe: _openRecipeForViewing,
                       onToggleFavorite: _toggleRecipeFavorite,
+                      useCompactCards: _useCompactRecipeCards,
+                      onToggleCompactCards: () {
+                        setState(() {
+                          _useCompactRecipeCards = !_useCompactRecipeCards;
+                        });
+                      },
                     )
                   else
                     _IngredientCollectionBody(
@@ -435,6 +443,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
                       onToggleTag: _toggleIngredientTagFilter,
                       onEditIngredient: _openIngredientEditor,
                       onDeleteIngredient: _deleteIngredient,
+                      useCompactCards: _useCompactIngredientCards,
+                      onToggleCompactCards: () {
+                        setState(() {
+                          _useCompactIngredientCards =
+                              !_useCompactIngredientCards;
+                        });
+                      },
                     ),
                 ],
               ),
@@ -1114,6 +1129,8 @@ class _RecipeCollectionBody extends StatelessWidget {
     required this.onToggleTag,
     required this.onOpenRecipe,
     required this.onToggleFavorite,
+    required this.useCompactCards,
+    required this.onToggleCompactCards,
   });
 
   final TextEditingController searchController;
@@ -1130,6 +1147,8 @@ class _RecipeCollectionBody extends StatelessWidget {
   final ValueChanged<String> onToggleTag;
   final ValueChanged<int> onOpenRecipe;
   final ValueChanged<int> onToggleFavorite;
+  final bool useCompactCards;
+  final VoidCallback onToggleCompactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -1182,11 +1201,10 @@ class _RecipeCollectionBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        Text(
-          localizations.collectionTitle,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        _CollectionSectionHeader(
+          title: localizations.collectionTitle,
+          useCompactCards: useCompactCards,
+          onToggleCompactCards: onToggleCompactCards,
         ),
         const SizedBox(height: 12),
         for (final entry in recipeEntries) ...[
@@ -1194,8 +1212,9 @@ class _RecipeCollectionBody extends StatelessWidget {
             recipe: entry.recipe,
             onTap: () => onOpenRecipe(entry.index),
             onToggleFavorite: () => onToggleFavorite(entry.index),
+            isCompact: useCompactCards,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
         ],
       ],
     );
@@ -1214,6 +1233,8 @@ class _IngredientCollectionBody extends StatelessWidget {
     required this.onToggleTag,
     required this.onEditIngredient,
     required this.onDeleteIngredient,
+    required this.useCompactCards,
+    required this.onToggleCompactCards,
   });
 
   final TextEditingController searchController;
@@ -1226,6 +1247,8 @@ class _IngredientCollectionBody extends StatelessWidget {
   final ValueChanged<String> onToggleTag;
   final ValueChanged<int> onEditIngredient;
   final ValueChanged<int> onDeleteIngredient;
+  final bool useCompactCards;
+  final VoidCallback onToggleCompactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -1257,11 +1280,10 @@ class _IngredientCollectionBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        Text(
-          localizations.ingredientsTitle,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        _CollectionSectionHeader(
+          title: localizations.ingredientsTitle,
+          useCompactCards: useCompactCards,
+          onToggleCompactCards: onToggleCompactCards,
         ),
         const SizedBox(height: 12),
         if (ingredients.isEmpty)
@@ -1286,8 +1308,9 @@ class _IngredientCollectionBody extends StatelessWidget {
               ingredient: entry.ingredient,
               onTap: () => onEditIngredient(entry.index),
               onDelete: () => onDeleteIngredient(entry.index),
+              isCompact: useCompactCards,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
           ],
       ],
     );
@@ -1336,6 +1359,45 @@ class _SearchField extends StatelessWidget {
   }
 }
 
+class _CollectionSectionHeader extends StatelessWidget {
+  const _CollectionSectionHeader({
+    required this.title,
+    required this.useCompactCards,
+    required this.onToggleCompactCards,
+  });
+
+  final String title;
+  final bool useCompactCards;
+  final VoidCallback onToggleCompactCards;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        IconButton.filledTonal(
+          onPressed: onToggleCompactCards,
+          icon: Icon(
+            useCompactCards
+                ? Icons.view_agenda_outlined
+                : Icons.view_headline_outlined,
+          ),
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
+  }
+}
+
 class _UndoToastContent extends StatelessWidget {
   const _UndoToastContent({required this.message, required this.duration});
 
@@ -1377,11 +1439,13 @@ class _RecipeCard extends StatelessWidget {
     required this.recipe,
     required this.onTap,
     required this.onToggleFavorite,
+    required this.isCompact,
   });
 
   final RecipeSummary recipe;
   final VoidCallback onTap;
   final VoidCallback onToggleFavorite;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -1390,6 +1454,40 @@ class _RecipeCard extends StatelessWidget {
     final yieldText = recipe.yieldText.trim();
     final hasDuration = durationText.isNotEmpty;
     final hasYield = yieldText.isNotEmpty;
+
+    if (isCompact) {
+      return Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    recipe.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onToggleFavorite,
+                  icon: Icon(
+                    recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: const Color(0xFFC96A3D),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -1474,11 +1572,13 @@ class _IngredientCard extends StatelessWidget {
     required this.ingredient,
     required this.onTap,
     required this.onDelete,
+    required this.isCompact,
   });
 
   final IngredientProduct ingredient;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -1490,6 +1590,38 @@ class _IngredientCard extends StatelessWidget {
       if (ingredient.price.trim().isNotEmpty) ingredient.price.trim(),
       if (ingredient.store.trim().isNotEmpty) ingredient.store.trim(),
     ];
+
+    if (isCompact) {
+      return Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    ingredient.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: localizations.delete,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card(
       clipBehavior: Clip.antiAlias,
