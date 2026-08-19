@@ -53,6 +53,7 @@ abstract class AppLocalizations {
   String get editDeleteTagsLabel;
   String get deleteTagLabel;
   String get deleteTagTitle;
+  String get tagAlreadyExistsMessage;
   String get tagsAvailableLabel;
   String tagUsageCountLabel(int count);
   String get renameOrRemoveTags;
@@ -246,6 +247,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addTagTitle => 'Add Tag';
+
+  @override
+  String get tagAlreadyExistsMessage => 'A tag with this name already exists.';
 
   @override
   String get allFilter => 'All';
@@ -880,6 +884,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addTagTitle => 'Tag hinzuf\u00fcgen';
+
+  @override
+  String get tagAlreadyExistsMessage =>
+      'Ein Tag mit diesem Namen existiert bereits.';
 
   @override
   String get allFilter => 'Alle';

@@ -1121,6 +1121,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     if (normalizedTag.isEmpty) {
       return;
     }
+    if (_availableTags.contains(normalizedTag)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.tagAlreadyExistsMessage)),
+      );
+      return;
+    }
 
     setState(() {
       _availableTags.add(normalizedTag);

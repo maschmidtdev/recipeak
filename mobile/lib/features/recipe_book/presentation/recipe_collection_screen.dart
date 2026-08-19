@@ -1053,6 +1053,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     if (normalizedTag.isEmpty) {
       return false;
     }
+    if (_availableTags.contains(normalizedTag)) {
+      _showTagAlreadyExists();
+      return false;
+    }
 
     setState(() {
       _availableTags.add(normalizedTag);
@@ -1095,6 +1099,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     final normalizedTag = normalizeTag(tag);
     if (normalizedTag.isEmpty) {
+      return false;
+    }
+    if (_ingredientTagExists(normalizedTag)) {
+      _showTagAlreadyExists();
       return false;
     }
 
@@ -1191,6 +1199,10 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     if (normalizedTag.isEmpty || normalizedTag == tag) {
       return false;
     }
+    if (_availableTags.contains(normalizedTag)) {
+      _showTagAlreadyExists();
+      return false;
+    }
 
     setState(() {
       _availableTags.remove(tag);
@@ -1280,7 +1292,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<bool> _renameIngredientTag(String tag) async {
-    final controller = TextEditingController(text: tag);
+    final localizations = AppLocalizations.of(context);
+    final currentLabel = ingredientTagLabel(localizations, tag);
+    final controller = TextEditingController(text: currentLabel);
     final nextTag = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -1314,7 +1328,13 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     }
 
     final normalizedTag = normalizeTag(nextTag);
-    if (normalizedTag.isEmpty || normalizedTag == tag) {
+    if (normalizedTag.isEmpty ||
+        normalizedTag == tag ||
+        normalizedTag == currentLabel) {
+      return false;
+    }
+    if (_ingredientTagExists(normalizedTag, except: tag)) {
+      _showTagAlreadyExists();
       return false;
     }
 
@@ -1342,6 +1362,27 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     _persistState();
 
     return true;
+  }
+
+  bool _ingredientTagExists(String candidate, {String? except}) {
+    final localizations = AppLocalizations.of(context);
+    for (final tag in _availableIngredientTags) {
+      if (tag == except) {
+        continue;
+      }
+      if (tag == candidate ||
+          ingredientTagLabel(localizations, tag) == candidate) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _showTagAlreadyExists() {
+    final localizations = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(localizations.tagAlreadyExistsMessage)),
+    );
   }
 }
 

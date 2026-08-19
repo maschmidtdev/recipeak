@@ -16,6 +16,7 @@
   "aboutTitle": "\u00dcber",
   "localDataNotice": "Recipeek speichert deine Rezepte und Zutaten lokal auf diesem Ger\u00e4t. Nutze Backups oder Exporte, bevor du App-Daten zur\u00fccksetzt, die App deinstallierst oder das Smartphone wechselst.",
   "tagUsageCountLabel": "In {count} Rezepten verwendet",
+  "tagAlreadyExistsMessage": "Ein Tag mit diesem Namen existiert bereits.",
   "recipeTagsTitle": "Rezept-Tags",
   "ingredientTagsTitle": "Zutaten-Tags",
   "ingredientTagsAvailableCountLabel": "{count} Zutaten-Tags verf\u00fcgbar",
