@@ -32,8 +32,11 @@ abstract class AppLocalizations {
   String get languageLabel;
   String get englishLanguage;
   String get germanLanguage;
+  String get menuTooltip;
   String get settingsTitle;
-  String get settingsTooltip;
+  String get backupsTitle;
+  String get aboutTitle;
+  String get localDataNotice;
   String get resetToSeedLabel;
   String get resetToSeedDescription;
   String get resetToSeedTitle;
@@ -50,6 +53,7 @@ abstract class AppLocalizations {
   String get deleteTagLabel;
   String get deleteTagTitle;
   String get tagsAvailableLabel;
+  String tagUsageCountLabel(int count);
   String get renameOrRemoveTags;
   String get removeTagsFromAllRecipes;
   String get noTagsAvailableToDelete;
@@ -544,10 +548,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchIngredients => 'Search ingredients';
 
   @override
+  String get menuTooltip => 'Menu';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
-  String get settingsTooltip => 'Settings';
+  String get backupsTitle => 'Backups';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get localDataNotice =>
+      'Recipeek stores your recipes and ingredients locally on this device. Use backups or exports before resetting app data, uninstalling, or switching phones.';
 
   @override
   String get resetToSeedLabel => 'Reset to seed';
@@ -584,6 +598,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tagsAvailableCountLabel(int count) => '$count tags available';
+
+  @override
+  String tagUsageCountLabel(int count) => 'Used in $count recipes';
 
   @override
   String ingredientsImportedMessage(int addedCount, int updatedCount) =>
@@ -1152,10 +1169,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchIngredients => 'Zutaten suchen';
 
   @override
+  String get menuTooltip => 'Men\u00fc';
+
+  @override
   String get settingsTitle => 'Einstellungen';
 
   @override
-  String get settingsTooltip => 'Einstellungen';
+  String get backupsTitle => 'Backups';
+
+  @override
+  String get aboutTitle => '\u00dcber';
+
+  @override
+  String get localDataNotice =>
+      'Recipeek speichert deine Rezepte und Zutaten lokal auf diesem Ger\u00e4t. Nutze Backups oder Exporte, bevor du App-Daten zur\u00fccksetzt, die App deinstallierst oder das Smartphone wechselst.';
 
   @override
   String get resetToSeedLabel => 'Auf Seed zurücksetzen';
@@ -1192,6 +1219,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String tagsAvailableCountLabel(int count) => '$count Tags verf\u00fcgbar';
+
+  @override
+  String tagUsageCountLabel(int count) => 'In $count Rezepten verwendet';
 
   @override
   String ingredientsImportedMessage(int addedCount, int updatedCount) =>

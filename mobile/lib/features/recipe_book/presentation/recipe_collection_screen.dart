@@ -357,9 +357,9 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: _openSettings,
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: localizations.settingsTooltip,
+            onPressed: _openMenu,
+            icon: const Icon(Icons.menu),
+            tooltip: localizations.menuTooltip,
           ),
         ],
       ),
@@ -621,6 +621,37 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
     _restoreAllIfNoSpecificFilters();
   }
 
+  Future<void> _openMenu() async {
+    final action = await showModalBottomSheet<CollectionMenuAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return CollectionMenuSheet(
+          onSelectAction: (action) => Navigator.of(context).pop(action),
+        );
+      },
+    );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    switch (action) {
+      case CollectionMenuAction.settings:
+        await _openSettings();
+        break;
+      case CollectionMenuAction.tags:
+        await _openTagsMenu();
+        break;
+      case CollectionMenuAction.backups:
+        await _openBackupsMenu();
+        break;
+      case CollectionMenuAction.about:
+        await _openAbout();
+        break;
+    }
+  }
+
   Future<void> _openSettings() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -629,7 +660,6 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         return CollectionSettingsSheet(
           locale: widget.localeOverride,
           matchAllTags: _matchAllTags,
-          availableTagCountBuilder: () => _availableTags.length,
           showResetToSeed: kIsDevelopmentMode,
           onLocaleChanged: widget.onLocaleChanged,
           onMatchAllTagsChanged: (value) {
@@ -639,13 +669,44 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             _persistState();
           },
           onResetToSeed: _resetToSeedState,
-          onBackupIngredients: _backupIngredientsToAppStorage,
-          onExportIngredients: _exportIngredientsToFile,
-          onImportIngredients: _chooseIngredientImportSource,
+        );
+      },
+    );
+  }
+
+  Future<void> _openTagsMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return CollectionTagsSheet(
+          availableTagCountBuilder: () => _availableTags.length,
           onAddTag: _addGlobalTag,
           onOpenTagManager: _openDeleteTagManager,
         );
       },
+    );
+  }
+
+  Future<void> _openBackupsMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return CollectionBackupsSheet(
+          onBackupIngredients: _backupIngredientsToAppStorage,
+          onExportIngredients: _exportIngredientsToFile,
+          onImportIngredients: _chooseIngredientImportSource,
+        );
+      },
+    );
+  }
+
+  Future<void> _openAbout() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => const CollectionAboutSheet(),
     );
   }
 
