@@ -42,6 +42,7 @@ abstract class AppLocalizations {
   String get resetToSeedTitle;
   String get resetToSeedMessage;
   String get tagsTitle;
+  String get recipeTagsTitle;
   String get tagMatchingLabel;
   String get matchAnyLabel;
   String get matchAllLabel;
@@ -144,6 +145,7 @@ abstract class AppLocalizations {
   String get optionalAdvancedEditing;
   String get createTopInstructionsHint;
   String get ingredientsTitle;
+  String get ingredientTagsTitle;
   String get backupIngredientsLabel;
   String get backupIngredientsDescription;
   String get exportIngredientsLabel;
@@ -205,8 +207,11 @@ abstract class AppLocalizations {
   String deletedMessage(String title);
   String recipesCountLabel(int count);
   String tagsAvailableCountLabel(int count);
+  String ingredientTagsAvailableCountLabel(int count);
   String ingredientsImportedMessage(int addedCount, int updatedCount);
   String tagDeleteConfirmation(int count);
+  String ingredientTagUsageCountLabel(int count);
+  String ingredientTagDeleteConfirmation(int count);
   String invalidRowRangeMessage(int maxRow);
   String overlappingRowRangeMessage(String columnId);
   String prepRowNumberLabel(int index);
@@ -603,11 +608,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String tagUsageCountLabel(int count) => 'Used in $count recipes';
 
   @override
+  String ingredientTagsAvailableCountLabel(int count) =>
+      '$count ingredient tags available';
+
+  @override
+  String ingredientTagUsageCountLabel(int count) =>
+      'Used in $count ingredients';
+
+  @override
+  String ingredientTagDeleteConfirmation(int count) =>
+      'Tag used in $count ingredients, delete?';
+
+  @override
   String ingredientsImportedMessage(int addedCount, int updatedCount) =>
       'Imported $addedCount new and updated $updatedCount ingredients.';
 
   @override
   String get tagsTitle => 'Tags';
+
+  @override
+  String get recipeTagsTitle => 'Recipe tags';
 
   @override
   String get timeTbd => 'Time TBD';
@@ -638,6 +658,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ingredientsTitle => 'My Ingredients';
+
+  @override
+  String get ingredientTagsTitle => 'Ingredient tags';
 
   @override
   String get backupIngredientsLabel => 'Make ingredient backup';
@@ -1224,11 +1247,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String tagUsageCountLabel(int count) => 'In $count Rezepten verwendet';
 
   @override
+  String ingredientTagsAvailableCountLabel(int count) =>
+      '$count Zutaten-Tags verf\u00fcgbar';
+
+  @override
+  String ingredientTagUsageCountLabel(int count) =>
+      'In $count Zutaten verwendet';
+
+  @override
+  String ingredientTagDeleteConfirmation(int count) =>
+      'Tag wird in $count Zutaten verwendet, l\u00f6schen?';
+
+  @override
   String ingredientsImportedMessage(int addedCount, int updatedCount) =>
       '$addedCount neue Zutaten importiert und $updatedCount Zutaten aktualisiert.';
 
   @override
   String get tagsTitle => 'Tags';
+
+  @override
+  String get recipeTagsTitle => 'Rezept-Tags';
 
   @override
   String get timeTbd => 'Zeit offen';
@@ -1259,6 +1297,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ingredientsTitle => 'Meine Zutaten';
+
+  @override
+  String get ingredientTagsTitle => 'Zutaten-Tags';
 
   @override
   String get backupIngredientsLabel => 'Zutaten sichern';

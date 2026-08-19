@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/recipe_collection_filters.dart';
-import '../../domain/recipe_summary.dart';
 
 enum CollectionMenuAction {
   settings,
@@ -255,14 +254,20 @@ class CollectionBackupsSheet extends StatelessWidget {
 class CollectionTagsSheet extends StatelessWidget {
   const CollectionTagsSheet({
     super.key,
-    required this.availableTagCountBuilder,
-    required this.onAddTag,
-    required this.onOpenTagManager,
+    required this.recipeTagCount,
+    required this.ingredientTagCount,
+    required this.onAddRecipeTag,
+    required this.onManageRecipeTags,
+    required this.onAddIngredientTag,
+    required this.onManageIngredientTags,
   });
 
-  final int Function() availableTagCountBuilder;
-  final Future<bool> Function() onAddTag;
-  final Future<void> Function() onOpenTagManager;
+  final int recipeTagCount;
+  final int ingredientTagCount;
+  final Future<bool> Function() onAddRecipeTag;
+  final Future<void> Function() onManageRecipeTags;
+  final Future<bool> Function() onAddIngredientTag;
+  final Future<void> Function() onManageIngredientTags;
 
   @override
   Widget build(BuildContext context) {
@@ -279,26 +284,73 @@ class CollectionTagsSheet extends StatelessWidget {
               icon: Icons.sell_outlined,
               title: localizations.tagsTitle,
             ),
-            const SizedBox(height: 8),
-            _MenuTile(
-              icon: Icons.add,
-              title: localizations.addTagLabel,
-              subtitle: localizations.tagsAvailableCountLabel(
-                availableTagCountBuilder(),
+            const SizedBox(height: 16),
+            _TagSection(
+              title: localizations.recipeTagsTitle,
+              countLabel: localizations.tagsAvailableCountLabel(
+                recipeTagCount,
               ),
-              onTap: () async {
-                await onAddTag();
-              },
+              onAddTag: onAddRecipeTag,
+              onManageTags: onManageRecipeTags,
             ),
-            _MenuTile(
-              icon: Icons.edit_outlined,
-              title: localizations.editDeleteTagsLabel,
-              subtitle: localizations.renameOrRemoveTags,
-              onTap: onOpenTagManager,
+            const SizedBox(height: 18),
+            _TagSection(
+              title: localizations.ingredientTagsTitle,
+              countLabel: localizations.ingredientTagsAvailableCountLabel(
+                ingredientTagCount,
+              ),
+              onAddTag: onAddIngredientTag,
+              onManageTags: onManageIngredientTags,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TagSection extends StatelessWidget {
+  const _TagSection({
+    required this.title,
+    required this.countLabel,
+    required this.onAddTag,
+    required this.onManageTags,
+  });
+
+  final String title;
+  final String countLabel;
+  final Future<bool> Function() onAddTag;
+  final Future<void> Function() onManageTags;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        _MenuTile(
+          icon: Icons.add,
+          title: localizations.addTagLabel,
+          subtitle: countLabel,
+          onTap: () async {
+            await onAddTag();
+          },
+        ),
+        _MenuTile(
+          icon: Icons.edit_outlined,
+          title: localizations.editDeleteTagsLabel,
+          subtitle: localizations.renameOrRemoveTags,
+          onTap: onManageTags,
+        ),
+      ],
     );
   }
 }
@@ -388,15 +440,19 @@ class _MenuTile extends StatelessWidget {
 class TagManagerSheet extends StatefulWidget {
   const TagManagerSheet({
     super.key,
+    required this.title,
     required this.availableTags,
-    required this.recipes,
+    required this.tagUsageCountBuilder,
+    required this.usageCountLabel,
     required this.tagLabelBuilder,
     required this.onRenameTag,
     required this.onDeleteTag,
   });
 
+  final String title;
   final Set<String> availableTags;
-  final List<RecipeSummary> recipes;
+  final int Function(String tag) tagUsageCountBuilder;
+  final String Function(int count) usageCountLabel;
   final String Function(BuildContext context, String tag) tagLabelBuilder;
   final Future<bool> Function(String tag) onRenameTag;
   final Future<bool> Function(String tag) onDeleteTag;
@@ -409,10 +465,6 @@ class _TagManagerSheetState extends State<TagManagerSheet> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    final tagUsage = tagUsageCounts(
-      availableTags: widget.availableTags,
-      recipes: widget.recipes,
-    );
 
     return SafeArea(
       child: Padding(
@@ -423,7 +475,7 @@ class _TagManagerSheetState extends State<TagManagerSheet> {
           children: [
             _SheetTitle(
               icon: Icons.sell_outlined,
-              title: localizations.deleteTagTitle,
+              title: widget.title,
             ),
             const SizedBox(height: 12),
             if (widget.availableTags.isEmpty)
@@ -447,7 +499,9 @@ class _TagManagerSheetState extends State<TagManagerSheet> {
                         contentPadding: EdgeInsets.zero,
                         title: Text(widget.tagLabelBuilder(context, tag)),
                         subtitle: Text(
-                          localizations.tagUsageCountLabel(tagUsage[tag] ?? 0),
+                          widget.usageCountLabel(
+                            widget.tagUsageCountBuilder(tag),
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

@@ -111,7 +111,7 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
         );
       _availableIngredientTags
         ..clear()
-        ..addAll(defaultIngredientTags)
+        ..addAll(snapshot == null ? defaultIngredientTags : const [])
         ..addAll(snapshot?.availableIngredientTags ?? const [])
         ..addAll(_ingredients.expand((ingredient) => ingredient.tags));
 
@@ -680,9 +680,12 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
       showDragHandle: true,
       builder: (context) {
         return CollectionTagsSheet(
-          availableTagCountBuilder: () => _availableTags.length,
-          onAddTag: _addGlobalTag,
-          onOpenTagManager: _openDeleteTagManager,
+          recipeTagCount: _availableTags.length,
+          ingredientTagCount: _availableIngredientTags.length,
+          onAddRecipeTag: _addGlobalTag,
+          onManageRecipeTags: _openDeleteTagManager,
+          onAddIngredientTag: _addIngredientTag,
+          onManageIngredientTags: _openIngredientTagManager,
         );
       },
     );
@@ -974,16 +977,41 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
   }
 
   Future<void> _openDeleteTagManager() async {
+    final localizations = AppLocalizations.of(context);
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) {
         return TagManagerSheet(
+          title: localizations.deleteTagTitle,
           availableTags: _availableTags,
-          recipes: _recipes,
+          tagUsageCountBuilder: _recipeTagUsageCount,
+          usageCountLabel: localizations.tagUsageCountLabel,
           tagLabelBuilder: _tagLabel,
           onRenameTag: _renameTag,
           onDeleteTag: _deleteTag,
+        );
+      },
+    );
+  }
+
+  Future<void> _openIngredientTagManager() async {
+    final localizations = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return TagManagerSheet(
+          title: localizations.ingredientTagsTitle,
+          availableTags: _availableIngredientTags,
+          tagUsageCountBuilder: _ingredientTagUsageCount,
+          usageCountLabel: localizations.ingredientTagUsageCountLabel,
+          tagLabelBuilder: (context, tag) => ingredientTagLabel(
+            AppLocalizations.of(context),
+            tag,
+          ),
+          onRenameTag: _renameIngredientTag,
+          onDeleteTag: _deleteIngredientTag,
         );
       },
     );
@@ -1028,6 +1056,50 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
 
     setState(() {
       _availableTags.add(normalizedTag);
+    });
+    _persistState();
+    return true;
+  }
+
+  Future<bool> _addIngredientTag() async {
+    final controller = TextEditingController();
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final localizations = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(localizations.addTagTitle),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(hintText: localizations.tagNameHint),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.discard),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: Text(localizations.addTagLabel),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || tag == null || tag.isEmpty) {
+      return false;
+    }
+
+    final normalizedTag = normalizeTag(tag);
+    if (normalizedTag.isEmpty) {
+      return false;
+    }
+
+    setState(() {
+      _availableIngredientTags.add(normalizedTag);
     });
     _persistState();
     return true;
@@ -1139,6 +1211,132 @@ class _RecipeCollectionScreenState extends State<RecipeCollectionScreen> {
             );
 
         _recipes[index] = _recipes[index].copyWith(tags: updatedTags);
+      }
+    });
+    _persistState();
+
+    return true;
+  }
+
+  int _recipeTagUsageCount(String tag) {
+    return _recipes.where((recipe) => recipe.tags.contains(tag)).length;
+  }
+
+  int _ingredientTagUsageCount(String tag) {
+    return _ingredients
+        .where((ingredient) => ingredient.tags.contains(tag))
+        .length;
+  }
+
+  Future<bool> _deleteIngredientTag(String tag) async {
+    final localizations = AppLocalizations.of(context);
+    final usageCount = _ingredients
+        .where((ingredient) => ingredient.tags.contains(tag))
+        .length;
+
+    if (usageCount > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(localizations.ingredientTagsTitle),
+            content: Text(
+              localizations.ingredientTagDeleteConfirmation(usageCount),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(localizations.discard),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(localizations.delete),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmed != true) {
+        return false;
+      }
+    }
+
+    setState(() {
+      _availableIngredientTags.remove(tag);
+      _selectedIngredientTagFilters.remove(tag);
+      for (var index = 0; index < _ingredients.length; index++) {
+        _ingredients[index] = _ingredients[index].copyWith(
+          tags: [
+            for (final ingredientTag in _ingredients[index].tags)
+              if (ingredientTag != tag) ingredientTag,
+          ],
+        );
+      }
+    });
+    _persistState();
+
+    return true;
+  }
+
+  Future<bool> _renameIngredientTag(String tag) async {
+    final controller = TextEditingController(text: tag);
+    final nextTag = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final localizations = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(
+            '${localizations.edit} ${localizations.ingredientTagsTitle}',
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(hintText: localizations.tagNameHint),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.deleteDialogCancel),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: Text(localizations.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || nextTag == null) {
+      return false;
+    }
+
+    final normalizedTag = normalizeTag(nextTag);
+    if (normalizedTag.isEmpty || normalizedTag == tag) {
+      return false;
+    }
+
+    setState(() {
+      _availableIngredientTags.remove(tag);
+      _availableIngredientTags.add(normalizedTag);
+
+      if (_selectedIngredientTagFilters.remove(tag)) {
+        _selectedIngredientTagFilters.add(normalizedTag);
+      }
+
+      for (var index = 0; index < _ingredients.length; index++) {
+        final updatedTags =
+            <String>{
+              for (final ingredientTag in _ingredients[index].tags)
+                if (ingredientTag == tag) normalizedTag else ingredientTag,
+            }.toList()..sort(
+              (left, right) =>
+                  left.toLowerCase().compareTo(right.toLowerCase()),
+            );
+
+        _ingredients[index] = _ingredients[index].copyWith(tags: updatedTags);
       }
     });
     _persistState();
